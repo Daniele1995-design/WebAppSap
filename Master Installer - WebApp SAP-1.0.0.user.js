@@ -2,6 +2,8 @@
 // @name         Master Installer - WebApp SAP
 // @namespace    https://github.com/tuo-username/tampermonkey-scripts
 // @version      1.0.0
+// @description  Automazioni su WebApp IndustryOne sviluppata ad hoc per ATS S.p.A da Sanniomatica.
+// @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
 // @require      https://github.com/Daniele1995-design/WebAppSap/raw/refs/heads/main/Estrazione%20Dati%20MOD%20GRN%20+%20Stampa%20Etichette%2010x10%20e%2010x5.user.js
