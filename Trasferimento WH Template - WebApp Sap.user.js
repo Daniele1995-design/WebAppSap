@@ -1,3 +1,13 @@
+// ==UserScript==
+// @name         Trasferimento WH Template - WebApp Sap
+// @namespace    http://tampermonkey.net/
+// @version      1.3
+// @description  Inserisce seriali e ubicazioni con report errori e scarico CSV funzionante
+// @match        http://172.18.20.20:8095/Transfer/Whs/?v=20250522
+// @grant        GM_download
+// @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/xlsx.full.min.js
+// ==/UserScript==
+
 (function() {
     'use strict';
 
