@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name         Ricerca Riferimento FR / Seriale MOD - WebApp Sap (Aggiornato con Pulizia e scroll)
 // @namespace    http://tampermonkey.net/
+// @author       Daniele Izzo
 // @version      8.3
-// @description  Script aggiornato: inserisce seriale nella maschera, pulizia seriali, reset/focus sul campo ricerca principale, pulsanti nel modal, scroll automatico dopo aggiunta
+// @description  Script aggiornato: inserisce seriale nella maschera, pulizia seriali, reset/focus sul campo ricerca principale, pulsanti nel modal, scroll automatico dopo aggiunta + avvio script ricerca pn e seriali attesi
 // @match        http://172.18.20.20/GRN/*
 // @grant        none
 // ==/UserScript==
