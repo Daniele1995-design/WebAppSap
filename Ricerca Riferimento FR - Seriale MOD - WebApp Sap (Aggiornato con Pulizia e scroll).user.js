@@ -1,4 +1,4 @@
-window.initGRNCompleto = (function() {
+window.initGRNCompleto = function() {
     'use strict';
 
     console.log("Script Tampermonkey avviato con pulizia seriali");
@@ -1261,3 +1261,7 @@ function evidenziaRigaDaCodiceQuandoPronta(codiceRiga) {
 
 // Richiama subito la funzione per avviare lo script
 window.initGRNCompleto();
+
+
+
+    
