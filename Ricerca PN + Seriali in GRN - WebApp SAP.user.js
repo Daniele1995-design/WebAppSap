@@ -1,12 +1,3 @@
-// ==UserScript==
-// @name         Ricerca PN + Seriali in GRN - WebApp SAP
-// @namespace    http://tampermonkey.net/
-// @version      3.8
-// @description  Mostra PN, Riferimento e Seriali (FR_ID->seriale CSV) con caching 9h, aggiorna righe e maschere "Aggiungi"
-// @match        http://172.18.20.20:8095/GRN/*
-// @grant        none
-// ==/UserScript==
-
 (async function() {
     'use strict';
 
