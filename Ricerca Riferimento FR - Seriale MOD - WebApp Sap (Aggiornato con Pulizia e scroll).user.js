@@ -1,4 +1,4 @@
-(function() {
+window.initGRNCompleto = (function() {
     'use strict';
 
     console.log("Script Tampermonkey avviato con pulizia seriali");
@@ -1247,13 +1247,13 @@ function evidenziaRigaDaCodiceQuandoPronta(codiceRiga) {
             observer.disconnect();
         }
     });
-    observer.observe(ulContainer, { childList: true, subtree: true });
-    // Se giÃ  presente (seriale giÃ  inserito)
-    let rigaSubito = trovaLi();
-    if (rigaSubito) {
-        evidenzia(rigaSubito);
-        observer.disconnect();
-    }
-    setTimeout(() => observer.disconnect(), 4000); // safety
-}
-})();
+   // --- Inizio funzione unica ---
+window.initGRNCompleto = function() {
+    // Tutto il tuo codice qui dentro
+    // ... observer, click handler, checkAndAddSerial, evidenziaRigaDaCodiceQuandoPronta, ecc.
+
+    console.log("✅ GRN completamente inizializzato");
+};
+
+// --- Alla fine richiami la funzione ---
+window.initGRNCompleto();
