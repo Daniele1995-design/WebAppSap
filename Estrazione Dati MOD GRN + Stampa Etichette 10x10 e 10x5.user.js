@@ -1,3 +1,4 @@
+/*
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
@@ -9,6 +10,7 @@
 // @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js
 // @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js
 // ==/UserScript==
+*/
 
 (function () {
     'use strict';
@@ -1144,15 +1146,20 @@ function addPrintButtonsToRows() {
         addPrintButtonsToRows();
     }
 
-    // Avvio dello script
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            addExportAndPrintUI();
-            setInterval(addPrintButtonsToRows, 1500);
-        });
-    } else {
+    function startIfVerbaliPresent() {
+    const strong = document.querySelector("strong");
+    if (strong && strong.textContent.trim() === "Verbali di scarico collegato") {
         addExportAndPrintUI();
         setInterval(addPrintButtonsToRows, 1500);
     }
+}
+
+// Avvio dello script
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startIfVerbaliPresent);
+} else {
+    startIfVerbaliPresent();
+}
+
 
 })();
