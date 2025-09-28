@@ -995,11 +995,25 @@ body {
 
 function addPrintButtonsToRows() {
     const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
+    if (righe.length === 0) {
+        console.log('Nessuna riga trovata nella pagina');
+        return;
+    }
+
     righe.forEach((li, idx) => {
         // Salta la riga di ricerca (contiene l'input con id 'shootInput')
         if (li.querySelector('#shootInput')) {
+            console.log('Trovata riga di ricerca, salto');
             return; // Salta questa iterazione
         }
+
+        // Salta la riga se contiene il checkbox con id "odaSelected"
+        if (li.querySelector('input#odaSelected')) {
+            console.log('Trovato checkbox odaSelected, salto la riga');
+            return; // Salta questa iterazione
+        }
+
+        console.log('Aggiungo pulsanti alla riga', idx);
 
         // Rimuovi i pulsanti esistenti
         const existingBtns = li.querySelectorAll('.btn-print-etichetta, .btn-print-etichetta-small, .btn-container');
@@ -1045,23 +1059,25 @@ function addPrintButtonsToRows() {
         // Aggiungi il contenitore all'area azioni
         const actionArea = li.querySelector('.item-media, .item-after, .item-title, .item-inner') || li;
 
-        if (actionArea.classList.contains('item-inner')) {
-            actionArea.style.display = 'flex';
-            actionArea.style.alignItems = 'center';
-            actionArea.style.justifyContent = 'space-between';
-            actionArea.style.width = '100%';
+        if (actionArea) {
+            if (actionArea.classList.contains('item-inner')) {
+                actionArea.style.display = 'flex';
+                actionArea.style.alignItems = 'center';
+                actionArea.style.justifyContent = 'space-between';
+                actionArea.style.width = '100%';
 
-            // Crea un contenitore per il testo esistente
-            const textContainer = document.createElement('div');
-            while (actionArea.firstChild) {
-                textContainer.appendChild(actionArea.firstChild);
+                // Crea un contenitore per il testo esistente
+                const textContainer = document.createElement('div');
+                while (actionArea.firstChild) {
+                    textContainer.appendChild(actionArea.firstChild);
+                }
+
+                // Aggiungi il contenitore del testo e i pulsanti
+                actionArea.appendChild(textContainer);
+                actionArea.appendChild(btnContainer);
+            } else {
+                actionArea.appendChild(btnContainer);
             }
-
-            // Aggiungi il contenitore del testo e i pulsanti
-            actionArea.appendChild(textContainer);
-            actionArea.appendChild(btnContainer);
-        } else {
-            actionArea.appendChild(btnContainer);
         }
     });
 }
