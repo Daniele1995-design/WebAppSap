@@ -1,11 +1,18 @@
 (function() {
     'use strict';
 
-    // Controllo: se esiste il testo specificato nella pagina, non facciamo partire nulla
-    if (document.querySelector('strong')?.textContent.trim() === 'Verbali di scarico collegato') {
+const checkInterval = setInterval(() => {
+    const strongElements = Array.from(document.querySelectorAll('strong'));
+    if(strongElements.some(el => el.textContent.trim() === 'Verbali di scarico collegato')) {
         console.log('Script non avviato: Verbali di scarico collegato presente.');
-        return; // Interrompe l'esecuzione dello script
+        clearInterval(checkInterval);
+        return;
     }
+    
+    clearInterval(checkInterval);
+    addButton(); // avvia solo se il testo non è presente
+}, 200);
+
 
     let dati = [];
     let report = [];
