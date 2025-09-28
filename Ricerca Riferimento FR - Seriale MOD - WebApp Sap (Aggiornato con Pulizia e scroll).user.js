@@ -66,7 +66,7 @@ function normalizeSN(s) {
     // --- Caricamento CSV con PapaParse ---
     function loadCSVData() {
         const script = document.createElement('script');
-        script.src = "https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js";
+        script.src = "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/papaparse.min.js";
         script.onload = () => {
             console.log("ðŸ“Š PapaParse caricato");
             Papa.parse(CSV_URL, {
