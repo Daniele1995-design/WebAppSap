@@ -1,13 +1,3 @@
-// ==UserScript==
-// @name         Seleziona/Deseleziona Tutti GRN - WebApp SAP
-// @namespace    http://tampermonkey.net/
-// @version      1.6
-// @description  Pulsanti accanto a "Ricerca Ordini" con lo stesso layout dei bottoni originali (compatibile su tutti i PC)
-// @author       Tu
-// @match        http://172.18.20.20:8095/GRN/*
-// @grant        none
-// ==/UserScript==
-
 (function() {
     'use strict';
 
