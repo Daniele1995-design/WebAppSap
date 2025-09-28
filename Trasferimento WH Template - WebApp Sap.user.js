@@ -1,6 +1,12 @@
 (function() {
     'use strict';
 
+    // Controllo: se esiste il testo specificato nella pagina, non facciamo partire nulla
+    if (document.querySelector('strong')?.textContent.trim() === 'Verbali di scarico collegato') {
+        console.log('Script non avviato: Verbali di scarico collegato presente.');
+        return; // Interrompe l'esecuzione dello script
+    }
+
     let dati = [];
     let report = [];
     const wm = unsafeWindow.wm;
@@ -58,7 +64,6 @@
         const [seriale, ubicazione] = dati[index];
         let currentEntry = { seriale, ubicazione, stato: 'Caricato', tipoErrore: 'Nessuno' };
 
-        // Proviamo a intercettare errori tramite PNotify
         const originalError = unsafeWindow.PNotify.error;
         unsafeWindow.PNotify.error = function(obj){
             currentEntry.stato = 'Errore';
@@ -93,5 +98,3 @@
 
     addButton();
 })();
-
-
