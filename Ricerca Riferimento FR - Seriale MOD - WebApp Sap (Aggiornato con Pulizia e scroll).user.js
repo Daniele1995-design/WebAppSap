@@ -1258,7 +1258,7 @@ function evidenziaRigaDaCodiceQuandoPronta(codiceRiga) {
 
     console.log("✅ GRN completamente inizializzato");
 };
-
+}
 // Richiama subito la funzione per avviare lo script
 window.initGRNCompleto();
 
