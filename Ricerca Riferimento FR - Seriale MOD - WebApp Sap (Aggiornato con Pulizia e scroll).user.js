@@ -1,6 +1,17 @@
-window.initGRNCompleto = function() {
-    'use strict';
+// ==UserScript==
+// @name         Ricerca Riferimento FR / Seriale MOD - WebApp Sap (Aggiornato con Pulizia e scroll)
+// @namespace    http://tampermonkey.net/
+// @version      8.3
+// @description  Script aggiornato: inserisce seriale nella maschera, pulizia seriali, reset/focus sul campo ricerca principale, pulsanti nel modal, scroll automatico dopo aggiunta
+// @match        http://172.18.20.20/GRN/*
+// @grant        none
+// ==/UserScript==
 
+(function() {
+    'use strict';
+   // ---Avvio Script Ricerca PN + Seriali
+    window.initGRN();
+    
     console.log("Script Tampermonkey avviato con pulizia seriali");
 
     // --- Variabili globali per la pulizia seriali ---
@@ -59,7 +70,7 @@ function normalizeSN(s) {
         const script = document.createElement('script');
         script.src = "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/papaparse.min.js";
         script.onload = () => {
-            console.log("ðŸ“Š PapaParse caricato");
+            console.log("OK PapaParse caricato");
             Papa.parse(CSV_URL, {
                 download: true,
                 header: false,
@@ -1247,21 +1258,13 @@ function evidenziaRigaDaCodiceQuandoPronta(codiceRiga) {
             observer.disconnect();
         }
     });
-       observer.observe(ulContainer, { childList: true, subtree: true });
-    // Se già presente (seriale già inserito)
+    observer.observe(ulContainer, { childList: true, subtree: true });
+    // Se giÃ  presente (seriale giÃ  inserito)
     let rigaSubito = trovaLi();
     if (rigaSubito) {
         evidenzia(rigaSubito);
         observer.disconnect();
     }
     setTimeout(() => observer.disconnect(), 4000); // safety
-
-    console.log("✅ GRN completamente inizializzato");
-};
 }
-// Richiama subito la funzione per avviare lo script
-window.initGRNCompleto();
-
-
-
-    
+})();
