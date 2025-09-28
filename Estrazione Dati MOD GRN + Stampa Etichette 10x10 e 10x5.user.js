@@ -6,7 +6,7 @@
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
 // @grant        GM_download
-// @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js
+// @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/qrcode.min.js
 // @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js
 // ==/UserScript==
 
@@ -329,8 +329,8 @@ html, body {
 <body>
 <div id="labels" class="labels"></div>
 
-<script src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js"></script>
-<script src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
 <script>
 (function(){
@@ -723,8 +723,8 @@ body {
 <body>
 <div id="labels"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/qrcode.min.js"></script>
+<script src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js"></script>
 
 <script>
 (function(){
@@ -1144,20 +1144,15 @@ function addPrintButtonsToRows() {
         addPrintButtonsToRows();
     }
 
-    function startIfVerbaliPresent() {
-    const strong = document.querySelector("strong");
-    if (strong && strong.textContent.trim() === "Verbali di scarico collegato") {
+    // Avvio dello script
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            addExportAndPrintUI();
+            setInterval(addPrintButtonsToRows, 1500);
+        });
+    } else {
         addExportAndPrintUI();
         setInterval(addPrintButtonsToRows, 1500);
     }
-}
-
-// Avvio dello script
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startIfVerbaliPresent);
-} else {
-    startIfVerbaliPresent();
-}
-
 
 })();
