@@ -1247,13 +1247,17 @@ function evidenziaRigaDaCodiceQuandoPronta(codiceRiga) {
             observer.disconnect();
         }
     });
-   // --- Inizio funzione unica ---
-window.initGRNCompleto = function() {
-    // Tutto il tuo codice qui dentro
-    // ... observer, click handler, checkAndAddSerial, evidenziaRigaDaCodiceQuandoPronta, ecc.
+       observer.observe(ulContainer, { childList: true, subtree: true });
+    // Se già presente (seriale già inserito)
+    let rigaSubito = trovaLi();
+    if (rigaSubito) {
+        evidenzia(rigaSubito);
+        observer.disconnect();
+    }
+    setTimeout(() => observer.disconnect(), 4000); // safety
 
     console.log("✅ GRN completamente inizializzato");
 };
 
-// --- Alla fine richiami la funzione ---
+// Richiama subito la funzione per avviare lo script
 window.initGRNCompleto();
