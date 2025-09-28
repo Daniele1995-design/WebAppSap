@@ -7,7 +7,7 @@
 // @match        http://172.18.20.20:8095/GRN/*
 // @grant        GM_download
 // @require      https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js
-// @require      https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js
+// @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js
 // ==/UserScript==
 
 (function () {
