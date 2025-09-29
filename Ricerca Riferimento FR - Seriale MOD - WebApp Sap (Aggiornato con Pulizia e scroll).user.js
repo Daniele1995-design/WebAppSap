@@ -1085,7 +1085,7 @@ if (codiceRiga) {
                 }
                 rifDiv.innerHTML = `<strong>Riferimento:</strong> ${riferimentoLinea || 'N/D'}`;
 
-                const disableManualAddCleanup = true;
+                const disableManualAddCleanup = false;
                 if (!disableManualAddCleanup && puliziaSerialiAttiva) {
                     let pnDiv = document.getElementById('dialogNewItem-PN-estratto');
                     if (!pnDiv) {
