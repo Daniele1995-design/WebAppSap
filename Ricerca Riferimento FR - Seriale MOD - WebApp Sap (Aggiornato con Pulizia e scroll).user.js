@@ -11,7 +11,7 @@
 
 (function() {
     'use strict';
-    
+
     console.log("Script Tampermonkey avviato con pulizia seriali");
 
     // --- Variabili globali per la pulizia seriali ---
@@ -1126,70 +1126,68 @@ if (codiceRiga) {
     });
 
 // --- Funzione di controllo automatico per la pulizia seriali ---
-function checkAndAddSerial() {
-    console.log("=== INIZIO CHECK SERIAL ===");
+    function checkAndAddSerial() {
+        if (!puliziaSerialiAttiva) return;
 
-    // 1. Verifica se la funzione viene chiamata
-    console.log("Funzione checkAndAddSerial chiamata");
+        const referenceSpan = document.querySelector('#dialogNewItem-PN');
+        if (!referenceSpan) return;
 
-    // 2. Trova l'input del seriale
-    const serialInput = document.querySelector('#dialogNewItem-Seriale');
-    console.log("Input seriale trovato:", !!serialInput);
-    if (!serialInput) return;
+        const matchPN = referenceSpan.textContent.match(/PN:\s*([^\]]+)/);
+        const matchSN = referenceSpan.textContent.match(/Seriale:\s*([^\s|]+)/);
+        const expectedPN = matchPN ? matchPN[1].trim() : "";
+        const expectedSN = matchSN ? matchSN[1].trim() : "";
 
-    // 3. Leggi il valore inserito
-    const currentSN = serialInput.value.trim();
-    console.log("Seriale inserito:", JSON.stringify(currentSN));
+        const serialInput = document.querySelector('#dialogNewItem-Seriale');
+        const pnDiv = document.querySelector('#dialogNewItem-PN-estratto');
 
-    // 4. Trova il riferimento al seriale atteso
-    const referenceSpan = document.querySelector('#dialogNewItem-PN');
-    console.log("Riferimento PN trovato:", !!referenceSpan);
-    if (!referenceSpan) return;
+        if (!serialInput || !pnDiv) return;
 
-    // 5. Stampa il contenuto completo per debug
-    console.log("Contenuto referenceSpan:", referenceSpan.textContent);
+        const currentSN = serialInput.value.trim();
+        const pnDivContent = pnDiv.innerText;
+        const currentPNMatch = pnDivContent.match(/PN estratto:\s*(.*)/);
+        const currentPN = currentPNMatch ? currentPNMatch[1].trim() : "";
 
-    // 6. Cerca il seriale atteso
-    const expectedMatch = referenceSpan.textContent.match(/Seriale:\s*([^|]+)/);
-    console.log("Match trovato:", !!expectedMatch);
+        const snMatch = currentSN === expectedSN;
+        const pnMatch = currentPN === expectedPN;
 
-    if (expectedMatch) {
-        const expectedSN = expectedMatch[1].trim();
-        console.log("Seriale atteso:", JSON.stringify(expectedSN));
+        const articoloH1 = Array.from(document.querySelectorAll('h1')).find(h => h.textContent.trim() === "Articolo");
+        if (!articoloH1) return;
 
-        // 7. Normalizzazione aggressiva
-        const normalize = s => String(s || "").replace(/\s+/g, '').toUpperCase();
-        const cleanCurrent = normalize(currentSN);
-        const cleanExpected = normalize(expectedSN);
+        let msgH1 = document.querySelector('#dialogNewItem-errore');
+        if (msgH1) msgH1.remove();
 
-        console.log("Dopo normalizzazione:", {
-            inserito: cleanCurrent,
-            atteso: cleanExpected,
-            corrispondono: cleanCurrent === cleanExpected
-        });
-
-        // 8. Se corrispondono, clicca su Aggiungi
-        if (cleanCurrent === cleanExpected) {
+        if (snMatch && pnMatch) {
             const addBtn = document.querySelector('button[onclick="grn.addLine(true)"]');
-            console.log("Pulsante Aggiungi trovato:", !!addBtn);
             if (addBtn) {
-                console.log("Click su Aggiungi in corso...");
                 addBtn.click();
-                return;
+                console.log("✅ Controllo superato, aggiunta automatica effettuata");
+
+                // *** ESEGUI LO SCROLL ANCHE PER L'AGGIUNTA AUTOMATICA ***
+                setTimeout(() => {
+                    scrollToTargetElement();
+                }, 500);
             }
+        } else {
+            const message = document.createElement('h1');
+            message.id = 'dialogNewItem-errore';
+            message.style.color = 'red';
+            message.style.fontWeight = 'bold';
+            message.style.fontSize = '20px';
+            message.style.marginTop = '5px';
+
+            if (!snMatch && !pnMatch) {
+                message.textContent = "❌ Attenzione: Seriale e Partnumber non coincidono";
+            } else if (!snMatch) {
+                message.textContent = "❌ Attenzione: il Seriale non corrisponde con quanto atteso";
+            } else if (!pnMatch) {
+                message.textContent = "❌ Attenzione: il Part Number non coincide con quanto atteso";
+            }
+
+            articoloH1.after(message);
+            console.warn("⚠️ Controllo fallito:", { snMatch, pnMatch, expectedSN, currentSN, expectedPN, currentPN });
         }
     }
 
-    console.log("=== FINE CHECK SERIAL (nessuna azione eseguita) ===");
-}
-
-// Aggiungi questo per verificare se la funzione viene chiamata
-document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && e.target.matches('#dialogNewItem-Seriale')) {
-        console.log("=== INVIO RILEVATO NEL CAMPO SERIALE ===");
-        setTimeout(checkAndAddSerial, 100);
-    }
-});
     // --- Reset dei campi quando si chiude/cancella ---
     document.body.addEventListener('click', (e) => {
         const btn = e.target;
@@ -1213,18 +1211,18 @@ document.addEventListener('keypress', function(e) {
             const erroreDiv = document.querySelector('#dialogNewItem-errore');
 
             if (pnDiv) {
-                pnDiv.innerHTML = "<div>ðŸ§¹ Pulizia seriali: " + (puliziaSerialiAttiva ? "ATTIVA" : "DISATTIVA") + "</div><div>SN Barcodato: </div><div>PN estratto: </div>";
+                pnDiv.innerHTML = "<div>🧹 Pulizia seriali: " + (puliziaSerialiAttiva ? "ATTIVA" : "DISATTIVA") + "</div><div>SN Barcodato: </div><div>PN estratto: </div>";
             }
             if (erroreDiv) {
                 erroreDiv.remove();
             }
 
             serialeOriginale = "";
-            console.log("ðŸ”„ Campi pulizia resettati");
+            console.log("🔄 Campi pulizia resettati");
         }
     });
 
-    console.log("ðŸŽ¯ Script con pulizia seriali e scroll automatico completamente inizializzato");
+    console.log("🎯 Script con pulizia seriali e scroll automatico completamente inizializzato");
 
     let lastHighlightedCard = null;
 
