@@ -6,8 +6,8 @@
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
 // @grant        GM_download
-// @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/qrcode.min.js
-// @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js
+// @require      https://cdn.jsdelivr.net/gh/Daniele1995-design/WebAppSap@main/qrcode.min.js
+// @require      https://cdn.jsdelivr.net/gh/Daniele1995-design/WebAppSap@main/JsBarcode.all.min.js
 // ==/UserScript==
 
 (function () {
@@ -329,8 +329,8 @@ html, body {
 <body>
 <div id="labels" class="labels"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Daniele1995-design/WebAppSap@main/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Daniele1995-design/WebAppSap@main/JsBarcode.all.min.js"></script>
 
 <script>
 (function(){
@@ -723,8 +723,8 @@ body {
 <body>
 <div id="labels"></div>
 
-<script src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/qrcode.min.js"></script>
-<script src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Daniele1995-design/WebAppSap@main/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Daniele1995-design/WebAppSap@main/JsBarcode.all.min.js"></script>
 
 <script>
 (function(){
