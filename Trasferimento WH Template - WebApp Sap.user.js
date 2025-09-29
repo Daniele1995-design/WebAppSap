@@ -5,7 +5,7 @@
 // @description  Inserisce seriali e ubicazioni con report errori e scarico CSV funzionante
 // @match        http://172.18.20.20:8095/Transfer/Whs/?v=20250522
 // @grant        GM_download
-// @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/xlsx.full.min.js
+// @require      https://cdn.jsdelivr.net/gh/Daniele1995-design/WebAppSap@main/xlsx.full.min.js
 // ==/UserScript==
 
 (function() {
