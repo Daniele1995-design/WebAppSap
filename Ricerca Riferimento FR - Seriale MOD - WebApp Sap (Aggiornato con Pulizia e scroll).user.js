@@ -1096,7 +1096,7 @@ if (codiceRiga) {
                         pnDiv.style.color = 'green';
                         rifDiv.after(pnDiv);
                     }
-                    pnDiv.innerHTML = "<div>ðŸ§¹ Pulizia seriali: ATTIVA</div><div>SN Barcodato: </div><div>PN estratto: </div>";
+                    pnDiv.innerHTML = "<div>🧹 Pulizia seriali: ATTIVA</div><div>SN Barcodato: </div><div>PN estratto: </div>";
 
                     serialInput.addEventListener('keydown', function handleSerialClean(e) {
                         if (e.key === 'Enter') {
@@ -1106,7 +1106,7 @@ if (codiceRiga) {
                                 serialInput.value = SERESTRATTO || rawSN;
                                 serialInput.dispatchEvent(new Event('input', { bubbles: true }));
                                 console.log("[INFO] SN Barcodato:", rawSN, "| SN estratto:", SERESTRATTO, "| PN estratto:", PNESTRATTO);
-                                pnDiv.innerHTML = `<div>ðŸ§¹ Pulizia seriali: ATTIVA</div><div>SN Barcodato: ${rawSN}</div><div>PN estratto: ${PNESTRATTO}</div>`;
+                                pnDiv.innerHTML = `<div>🧹 Pulizia seriali: ATTIVA</div><div>SN Barcodato: ${rawSN}</div><div>PN estratto: ${PNESTRATTO}</div>`;
 
                                 setTimeout(() => checkAndAddSerial(), 200);
                             }
@@ -1118,7 +1118,7 @@ if (codiceRiga) {
                 serialInput.focus();
                 serialInput.select();
                 observer.disconnect();
-                console.log("ðŸ“ Riferimento inserito nella maschera da click manuale");
+                console.log("Riferimento inserito nella maschera da click manuale");
             }
         });
 
