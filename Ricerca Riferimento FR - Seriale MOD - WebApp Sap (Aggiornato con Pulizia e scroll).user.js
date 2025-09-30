@@ -6,7 +6,7 @@
 // @description  Script aggiornato: inserisce seriale nella maschera, pulizia seriali, reset/focus sul campo ricerca principale, pulsanti nel modal, scroll automatico dopo aggiunta
 // @match        http://172.18.20.20/GRN/*
 // @require      https://github.com/Daniele1995-design/WebAppSap/raw/refs/heads/main/Seleziona-Deseleziona%20Tutti%20GRN%20-%20WebApp%20SAP.user.js
-// @require      https://github.com/Daniele1995-design/WebAppSap/raw/refs/heads/main/Seleziona-Deseleziona%20Tutti%20GRN%20-%20WebApp%20SAP.user.js
+// @require      https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/papaparse.min.js
 // @grant        none
 // ==/UserScript==
 
