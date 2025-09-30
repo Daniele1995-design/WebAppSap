@@ -37,7 +37,7 @@ function normalizeSN(s) {
         .trim();
 }
 
-    // --- Helper VB functions ---
+    // --- Helper VB functions “VB-izzato” ---
     function vbInStr(haystack, needle, start) {
         start = start || 1;
         const idx = haystack.indexOf(needle, Math.max(0, start - 1));
