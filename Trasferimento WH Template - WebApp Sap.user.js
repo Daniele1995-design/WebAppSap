@@ -1,28 +1,25 @@
 // ==UserScript==
-// @name         Trasferimento WH Template - WebApp Sap
+// @name         Trasferimento WH Template - WebApp Sap CSV
 // @namespace    http://tampermonkey.net/
-// @version      1.3
-// @description  Inserisce seriali e ubicazioni con report errori e scarico CSV funzionante
+// @version      1.4
+// @description  Inserisce seriali e ubicazioni da CSV separato da ; con report errori
 // @match        http://172.18.20.20:8095/Transfer/Whs/?v=20250522
 // @grant        GM_download
-// @require      https://cdn.jsdelivr.net/gh/Daniele1995-design/WebAppSap@main/xlsx.full.min.js
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-const checkInterval = setInterval(() => {
-    const strongElements = Array.from(document.querySelectorAll('strong'));
-    if(strongElements.some(el => el.textContent.trim() === 'Verbali di scarico collegato')) {
-        console.log('Script non avviato: Verbali di scarico collegato presente.');
+    const checkInterval = setInterval(() => {
+        const strongElements = Array.from(document.querySelectorAll('strong'));
+        if(strongElements.some(el => el.textContent.trim() === 'Verbali di scarico collegato')) {
+            console.log('Script non avviato: Verbali di scarico collegato presente.');
+            clearInterval(checkInterval);
+            return;
+        }
         clearInterval(checkInterval);
-        return;
-    }
-    
-    clearInterval(checkInterval);
-    addButton(); // avvia solo se il testo non è presente
-}, 200);
-
+        addButton(); // avvia solo se il testo non è presente
+    }, 200);
 
     let dati = [];
     let report = [];
@@ -47,26 +44,25 @@ const checkInterval = setInterval(() => {
     function startProcess() {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.xlsx';
+        input.accept = '.csv';
         input.onchange = e => {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = evt => {
-                const dataArray = new Uint8Array(evt.target.result);
-                const workbook = XLSX.read(dataArray, { type: 'array' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                json.forEach((row, idx) => {
-                    if(idx>0 && row[7] && row[9]){
-                        dati.push([row[7].toString().trim(), row[9].toString().trim()]);
+                const text = evt.target.result;
+                const lines = text.split(/\r?\n/);
+                lines.forEach((line, idx) => {
+                    if(idx === 0) return; // salta intestazione
+                    if(!line.trim()) return; // salta righe vuote
+                    const parts = line.split(';');
+                    if(parts[7] && parts[9]){
+                        dati.push([parts[7].trim(), parts[9].trim()]);
                     }
                 });
-
                 console.log('Dati caricati:', dati);
                 insertSeriale(0);
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsText(file);
         };
         input.click();
     }
@@ -102,8 +98,8 @@ const checkInterval = setInterval(() => {
     }
 
     function downloadCSV() {
-        const csvContent = ['Seriale,Ubicazione,Stato,TipoErrore']
-            .concat(report.map(e => [e.seriale, e.ubicazione, e.stato, e.tipoErrore].join(',')))
+        const csvContent = ['Seriale;Ubicazione;Stato;TipoErrore']
+            .concat(report.map(e => [e.seriale, e.ubicazione, e.stato, e.tipoErrore].join(';')))
             .join('\n');
 
         GM_download({
