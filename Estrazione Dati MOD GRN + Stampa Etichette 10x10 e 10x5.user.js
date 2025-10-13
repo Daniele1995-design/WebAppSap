@@ -23,10 +23,10 @@
         }
     }
 
-    function toCSV(rows) {
-        const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"` ;
-        return rows.map(r => r.map(escape).join(';')).join('\n');
-    }
+   function toCSV(rows) {
+    const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    return 'sep=;\n' + rows.map(r => r.map(escape).join(';')).join('\n');
+  }
 
     function findDivTextByLabel(root, label) {
         const divs = root.querySelectorAll('div');
