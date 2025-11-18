@@ -9,6 +9,7 @@
 // @grant        GM_download
 // @connect      script.google.com
 // ==/UserScript==
+/* global grn */
 
 (function () {
     'use strict';
@@ -45,15 +46,38 @@ function toCSV(rows) {
         const dropdown = li.querySelector("div[id^='dropdown-']");
         if (dropdown) dropdown.style.display = 'block';
 
-        const articoloOriginale = findDivTextByLabel(li, 'Articolo:');
-        const articolo = (articoloOriginale.split(' ')[0] || '').trim();
-        const codiceBP = (articoloOriginale.split(' ')[1] ? articoloOriginale.split(' ')[1].replace(/[()]/g, '') : '').trim();
+let articolo = '';
+let codiceBP = '';
+let pn = '';
+
+const headerContainer = li.querySelector("div[style*='display: flex']");
+if (headerContainer) {
+    const codeDiv = headerContainer.querySelector("div:nth-of-type(2)");
+    if (codeDiv) {
+        // Prende solo il testo diretto del div, senza badge "OK" ecc.
+        const txt = codeDiv.childNodes[0]?.textContent.trim() || '';
+
+        const parts = txt.split('|').map(p => p.trim());
+
+        // Articolo (1ª parte)
+        if (parts.length >= 1) articolo = parts[0] || '';
+
+        // Codice BP (2ª parte SEMPRE)
+        if (parts.length >= 2) codiceBP = parts[1] || '';
+        pn = parts[1] || '';
+
+    }
+}
 
         const descrizione = findDivTextByLabel(li, 'Descrizione:');
 
-        let riferimento = '';
-        const rifDiv = Array.from(li.querySelectorAll('div')).find(d => /Riferimento:/i.test(d.innerText || ''));
-        if (rifDiv) riferimento = (rifDiv.innerText || '').replace(/^.*Riferimento:\s*/i, '').trim();
+let riferimento = '';
+if (headerContainer) {
+    const firstDiv = headerContainer.querySelector("div:first-child span b");
+    if (firstDiv) {
+        riferimento = firstDiv.textContent.trim();
+    }
+}
 
         let riferimentoOrdine = '';
         const divRifOrd = Array.from(li.querySelectorAll('div')).find(d => d.querySelector('button[onclick*="modificaRiferimentoCliente"]'));
@@ -62,12 +86,6 @@ function toCSV(rows) {
             if (button && button.nextSibling) {
                 riferimentoOrdine = (button.nextSibling.textContent || '').replace(/\s+/g,'').trim();
             }
-        }
-
-        let pn = '';
-        const pnSpan = li.querySelector('span.pn-info');
-        if (pnSpan && /\[PN:/i.test(pnSpan.textContent)) {
-            pn = pnSpan.textContent.replace(/\[PN:\s*/i, '').replace(/\].*$/, '').trim();
         }
 
         const serialRows = li.querySelectorAll("div[id^='dropdown-'] ul > li");
@@ -105,7 +123,7 @@ function toCSV(rows) {
         const out = [];
         out.push([
             'Part Number', 'Articolo', 'Codice BP', 'Descrizione',
-            'Riferimento', 'Riferimento Ordine', 'Quantità', 'Seriale', 'Stato Logico', 'Ubicazione'
+            'Riferimento Riga', 'Riferimento Ordine', 'Quantità', 'Seriale', 'Stato Logico', 'Ubicazione'
         ]);
 
         const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
@@ -1012,7 +1030,7 @@ body {
 
         printLabels10x5(allLabels);
     }
-    function printAllLabelsFromPNInfo() {
+function printAllLabelsFromPNInfo() {
     const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
     if (righe.length === 0) {
         alert('Nessuna riga trovata!');
@@ -1023,19 +1041,20 @@ body {
 
     righe.forEach(li => {
         // Salta la riga di ricerca
-        if (li.querySelector('#shootInput')) {
-            return;
-        }
+        if (li.querySelector('#shootInput')) return;
 
-        const pnInfo = li.querySelector('span.pn-info');
-        if (!pnInfo) return;
+        // Trova il div contenente "Seriale Atteso:"
+        const serialeDiv = Array.from(li.querySelectorAll('div')).find(div =>
+            /Seriale\s*Atteso:/i.test(div.textContent)
+        );
+        if (!serialeDiv) return;
 
-        const pnText = pnInfo.textContent || '';
-        const serialeMatch = pnText.match(/Seriale:\s*([^\s|]+)/i);
+        const serialeMatch = serialeDiv.textContent.match(/Seriale\s*Atteso:\s*([A-Za-z0-9]+)/i);
         if (!serialeMatch) return;
 
-        const data = getDataFromLi(li);
         const seriale = serialeMatch[1].trim();
+
+        const data = getDataFromLi(li);
 
         allLabels.push({
             codiceBP: data.codiceBP || '',
@@ -1047,13 +1066,12 @@ body {
     });
 
     if (allLabels.length === 0) {
-        alert('Nessun seriale trovato nel formato corretto!');
+        alert('Nessun seriale atteso trovato!');
         return;
     }
 
     printLabels10x5(allLabels);
 }
-
     function printLabelsForRow(dataRow) {
         const labels = dataRow.serials.map(s => ({
             codiceBP: dataRow.codiceBP || '',
