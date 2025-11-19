@@ -32,12 +32,15 @@
     .etichetta.small { height: 189px; padding: 6px; }
 
 .header-logo {
-        text-align: center;
-        border-bottom: 3px solid black;
-        padding-bottom: 4px;
-        margin-bottom: 4px;
-        position: relative;
-    }
+    text-align: center;
+    border-bottom: 3px solid black;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    position: relative;
+    display: flex;
+    justify-content: space-between; /* Logo principale a destra, icona commessa a sinistra */
+    align-items: center;
+}
 
     .header-logo img.logo-principale { height: 36px; }
     .header-logo img.icon-commessa {
