@@ -42,14 +42,20 @@
     align-items: center;
 }
 
-    .header-logo img.logo-principale { height: 36px; }
-    .header-logo img.icon-commessa {
-        height: 36px;
-        position: relative;
-        right: 10px;
-        top: 10%;
-        transform: translateY(-50%);
-    }
+.header-logo img {
+    max-height: 36px; /* mantiene altezza uniforme */
+    height: auto;
+}
+
+.icon-commessa {
+    max-width: 50%; /* o quanto vuoi che occupi a sinistra */
+    object-fit: contain;
+}
+
+.logo-principale {
+    max-height: 36px; /* adattamento automatico */
+    object-fit: contain;
+}
 
     .campo-data { border: 2px solid black; padding: 4px 8px; text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 4px; }
     .riga-odp { display: flex; align-items: center; justify-content: space-between; flex-grow: 1; padding: 0 8px; }
