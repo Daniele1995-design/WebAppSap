@@ -509,10 +509,12 @@ function genera() {
             const iconHTML = piccolo ? "" : `<img src="${iconeCommessa[document.getElementById("commessa").value] || ""}" class="icon-commessa">`;
 
             if (piccolo) {
+               const iconaCommessaUrl = iconeCommessa[document.getElementById("commessa").value] || "";
                 et.innerHTML = `
                     <div class="header-logo">
-    <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale">
-</div>
+     <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale" alt="ATS">
+     ${iconaCommessaUrl ? `<img src="${iconaCommessaUrl}" class="icon-commessa" alt="Commessa">` : ''}
+ </div>
                     <div class="campo-data">${data}</div>
                     <div class="riga-odp">
                         <div class="odp">${testoPrincipale}</div>
