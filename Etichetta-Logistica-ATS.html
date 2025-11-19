@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Etichetta ATS - Stampa 10x5 cm Reale</title>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f7; padding: 20px; color: #1d1d1f; }
+    .container { max-width: 420px; margin: 0 auto; }
+    .card { background: white; border-radius: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 30px; }
+    .header { background: #007aff; color: white; padding: 18px; text-align: center; font-size: 20px; font-weight: 600; }
+    .form { padding: 20px; }
+    .radio-group { display: flex; justify-content: center; gap: 40px; margin-bottom: 25px; font-size: 16px; }
+    .radio-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .field { margin-bottom: 18px; }
+    .field label { display: block; font-size: 15px; font-weight: 600; margin-bottom: 6px; color: #333; }
+    .field input, .field select { width: 100%; padding: 14px 16px; border: 1px solid #d2d2d7; border-radius: 12px; font-size: 17px; background: #fff; }
+    .field input:focus, .field select:focus { outline: none; border-color: #007aff; box-shadow: 0 0 0 3px rgba(0,122,255,0.2); }
+    .btn { width: 100%; padding: 16px; background: #007aff; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn:hover { background: #0066cc; }
+
+    @media print {
+        @page { size: auto; margin: 0; }
+        html, body { margin: 0 !important; padding: 0 !important; }
+        .card, .btn { display: none !important; }
+        .etichetta { margin: 0 auto !important; page-break-after: always !important; }
+        .etichetta:last-child { page-break-after: avoid !important; }
+    }
+
+    .etichetta { width: 378px; height: 378px; border: 3px solid black; background: white; margin: 30px auto; padding: 10px; display: flex; flex-direction: column; page-break-inside: avoid; }
+    .etichetta.small { height: 189px; padding: 6px; }
+    .header-logo { text-align: center; border-bottom: 3px solid black; padding-bottom: 4px; margin-bottom: 4px; }
+    .header-logo img { height: 36px; }
+    .campo-data { border: 2px solid black; padding: 4px 8px; text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    .riga-odp { display: flex; align-items: center; justify-content: space-between; flex-grow: 1; padding: 0 8px; }
+    .odp { font-size: 28px; font-weight: bold; text-align: center; flex: 1; }
+    .colli-pallet { font-size: 15px; font-weight: bold; text-align: right; white-space: nowrap; line-height: 1.3; }
+    .dati-10x5 { font-size: 13.5px; font-weight: bold; line-height: 1.4; text-align: left; margin-left: 8px; margin-top: 2px; }
+    .progressivo { text-align: center; font-size: 24px; font-weight: bold; margin: 8px 0; }
+    .campo { border: 2px solid black; padding: 6px 8px; margin-bottom: 8px; }
+    .label { font-size: 11px; font-weight: bold; }
+    .valore { font-size: 17px; font-weight: bold; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="header">Etichetta ATS - Magazzino</div>
+        <div class="form">
+
+            <div class="radio-group">
+                <label><input type="radio" name="size" value="10x10" checked onchange="cambiaFormato()"> 10×10 cm</label>
+                <label><input type="radio" name="size" value="10x5" onchange="cambiaFormato()"> 10×5 cm</label>
+            </div>
+
+            <div class="field"><label>Data:</label><input type="date" id="data" onchange="genera()"></div>
+
+            <div class="field" id="commessaField">
+                <label>Commessa:</label>
+                <select id="commessa">
+                    <option value="" selected disabled>Inserire Commessa</option>
+                    <option value="VODAFONE-NTD">VODAFONE-NTD</option>
+                    <option value="VODAFONE-FLM">VODAFONE-FLM</option>
+                    <option value="INWIT">INWIT</option>
+                    <option value="ZAS">ZAS</option>
+                </select>
+            </div>
+
+            <div class="field" id="odpField" style="display:none;">
+                <label>ODP:</label>
+                <input type="text" id="odp" placeholder="es. 123456789" oninput="genera()">
+            </div>
+
+            <!-- DESTINO 10x10 -->
+            <div class="field" id="destinoField">
+                <label>Destino:</label>
+                <input type="text" id="destino" placeholder="Seleziona destinazione" list="destinoList" oninput="validateDestino()">
+                <datalist id="destinoList"></datalist>
+            </div>
+
+            <div class="field" id="locationField" style="display:none;">
+                <label>Location:</label>
+                <input type="text" id="location" placeholder="es. ITWXXXXXXX" oninput="genera()">
+            </div>
+
+            <div class="field">
+                <label id="labelIndirizzo">Indirizzo:</label>
+                <input type="text" id="indirizzo" placeholder="si compila automaticamente" oninput="genera()">
+            </div>
+
+            <div class="field"><label>Colli per pallet (es. 5,3,7):</label><input type="text" id="palletColli" placeholder="5,3,7" oninput="genera()"></div>
+
+            <button class="btn" onclick="window.print()">Stampa Etichette</button>
+            <button class="btn" style="background:#ff3b30;" onclick="resetCampi()">Reset Campi</button>
+        </div>
+    </div>
+
+    <div id="anteprima"></div>
+</div>
+
+<script>
+// DESTINAZIONI PER COMMESSA
+const destinazioniPerCommessa = {
+    "ZAS": [
+        { destino: "1088 - MI", indirizzo: "VIALE LEONE TOLSTOJ, 47/A" },
+        { destino: "97 OSPEDALE CONA FERRARA - FE", indirizzo: "VIA ALDO MORO, 8" },
+        { destino: "ACQUAELLE - TA", indirizzo: "VIA UGO AMALDI, 4" }
+    ],
+    "VODAFONE-NTD": [],
+    "VODAFONE-FLM": [],
+    "INWIT": []
+};
+
+// Imposta data odierna
+document.getElementById("data").value = new Date().toISOString().split('T')[0];
+
+// CAMBIA FORMATO 10x10 / 10x5
+function cambiaFormato() {
+    const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
+
+    document.getElementById("commessaField").style.display = piccolo ? "none" : "block";
+    document.getElementById("odpField").style.display = piccolo ? "block" : "none";
+    document.getElementById("destinoField").style.display = piccolo ? "none" : "block";
+    document.getElementById("locationField").style.display = piccolo ? "block" : "none";
+
+    document.getElementById("labelIndirizzo").textContent = piccolo ? "ID Scheda:" : "Indirizzo:";
+    document.getElementById("indirizzo").readOnly = !piccolo;
+    document.getElementById("indirizzo").placeholder = piccolo ? "es. 123456789" : "si compila automaticamente";
+
+    if (piccolo) {
+        document.getElementById("indirizzo").value = "";
+        document.getElementById("location").value = "";
+    } else {
+        document.getElementById("destino").value = "";
+        document.getElementById("indirizzo").value = "";
+    }
+
+    genera();
+}
+
+// AGGIORNA LISTA DESTINAZIONI PER COMMESSA
+function aggiornaListaDestinazioni() {
+    const commessa = document.getElementById("commessa").value;
+    const lista = destinazioniPerCommessa[commessa] || [];
+    const datalist = document.getElementById("destinoList");
+    datalist.innerHTML = "";
+    lista.forEach(d => {
+        const option = document.createElement("option");
+        option.value = d.destino;
+        datalist.appendChild(option);
+    });
+}
+
+// VALIDAZIONE DESTINO 10x10
+function validateDestino() {
+    const commessa = document.getElementById("commessa").value;
+    const lista = destinazioniPerCommessa[commessa] || [];
+    const input = document.getElementById("destino").value;
+
+    const trovato = lista.find(d => d.destino === input);
+    if (trovato) {
+        document.getElementById("indirizzo").value = trovato.indirizzo;
+    } else {
+        document.getElementById("indirizzo").value = "";
+    }
+
+    genera();
+}
+
+// GENERA ANTEPRIMA
+function genera() {
+    const anteprima = document.getElementById("anteprima");
+    anteprima.innerHTML = "";
+
+    let data = document.getElementById("data").value || new Date().toISOString().split('T')[0];
+    data = data.split("-").reverse().join("/");
+
+    const palletColliInput = document.getElementById("palletColli").value.trim();
+    let palletColli = palletColliInput ? palletColliInput.split(",").map(n => parseInt(n.trim())) : [1];
+    const totaleColli = palletColli.reduce((a,b)=>a+b,0);
+
+    const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
+
+    const testoPrincipale = piccolo ? (document.getElementById("odp").value || "—") : (document.getElementById("commessa").value || "—");
+    const location = piccolo ? (document.getElementById("location").value || "—") : (document.getElementById("destino").value || "—");
+    const idscheda = document.getElementById("indirizzo").value.trim() || "—";
+
+    let idx = 0;
+    for (let p = 0; p < palletColli.length; p++) {
+        for (let c = 1; c <= palletColli[p]; c++) {
+            const prog = `Colli: ${c}/${palletColli[p]} | Pallet: ${p+1}/${palletColli.length}`;
+
+            const et = document.createElement("div");
+            et.className = "etichetta" + (piccolo ? " small" : "");
+
+            if (piccolo) {
+                et.innerHTML = `
+                    <div class="header-logo"><img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg"></div>
+                    <div class="campo-data">${data}</div>
+                    <div class="riga-odp">
+                        <div class="odp">${testoPrincipale}</div>
+                        <div class="colli-pallet">${prog}</div>
+                    </div>
+                    <div class="dati-10x5">
+                        Location: ${location}<br>
+                        ID Scheda: ${idscheda}
+                    </div>
+                `;
+            } else {
+                et.innerHTML = `
+                    <div class="header-logo"><img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg"></div>
+                    <div class="campo-data">${data}</div>
+                    <div class="odp">${testoPrincipale}</div>
+                    <div class="progressivo">${prog}</div>
+                    <div class="campo"><div class="label">DESTINO</div><div class="valore">${location}</div></div>
+                    <div class="campo"><div class="label">INDIRIZZO</div><div class="valore">${idscheda}</div></div>
+                `;
+            }
+            anteprima.appendChild(et);
+            idx++;
+        }
+    }
+}
+
+// RESET CAMPi
+function resetCampi() {
+    document.getElementById("data").value = new Date().toISOString().split('T')[0];
+    document.getElementById("commessa").value = "";
+    document.getElementById("odp").value = "";
+    document.getElementById("location").value = "";
+    document.getElementById("destino").value = "";
+    document.getElementById("indirizzo").value = "";
+    document.getElementById("palletColli").value = "";
+    document.getElementById("anteprima").innerHTML = "";
+}
+
+// EVENTI INIZIALI
+document.getElementById("commessa").addEventListener("change", () => {
+    aggiornaListaDestinazioni();
+    document.getElementById("destino").value = "";
+    document.getElementById("indirizzo").value = "";
+    genera();
+});
+
+cambiaFormato();
+aggiornaListaDestinazioni();
+genera();
+</script>
+</body>
+</html>
