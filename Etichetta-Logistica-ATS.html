@@ -30,8 +30,24 @@
 
     .etichetta { width: 378px; height: 378px; border: 3px solid black; background: white; margin: 30px auto; padding: 10px; display: flex; flex-direction: column; page-break-inside: avoid; }
     .etichetta.small { height: 189px; padding: 6px; }
-    .header-logo { text-align: center; border-bottom: 3px solid black; padding-bottom: 4px; margin-bottom: 4px; }
-    .header-logo img { height: 36px; }
+
+    .header-logo {
+        text-align: center;
+        border-bottom: 3px solid black;
+        padding-bottom: 4px;
+        margin-bottom: 4px;
+        position: relative;
+    }
+
+    .header-logo img.logo-principale { height: 36px; }
+    .header-logo img.icon-commessa {
+        height: 36px;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
     .campo-data { border: 2px solid black; padding: 4px 8px; text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 4px; }
     .riga-odp { display: flex; align-items: center; justify-content: space-between; flex-grow: 1; padding: 0 8px; }
     .odp { font-size: 28px; font-weight: bold; text-align: center; flex: 1; }
@@ -113,6 +129,14 @@ const destinazioniPerCommessa = {
     "INWIT": []
 };
 
+// ICONE COMMESSE (aggiungi i tuoi link)
+const iconeCommessa = {
+    "VODAFONE-NTD": "link-icona-ntd.png",
+    "VODAFONE-FLM": "link-icona-flm.png",
+    "INWIT": "link-icona-inwit.png",
+    "ZAS": "link-icona-zas.png"
+};
+
 // Imposta data odierna
 document.getElementById("data").value = new Date().toISOString().split('T')[0];
 
@@ -151,6 +175,7 @@ function aggiornaListaDestinazioni() {
         option.value = d.destino;
         datalist.appendChild(option);
     });
+    aggiornaIcona();
 }
 
 // VALIDAZIONE DESTINO 10x10
@@ -169,6 +194,15 @@ function validateDestino() {
     genera();
 }
 
+// AGGIORNA ICONA COMMESSA
+function aggiornaIcona() {
+    const commessa = document.getElementById("commessa").value;
+    const icona = iconeCommessa[commessa] || "";
+    const iconElem = document.querySelector(".icon-commessa");
+    if (!iconElem) return;
+    iconElem.src = icona;
+}
+
 // GENERA ANTEPRIMA
 function genera() {
     const anteprima = document.getElementById("anteprima");
@@ -179,7 +213,6 @@ function genera() {
 
     const palletColliInput = document.getElementById("palletColli").value.trim();
     let palletColli = palletColliInput ? palletColliInput.split(",").map(n => parseInt(n.trim())) : [1];
-    const totaleColli = palletColli.reduce((a,b)=>a+b,0);
 
     const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
 
@@ -195,9 +228,11 @@ function genera() {
             const et = document.createElement("div");
             et.className = "etichetta" + (piccolo ? " small" : "");
 
+            const iconHTML = piccolo ? "" : `<img src="${iconeCommessa[document.getElementById("commessa").value] || ""}" class="icon-commessa">`;
+
             if (piccolo) {
                 et.innerHTML = `
-                    <div class="header-logo"><img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg"></div>
+                    <div class="header-logo"><img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale"></div>
                     <div class="campo-data">${data}</div>
                     <div class="riga-odp">
                         <div class="odp">${testoPrincipale}</div>
@@ -210,7 +245,10 @@ function genera() {
                 `;
             } else {
                 et.innerHTML = `
-                    <div class="header-logo"><img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg"></div>
+                    <div class="header-logo">
+                        <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale">
+                        ${iconHTML}
+                    </div>
                     <div class="campo-data">${data}</div>
                     <div class="odp">${testoPrincipale}</div>
                     <div class="progressivo">${prog}</div>
