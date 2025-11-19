@@ -64,6 +64,39 @@
     .campo { border: 2px solid black; padding: 6px 8px; margin-bottom: 8px; }
     .label { font-size: 11px; font-weight: bold; }
     .valore { font-size: 17px; font-weight: bold; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.riga-id {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.colli-inline {
+    font-weight: bold;
+    margin-left: 10px;
+
+
+.riga-odp {
+    display: flex;
+    align-items: center;
+    gap: 6px; /* spazio tra ODP e numero */
+    font-weight: bold;
+}
+
+.label-odp {
+    font-size: 14px;
+    font-weight: bold;
+    
+    
+}
+.riga-id {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+.colli-inline {
+    font-weight: bold;
+}
 </style>
 </head>
 <body>
@@ -515,21 +548,22 @@ function genera() {
      <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale" alt="ATS">
      ${iconaCommessaUrl ? `<img src="${iconaCommessaUrl}" class="icon-commessa" alt="Commessa">` : ''}
  </div>
-                    <div class="label-odp">ODP</div>
 
-<div class="riga-odp">
-    <div class="odp">${testoPrincipale}</div>
-</div>
+        <div class="campo-data">${data}</div>
+        <div class="riga-odp">
+            <div class="label-odp">ODP</div>
+            <div class="odp">${testoPrincipale}</div>
+        </div>
+        <div class="dati-10x5">
+            Location: ${location}<br>
 
-<div class="colli-pallet-bottom">
-    ${prog}
-</div>
-                    <div class="dati-10x5">
-                        Location: ${location}<br>
-                        ID Scheda: ${idscheda}
-                    </div>
-                `;
-            } else {
+            <div class="riga-id">
+                <span>ID Scheda: ${idscheda}</span>
+                <span class="colli-inline">${prog}</span>
+            </div>
+        </div>
+    `;
+} else {
                const iconaCommessaUrl = iconeCommessa[document.getElementById("commessa").value] || "";
                 et.innerHTML = `
                     <div class="header-logo">
@@ -548,6 +582,7 @@ function genera() {
         }
     }
 }
+
 
 // RESET CAMPi
 function resetCampi() {
