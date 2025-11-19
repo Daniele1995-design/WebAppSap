@@ -515,11 +515,20 @@ function genera() {
      <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale" alt="ATS">
      ${iconaCommessaUrl ? `<img src="${iconaCommessaUrl}" class="icon-commessa" alt="Commessa">` : ''}
  </div>
-                    <div class="campo-data">${data}</div>
-                    <div class="riga-odp">
-                        <div class="odp">${testoPrincipale}</div>
-                        <div class="colli-pallet">${prog}</div>
-                    </div>
+                    <div class="label-odp">ODP</div>
+
+<div class="riga-odp">
+    <div class="odp">${testoPrincipale}</div>
+</div>
+
+<div class="dati-10x5">
+    Location: ${location}<br>
+    ID Scheda: ${idscheda}
+</div>
+
+<div class="colli-pallet-bottom">
+    ${prog}
+</div>
                     <div class="dati-10x5">
                         Location: ${location}<br>
                         ID Scheda: ${idscheda}
