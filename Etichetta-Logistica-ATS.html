@@ -501,7 +501,7 @@ function genera() {
     let idx = 0;
     for (let p = 0; p < palletColli.length; p++) {
         for (let c = 1; c <= palletColli[p]; c++) {
-            const prog = `Colli: ${c}/${palletColli[p]} | Pallet: ${p+1}/${palletColli.length}`;
+            const prog = `Pallet: ${p+1}/${palletColli.length} | Colli: ${c}/${palletColli[p]}`;
 
             const et = document.createElement("div");
             et.className = "etichetta" + (piccolo ? " small" : "");
