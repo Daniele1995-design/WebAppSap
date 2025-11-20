@@ -21,15 +21,38 @@
     .btn:hover { background: #0066cc; }
 
     @media print {
-        @page { size: auto; margin: 0; }
-        html, body { margin: 0 !important; padding: 0 !important; }
-        .card, .btn { display: none !important; }
-        .etichetta { margin: 0 auto !important; page-break-after: always !important; }
-        .etichetta:last-child { page-break-after: avoid !important; }
+    @page {
+        size: 100mm 50mm;      /* 10×5 cm  oppure 100mm 100mm per 10×10 */
+        margin: 0;
+        padding: 0;
+    }
+    
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100mm !important;
+        height: 50mm !important;   /* cambia in 100mm per formato 10×10 */
+        overflow: hidden;
     }
 
-    .etichetta { width: 378px; height: 378px; border: 3px solid black; background: white; margin: 30px auto; padding: 10px; display: flex; flex-direction: column; page-break-inside: avoid; }
-    .etichetta.small { height: 189px; padding: 6px; }
+    .etichetta {
+        width: 100mm !important;
+        height: 50mm !important;    /* cambia in 100mm per 10×10 */
+        margin: 0 !important;
+        padding: 5mm !important;    /* o quanto vuoi tu */
+        page-break-after: always;
+        box-sizing: border-box;
+    }
+
+    .etichetta.small {
+        height: 50mm !important;
+    }
+
+    /* Nascondi tutto il resto */
+    .card, .btn, .container > *:not(#anteprima) {
+        display: none !important;
+    }
+}
 
 .header-logo {
     border-bottom: 3px solid black;
@@ -607,6 +630,43 @@ document.getElementById("commessa").addEventListener("change", () => {
 cambiaFormato();
 aggiornaListaDestinazioni();
 genera();
+// Adatta automaticamente le dimensioni @page quando cambi formato
+function aggiornaPageSize() {
+    const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
+    const height = piccolo ? "50mm" : "100mm";
+    
+    // Crea/inserisci il CSS per la stampa
+    let style = document.getElementById("print-size-style");
+    if (!style) {
+        style = document.createElement("style");
+        style.id = "print-size-style";
+        document.head.appendChild(style);
+    }
+    
+    style.innerHTML = `
+        @media print {
+            @page { size: 100mm ${height}; margin: 0; }
+            html, body, .etichetta { 
+                width: 100mm !important; 
+                height: ${height} !important; 
+                min-height: ${height} !important;
+            }
+            .etichetta.small { height: ${height} !important; }
+        }
+    `;
+}
+
+// Chiamala ogni volta che cambi formato o generi
+document.querySelectorAll('input[name="size"]').forEach(r => {
+    r.addEventListener("change", () => {
+        cambiaFormato();
+        aggiornaPageSize();
+    });
+});
+
+// Prima stampa
+aggiornaPageSize();
+
 </script>
 </body>
 </html>
