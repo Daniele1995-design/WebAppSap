@@ -54,8 +54,34 @@
     }
 }
 
+/* ——— SOLO A VIDEO: etichette separate ——— */
+@media screen {
+    #anteprima {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        justify-content: center;
+        padding: 30px 15px;
+        background: #e5e5e5;
+        border-radius: 12px;
+        margin-top: 20px;
+    }
+    .etichetta {
+        width: 100mm !important;          /* dimensione reale */
+        min-height: 50mm !important;       /* parte da 10×5 */
+        border: 0px solid black !important;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        background: white;
+    }
+    .etichetta.small {      /* formato 10×5 */
+        min-height: 50mm !important;
+    }
+    .etichetta:not(.small) { /* formato 10×10 */
+        min-height: 100mm !important;
+    }
+}
 .header-logo {
-    border-bottom: 3px solid black;
+    border-bottom: 1px solid black;
     padding-bottom: 6px;
     margin-bottom: 6px;
     display: flex;
@@ -78,13 +104,25 @@
     width: auto;
     object-fit: contain;
 }
-    .campo-data { border: 2px solid black; padding: 4px 8px; text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    .campo-data { border: 1px solid black; padding: 4px 8px; text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 4px; }
     .riga-odp { display: flex; align-items: center; justify-content: space-between; flex-grow: 1; padding: 0 8px; }
     .odp { font-size: 28px; font-weight: bold; text-align: center; flex: 1; }
     .colli-pallet { font-size: 15px; font-weight: bold; text-align: right; white-space: nowrap; line-height: 1.3; }
     .dati-10x5 { font-size: 13.5px; font-weight: bold; line-height: 1.4; text-align: left; margin-left: 8px; margin-top: 2px; }
+
+/* Evita che il testo "Pallet / Colli" venga tagliato in stampa (solo formato 10×5) */
+@media print {
+    .dati-10x5 {
+        font-size: 12.5px !important;     /* era 13.5px → lo rimpiccioliamo solo di 1px */
+        padding-right: 1mm !important;    /* sposta tutto un po’ a sinistra */
+      
+    }
+    .colli-inline {
+        white-space: nowrap;
+    }
+}
     .progressivo { text-align: center; font-size: 24px; font-weight: bold; margin: 8px 0; }
-    .campo { border: 2px solid black; padding: 6px 8px; margin-bottom: 8px; }
+    .campo { border: 1px solid black; padding: 6px 8px; margin-bottom: 8px; }
     .label { font-size: 11px; font-weight: bold; }
     .valore { font-size: 17px; font-weight: bold; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -120,71 +158,6 @@
 .colli-inline {
     font-weight: bold;
 }
-/* ——— ANTEPRIMA A VIDEO BELLA E CHIARA ——— */
-#anteprima {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;                    /* spazio tra le etichette */
-    justify-content: center;
-    padding: 30px 15px;
-    background: #e2e8f0;         /* grigio-blu chiaro, molto leggibile */
-    border-radius: 16px;
-    margin-top: 20px;
-    min-height: 200px;
-}
-
-.etichetta {
-    flex: 0 0 100mm;              /* larghezza reale dell’etichetta */
-    background: white;
-    border: 4px solid #000;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.22);
-    position: relative;
-    page-break-after: always;     /* per sicurezza, ma non serve a video */
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-/* versione 10×5 */
-.etichetta.small {
-    height: 50mm !important;
-}
-
-/* versione 10×10 (default) */
-.etichetta:not(.small) {
-    height: 100mm !important;
-}
-
-/* piccolo effetto hover carino (solo desktop) */
-@media (hover: hover) {
-    .etichetta:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 14px 30px rgba(0,0,0,0.3);
-    }
-}
-
-/* numerino piccolo in alto a sinistra per contare le copie */
-.etichetta::before {
-    content: counter(etichetta);
-    counter-increment: etichetta;
-    position: absolute;
-    top: -12px;
-    left: -12px;
-    background: #007aff;
-    color: white;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    font-weight: bold;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    z-index: 10;
-}
-
-/* reset contatore */
-#anteprima { counter-reset: etichetta 1; }
-   
 </style>
 </head>
 <body>
@@ -709,16 +682,20 @@ function aggiornaPageSize() {
     }
     
     style.innerHTML = `
-        @media print {
-            @page { size: 100mm ${height}; margin: 0; }
-            html, body, .etichetta { 
-                width: 100mm !important; 
-                height: ${height} !important; 
-                min-height: ${height} !important;
-            }
-            .etichetta.small { height: ${height} !important; }
+    @media print {
+        @page { size: 100mm ${height}; margin: 0; }
+        html, body, .etichetta {
+            width: 100mm !important;
+            height: ${height} !important;
+            min-height: ${height} !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
         }
-    `;
+        .etichetta.small { 
+            height: ${height} !important; 
+        }
+    }
+`;
 }
 
 // Chiamala ogni volta che cambi formato o generi
