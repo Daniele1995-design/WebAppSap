@@ -120,6 +120,71 @@
 .colli-inline {
     font-weight: bold;
 }
+/* ——— ANTEPRIMA A VIDEO BELLA E CHIARA ——— */
+#anteprima {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;                    /* spazio tra le etichette */
+    justify-content: center;
+    padding: 30px 15px;
+    background: #e2e8f0;         /* grigio-blu chiaro, molto leggibile */
+    border-radius: 16px;
+    margin-top: 20px;
+    min-height: 200px;
+}
+
+.etichetta {
+    flex: 0 0 100mm;              /* larghezza reale dell’etichetta */
+    background: white;
+    border: 4px solid #000;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.22);
+    position: relative;
+    page-break-after: always;     /* per sicurezza, ma non serve a video */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* versione 10×5 */
+.etichetta.small {
+    height: 50mm !important;
+}
+
+/* versione 10×10 (default) */
+.etichetta:not(.small) {
+    height: 100mm !important;
+}
+
+/* piccolo effetto hover carino (solo desktop) */
+@media (hover: hover) {
+    .etichetta:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 14px 30px rgba(0,0,0,0.3);
+    }
+}
+
+/* numerino piccolo in alto a sinistra per contare le copie */
+.etichetta::before {
+    content: counter(etichetta);
+    counter-increment: etichetta;
+    position: absolute;
+    top: -12px;
+    left: -12px;
+    background: #007aff;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+/* reset contatore */
+#anteprima { counter-reset: etichetta 1; }
+   
 </style>
 </head>
 <body>
