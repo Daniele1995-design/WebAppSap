@@ -115,7 +115,7 @@
     .dati-10x5 {
         font-size: 12.5px !important;     /* era 13.5px → lo rimpiccioliamo solo di 1px */
         padding-right: 1mm !important;    /* sposta tutto un po’ a sinistra */
-      
+        
     }
     .colli-inline {
         white-space: nowrap;
@@ -158,6 +158,7 @@
 .colli-inline {
     font-weight: bold;
 }
+
 </style>
 </head>
 <body>
@@ -191,11 +192,11 @@
             </div>
 
             <!-- DESTINO 10x10 -->
-            <div class="field" id="destinoField">
-                <label>Destino:</label>
-                <input type="text" id="destino" placeholder="Seleziona destinazione" list="destinoList" oninput="validateDestino()">
-                <datalist id="destinoList"></datalist>
-            </div>
+    <div class="field" id="destinoField">
+    <label>Destino:</label>
+    <input type="text" id="destino" placeholder="Scrivi per filtrare..." autocomplete="off" oninput="filtraDestinazioni()">
+    <div id="listaDestinazioni" style="max-height:200px; overflow-y:auto; border:1px solid #aaa; border-top:none; background:white; display:none; position:absolute; width:100%; z-index:10; margin-top:-1px;"></div>
+</div>
 
             <div class="field" id="locationField" style="display:none;">
                 <label>Location:</label>
@@ -536,20 +537,87 @@ function cambiaFormato() {
     genera();
 }
 
-// AGGIORNA LISTA DESTINAZIONI PER COMMESSA
+let tutteDestinazioni = [];
+
 function aggiornaListaDestinazioni() {
     const commessa = document.getElementById("commessa").value;
-    const lista = destinazioniPerCommessa[commessa] || [];
-    const datalist = document.getElementById("destinoList");
-    datalist.innerHTML = "";
-    lista.forEach(d => {
-        const option = document.createElement("option");
-        option.value = d.destino;
-        datalist.appendChild(option);
-    });
+    tutteDestinazioni = destinazioniPerCommessa[commessa] || [];
+    const input = document.getElementById("destino");
+    const lista = document.getElementById("listaDestinazioni");
+
+    input.value = "";
+    document.getElementById("indirizzo").value = "";
+    lista.innerHTML = "";
+    lista.style.display = "none";
+
+    if (tutteDestinazioni.length === 0) {
+        input.placeholder = "Nessuna destinazione per questa commessa";
+        input.disabled = true;
+    } else {
+        input.placeholder = `Scrivi per filtrare... (${tutteDestinazioni.length} destinazioni)`;
+        input.disabled = false;
+    }
+
     aggiornaIcona();
+    genera();
 }
 
+// Mostra l’elenco (tutto o filtrato)
+function mostraElencoFiltrato() {
+    const testo = document.getElementById("destino").value.toLowerCase().trim();
+    const lista = document.getElementById("listaDestinazioni");
+    lista.innerHTML = "";
+
+    // Calcola la larghezza dell’input e imposta la lista uguale (non più larga)
+    const inputRect = document.getElementById("destino").getBoundingClientRect();
+    lista.style.width = inputRect.width + "px";
+
+    let daMostrare = tutteDestinazioni;
+    if (testo !== "") {
+        daMostrare = tutteDestinazioni.filter(d => 
+            d.destino.toLowerCase().includes(testo)
+        );
+    }
+
+    if (daMostrare.length === 0) {
+        lista.innerHTML = '<div style="padding:10px; color:#999;">Nessuna corrispondenza</div>';
+        lista.style.display = "block";
+        return;
+    }
+
+    daMostrare.forEach(d => {
+        const div = document.createElement("div");
+        div.textContent = d.destino;
+        div.style.padding = "10px";
+        div.style.cursor = "pointer";
+        div.style.borderBottom = "1px solid #eee";
+        div.style.whiteSpace = "nowrap";
+        div.style.overflow = "hidden";
+        div.style.textOverflow = "ellipsis";
+        div.onmouseover = () => div.style.background = "#f0f0f0";
+        div.onmouseout  = () => div.style.background = "white";
+        div.onclick = () => {
+            document.getElementById("destino").value = d.destino;
+            document.getElementById("indirizzo").value = d.indirizzo;
+            lista.style.display = "none";
+            genera();
+        };
+        lista.appendChild(div);
+    });
+
+    lista.style.display = "block";
+}
+
+// Quando clicchi o rientri nel campo → mostra l’elenco con il filtro attuale
+document.getElementById("destino").addEventListener("focus", mostraElencoFiltrato);
+document.getElementById("destino").addEventListener("input", mostraElencoFiltrato);
+
+// Chiudi se clicchi fuori
+document.addEventListener("click", function(e) {
+    if (!e.target.closest("#destinoField")) {
+        document.getElementById("listaDestinazioni").style.display = "none";
+    }
+});
 // VALIDAZIONE DESTINO 10x10
 function validateDestino() {
     const commessa = document.getElementById("commessa").value;
