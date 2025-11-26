@@ -119,7 +119,7 @@ function resetFile() {
 function downloadTemplate() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet([
-    ['CodiceBP', 'PartNumber', 'SerialNumber', 'ArticoloWMS', 'PO', 'Ubicazione'],
+    ['CodiceBP', 'PartNumber', 'SerialNumber/Lotto', 'ArticoloWMS', 'PO', 'Ubicazione'],
     ['000000000302059612', '02310CET', '2102310CET10E5001574', 'WMS0006047-FLM', '471005225', '71-STK-S11-C14-05-003']
   ]);
   XLSX.utils.book_append_sheet(wb, ws, 'Etichette');
@@ -176,7 +176,7 @@ document.getElementById('excelFile').addEventListener('change', e => {
         <hr class="thin">
 
         <div class="sn-section">
-          <span class="sn-label">Serial Number</span>
+          <span class="sn-label">SerialNumber/Lotto</span>
           <span class="sn-value">${SerialNumber}</span>
           <img class="qr-sn" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(SerialNumber)}">
           <div class="label-sn">SN</div>
@@ -205,3 +205,4 @@ document.getElementById('excelFile').addEventListener('change', e => {
 </script>
 </body>
 </html>
+
