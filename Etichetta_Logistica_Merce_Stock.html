@@ -5,7 +5,6 @@
 <title>Etichette ATS 100x100</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-
 <style>
   @page { size: 100mm 100mm; margin:0; }
   body { margin:20px; background:#f0f0f0; font-family:Arial,sans-serif; }
@@ -15,14 +14,13 @@
     border:none; border-radius:5px; cursor:pointer; font-weight:bold;
   }
   .btn-stampa:hover { background:#0056b3; }
-  
+ 
   .etichetta {
     width:100mm; height:100mm; border:2px solid #000; background:white;
     padding:2mm 3.5mm; box-sizing:border-box; page-break-after:always;
     position:relative; margin-bottom:10mm;
   }
-  
-  /* Logo e header */
+ 
   .logo-container { height:10mm; margin-bottom:0.5mm; position:relative; }
   .logo-img { height:9mm; }
   .label-cod-bp {
@@ -30,70 +28,71 @@
     font-size:7pt; font-weight:bold; writing-mode:vertical-rl;
     transform:rotate(180deg); letter-spacing:0.3px;
   }
-  
-  /* Codice BP */
+ 
   .bp-section { margin-bottom:1mm; }
   .bp-label { font-size:9pt; font-weight:bold; margin-bottom:0.2mm; }
   .bp-value { font-size:20pt; font-weight:bold; line-height:1; }
   .qr-bp { position:absolute; top:11mm; right:9mm; width:11mm; height:11mm; }
-  
-  /* Linea separatore */
+ 
   hr { border:none; border-top:1.8px solid black; margin:1.2mm 0; }
   hr.thin { border-top:1.8px solid black; margin:1.5mm 0; }
-  
-  /* Articolo */
+ 
   .art-label { font-weight:bold; font-size:9pt; margin:0 0 0.8mm; }
   .barcode-svg { width:72mm; height:26px; margin:0 auto 0.8mm; display:block; }
   .wms { text-align:center; font-size:10.5pt; font-weight:bold; margin-bottom:1mm; }
-  
-  /* PO e Ubicazione */
-  .po-row { display:flex; justify-content:space-between; margin-bottom:1mm; position:relative; margin-top:1.2mm; }
-  .po-col { width:48%; }
-  .pos-col { width:48%; }
-
-  .po-label { font-size:9pt; font-weight:bold; line-height:1.1; }
-
-  .pos-label { 
-  font-size:9pt;
-  font-weight:bold;
-  line-height:1.1;
-  text-align:right;
-  display:block;
-}
-
-.pos-value {
-  font-size:12pt;
-  font-weight:bold;
-  line-height:1.1;
-  display:block;
-  word-break:break-all;
-}
-
+ 
+  .po-row { margin-top:1.2mm; margin-bottom:1mm; }
+  .po-label { font-size:9pt; font-weight:bold; }
   .po-value { font-size:18pt; font-weight:bold; line-height:1; display:block; }
-
+ 
   .label-tpn {
     position:absolute; right:3mm; top:62mm;
     font-size:7pt; font-weight:bold; writing-mode:vertical-rl;
     transform:rotate(180deg); letter-spacing:0.3px;
   }
-  
-  /* Part Number */
-  .part-section { margin:1mm 0; position:relative; }
+ 
+  .part-section { margin:1mm 0 3mm; position:relative; }
   .part-label { font-size:9pt; font-weight:bold; line-height:1.1; }
   .part-value { font-size:16pt; font-weight:bold; line-height:1; display:block; }
   .qr-part { position:absolute; top:0; right:3.5mm; width:11mm; height:11mm; }
-  
+ 
   /* Serial Number */
-  .sn-section { margin:1mm 0; position:relative; padding-bottom:12mm; }
-  .sn-label { font-size:9pt; font-weight:bold; line-height:1.1; }
-  .sn-value { font-size:16pt; font-weight:bold; line-height:1; display:block; }
-  .qr-sn { position:absolute; bottom:10mm; right:3.5mm; width:11mm; height:11mm; }
-  .label-sn {
-    position:absolute; right:0; bottom:11mm;
-    font-size:7pt; font-weight:bold; writing-mode:vertical-rl;
-    transform:rotate(180deg); letter-spacing:0.3px;
+  .sn-section {
+    position: relative;
+    margin: 2mm 0 0.5mm;
   }
-  
+  .sn-label { font-size:9pt; font-weight:bold; display:block; }
+  .sn-value { font-size:16pt; font-weight:bold; line-height:1.2; display:block; }
+  .qr-sn {
+    position: absolute;
+    top: 0;
+    right: 3.5mm;
+    width: 11mm;
+    height: 11mm;
+  }
+  /* SN verticale salita di 8px → ora perfetta al centro del QR */
+  .label-sn {
+    position: absolute;
+    right: 0;
+    bottom: 2.8mm;          /* salita di 8px rispetto alla versione precedente */
+    font-size: 7pt;
+    font-weight: bold;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    letter-spacing: 0.3px;
+  }
+
+  /* Ubicazione salita di 8px */
+  .ubicazione-under-sn {
+    margin-top: -0.5mm;     /* ora è 8px più in alto rispetto a prima */
+  }
+  .ubicazione-under-sn .pos-label {
+    font-size:9pt; font-weight:bold; display:block;
+  }
+  .ubicazione-under-sn .pos-value {
+    font-size:12pt; font-weight:bold; line-height:1.2; word-break:break-all;
+  }
+ 
   @media print {
     body { margin:0; background:white; }
     .no-print { display:none; }
@@ -102,13 +101,12 @@
 </style>
 </head>
 <body>
-
 <div class="no-print">
   <h2>Etichette ATS 100×100</h2>
   <input type="file" id="excelFile" accept=".xlsx,.xls,.csv">
-  <button class="btn-stampa" onclick="window.print()">🖨️ STAMPA TUTTE</button>
-  <button class="btn-stampa" onclick="resetFile()" style="background:#dc3545;">🔄 RESET</button>
-  <button class="btn-stampa" onclick="downloadTemplate()" style="background:#28a745;">📥 SCARICA TEMPLATE</button>
+  <button class="btn-stampa" onclick="window.print()">STAMPA TUTTE</button>
+  <button class="btn-stampa" onclick="resetFile()" style="background:#dc3545;">RESET</button>
+  <button class="btn-stampa" onclick="downloadTemplate()" style="background:#28a745;">SCARICA TEMPLATE</button>
   <br><br>
 </div>
 <div id="output"></div>
@@ -118,12 +116,11 @@ function resetFile() {
   document.getElementById('excelFile').value = '';
   document.getElementById('output').innerHTML = '';
 }
-
 function downloadTemplate() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet([
     ['CodiceBP', 'PartNumber', 'SerialNumber', 'ArticoloWMS', 'PO', 'Ubicazione'],
-    ['02310CET', '02310CET', '2102310CET10E5001574', 'WMS0006047-FLM', '113057', 'A-01-02']
+    ['000000000302059612', '02310CET', '2102310CET10E5001574', 'WMS0006047-FLM', '471005225', '71-STK-S11-C14-05-003']
   ]);
   XLSX.utils.book_append_sheet(wb, ws, 'Etichette');
   XLSX.writeFile(wb, 'Template_Etichette_ATS.xlsx');
@@ -137,7 +134,6 @@ document.getElementById('excelFile').addEventListener('change', e => {
     const data = e.target.result;
     const wb = XLSX.read(data, {type:'array'});
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
-
     let html = '';
     for (let i=1; i<rows.length; i++) {
       const CodiceBP     = (rows[i][0]||'').toString().trim();
@@ -152,34 +148,24 @@ document.getElementById('excelFile').addEventListener('change', e => {
           <img class="logo-img" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg">
           <div class="label-cod-bp">COD BP</div>
         </div>
-        
+       
         <div class="bp-section">
           <div class="bp-label">Codice BP</div>
           <div class="bp-value">${CodiceBP}</div>
         </div>
         <img class="qr-bp" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(CodiceBP)}">
-
         <hr>
-
         <div class="art-label">Articolo</div>
         <svg class="barcode-svg" id="bc-${i}"></svg>
         <div class="wms">${ArticoloWMS}</div>
-
         <hr>
 
         <div class="po-row">
-          <div class="po-col">
-            <span class="po-label">Po Nr°</span>
-            <span class="po-value">${PO}</span>
-          </div>
-          <div class="pos-col">
-            <span class="pos-label">Ubicazione</span>
-            <span class="pos-value">${Ubicazione}</span>
-          </div>
+          <span class="po-label">Po Nr°</span>
+          <span class="po-value">${PO}</span>
         </div>
 
         <div class="label-tpn">TPN</div>
-
         <hr class="thin">
 
         <div class="part-section">
@@ -187,15 +173,20 @@ document.getElementById('excelFile').addEventListener('change', e => {
           <span class="part-value">${PartNumber}</span>
           <img class="qr-part" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(PartNumber)}">
         </div>
-
         <hr class="thin">
 
         <div class="sn-section">
-          <span class="sn-label">Serial Number</span>  
+          <span class="sn-label">Serial Number</span>
           <span class="sn-value">${SerialNumber}</span>
           <img class="qr-sn" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(SerialNumber)}">
           <div class="label-sn">SN</div>
         </div>
+
+        <div class="ubicazione-under-sn">
+          <span class="pos-label">Ubicazione</span>
+          <div class="pos-value">${Ubicazione}</div>
+        </div>
+
       </div>`;
     }
     document.getElementById('output').innerHTML = html;
@@ -212,6 +203,5 @@ document.getElementById('excelFile').addEventListener('change', e => {
   r.readAsArrayBuffer(f);
 });
 </script>
-
 </body>
 </html>
