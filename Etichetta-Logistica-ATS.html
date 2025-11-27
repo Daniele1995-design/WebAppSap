@@ -22,7 +22,7 @@
 
     @media print {
     @page {
-        size: 100mm 50mm;      /* 10×5 cm  oppure 100mm 100mm per 10×10 */
+        size: 100mm 50mm;     
         margin: 0;
         padding: 0;
     }
@@ -31,15 +31,15 @@
         margin: 0 !important;
         padding: 0 !important;
         width: 100mm !important;
-        height: 50mm !important;   /* cambia in 100mm per formato 10×10 */
+        height: 50mm !important;   
         overflow: hidden;
     }
 
     .etichetta {
         width: 100mm !important;
-        height: 50mm !important;    /* cambia in 100mm per 10×10 */
+        height: 50mm !important;    
         margin: 0 !important;
-        padding: 5mm !important;    /* o quanto vuoi tu */
+        padding: 5mm !important;    
         page-break-after: always;
         box-sizing: border-box;
     }
@@ -1122,7 +1122,7 @@ const destinazioniPerCommessa = {
     ]
 };
 
-// ICONE COMMESSE (aggiungi i tuoi link)
+// ICONE COMMESSE
 const iconeCommessa = {
     "VODAFONE-NTD": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
     "VODAFONE-FLM": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
@@ -1286,7 +1286,7 @@ function genera() {
     let etichette = [];
 
     if (piccolo) {
-        // ==================== FORMATO 10×5 (comportamento attuale - invariato) ====================
+        // ==================== FORMATO 10×5 ====================
         let palletColli = palletColliInput ? palletColliInput.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n)) : [1];
         let palletIndex = 0;
 
@@ -1298,7 +1298,7 @@ function genera() {
             }
         }
     } else {
-        // ==================== FORMATO 10×10 (nuovo comportamento) ====================
+        // ==================== FORMATO 10×10 ====================
         // Qui l'input contiene solo "quanti colli ha ogni pallet", es. "8,12,5"
         let numeri = palletColliInput 
             ? palletColliInput.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0)
