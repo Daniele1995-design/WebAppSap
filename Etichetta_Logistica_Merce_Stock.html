@@ -180,8 +180,8 @@ function resetFile() {
 function downloadTemplate() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet([
-    ['CodiceBP', 'PartNumber', 'SerialNumber/Lotto', 'ArticoloWMS', 'PO', 'Posizione', 'Ubicazione'],
-    ['000000000302059612', '02310CET', '2102310CET10E5001574', 'WMS0006047-FLM', '471005225', 'A-001', '71-STK-S11-C14-05-003']
+    ['CodiceBP', 'PartNumber', 'SerialNumber/Lotto', 'ArticoloWMS', 'PO', 'Posizione PO', 'Ubicazione'],
+    ['000000000302059612', '02310CET', '2102310CET10E5001574', 'WMS0006047-FLM', '471005225', '10', '71-STK-S11-C14-05-003']
   ]);
   XLSX.utils.book_append_sheet(wb, ws, 'Etichette');
   XLSX.writeFile(wb, 'Template_Etichette_ATS.xlsx');
@@ -314,3 +314,4 @@ document.getElementById('excelFile').addEventListener('change', e => {
 </script>
 </body>
 </html>
+
