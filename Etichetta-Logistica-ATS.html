@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Etichetta ATS - Stampa 10x5 cm Reale</title>
+<title>Etichetta ATS - Stampa 10x5 / 10x10 cm</title>
 <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f7; padding: 20px; color: #1d1d1f; }
@@ -19,146 +19,76 @@
     .field input:focus, .field select:focus { outline: none; border-color: #007aff; box-shadow: 0 0 0 3px rgba(0,122,255,0.2); }
     .btn { width: 100%; padding: 16px; background: #007aff; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .btn:hover { background: #0066cc; }
+    .btn.reset { background:#ff3b30; }
+    .btn.reset:hover { background:#cc2e26; }
 
+    /* ANTEPRIMA A VIDEO */
+    @media screen {
+        #anteprima {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            justify-content: center;
+            padding: 30px 15px;
+            background: #e5e5e5;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .etichetta {
+            width: 100mm;
+            min-height: 50mm;
+            border: 1px solid #ddd;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            background: white;
+            padding: 5mm;
+        }
+        .etichetta:not(.small) { min-height: 100mm; }
+    }
+
+    /* STAMPA */
     @media print {
-    @page {
-        size: 100mm 50mm;     
-        margin: 0;
-        padding: 0;
-    }
-    
-    html, body {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100mm !important;
-        height: 50mm !important;   
-        overflow: hidden;
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            width: 100mm !important;
+            overflow: visible !important;
+            background: white !important;
+        }
+        .container > *:not(#anteprima),
+        .card, .btn, .header, .form, .radio-group {
+            display: none !important;
+        }
+        #anteprima { display: block !important; padding: 0 !important; margin: 0 !important; }
+        .etichetta {
+            width: 100mm !important;
+            height: 50mm !important;
+            padding: 5mm !important;
+            box-sizing: border-box !important;
+            page-break-after: always;
+            break-after: page;
+            display: block !important;
+        }
+        .etichetta:not(.small) { height: 100mm !important; }
+        .etichetta:last-child { page-break-after: avoid; break-after: avoid; }
+        .dati-10x5 { font-size: 12.5px !important; padding-right: 1mm !important; }
     }
 
-    .etichetta {
-        width: 100mm !important;
-        height: 50mm !important;    
-        margin: 0 !important;
-        padding: 5mm !important;    
-        page-break-after: always;
-        box-sizing: border-box;
-    }
-
-    .etichetta.small {
-        height: 50mm !important;
-    }
-
-    /* Nascondi tutto il resto */
-    .card, .btn, .container > *:not(#anteprima) {
-        display: none !important;
-    }
-}
-
-/* ——— SOLO A VIDEO: etichette separate ——— */
-@media screen {
-    #anteprima {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 24px;
-        justify-content: center;
-        padding: 30px 15px;
-        background: #e5e5e5;
-        border-radius: 12px;
-        margin-top: 20px;
-    }
-    .etichetta {
-        width: 100mm !important;          /* dimensione reale */
-        min-height: 50mm !important;       /* parte da 10×5 */
-        border: 0px solid black !important;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-        background: white;
-    }
-    .etichetta.small {      /* formato 10×5 */
-        min-height: 50mm !important;
-    }
-    .etichetta:not(.small) { /* formato 10×10 */
-        min-height: 100mm !important;
-    }
-}
-.header-logo {
-    border-bottom: 1px solid black;
-    padding-bottom: 6px;
-    margin-bottom: 6px;
-    display: flex;
-    justify-content: space-between;    /* sinistro e destro */
-    align-items: center;
-    min-height: 50px;                  /* dà spazio verticale */
-    padding: 0 10px;                   /* margine interno sinistra/destra */
-}
-
-/* Logo ATS a sinistra */
-.logo-principale {
-    height: 42px;
-    width: auto;
-    object-fit: contain;
-}
-
-/* Icona commessa a destra */
-.icon-commessa {
-    height: 38px;           /* un po' più piccola del logo ATS */
-    width: auto;
-    object-fit: contain;
-}
+    /* Stili etichetta */
+    .header-logo { border-bottom: 1px solid black; padding-bottom: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; min-height: 50px; padding: 0 10px; }
+    .logo-principale { height: 42px; width: auto; object-fit: contain; }
+    .icon-commessa { height: 38px; width: auto; object-fit: contain; }
     .campo-data { border: 1px solid black; padding: 4px 8px; text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 4px; }
-    .riga-odp { display: flex; align-items: center; justify-content: space-between; flex-grow: 1; padding: 0 8px; }
+    .riga-odp { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; }
     .odp { font-size: 28px; font-weight: bold; text-align: center; flex: 1; }
-    .colli-pallet { font-size: 15px; font-weight: bold; text-align: right; white-space: nowrap; line-height: 1.3; }
-    .dati-10x5 { font-size: 13.5px; font-weight: bold; line-height: 1.4; text-align: left; margin-left: 8px; margin-top: 2px; }
-
-/* Evita che il testo "Pallet / Colli" venga tagliato in stampa (solo formato 10×5) */
-@media print {
-    .dati-10x5 {
-        font-size: 12.5px !important;     /* era 13.5px → lo rimpiccioliamo solo di 1px */
-        padding-right: 1mm !important;    /* sposta tutto un po’ a sinistra */
-        
-    }
-    .colli-inline {
-        white-space: nowrap;
-    }
-}
+    .dati-10x5 { font-size: 13.5px; font-weight: bold; line-height: 1.4; margin-left: 8px; margin-top: 2px; }
     .progressivo { text-align: center; font-size: 24px; font-weight: bold; margin: 8px 0; }
     .campo { border: 1px solid black; padding: 6px 8px; margin-bottom: 8px; }
     .label { font-size: 11px; font-weight: bold; }
     .valore { font-size: 17px; font-weight: bold; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-.riga-id {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-}
-
-.colli-inline {
-    font-weight: bold;
-    margin-left: 10px;
-
-
-.riga-odp {
-    display: flex;
-    align-items: center;
-    gap: 6px; /* spazio tra ODP e numero */
-    font-weight: bold;
-}
-
-.label-odp {
-    font-size: 14px;
-    font-weight: bold;
-    
-    
-}
-.riga-id {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-}
-.colli-inline {
-    font-weight: bold;
-}
-
+    .riga-id { display: flex; justify-content: space-between; width: 100%; }
+    .colli-inline { font-weight: bold; margin-left: 10px; white-space: nowrap; }
+    .label-odp { font-size: 14px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -167,7 +97,6 @@
     <div class="card">
         <div class="header">Etichetta ATS - Magazzino</div>
         <div class="form">
-
             <div class="radio-group">
                 <label><input type="radio" name="size" value="10x10" checked onchange="cambiaFormato()"> 10×10 cm</label>
                 <label><input type="radio" name="size" value="10x5" onchange="cambiaFormato()"> 10×5 cm</label>
@@ -177,7 +106,7 @@
 
             <div class="field" id="commessaField">
                 <label>Commessa:</label>
-                <select id="commessa">
+                <select id="commessa" onchange="aggiornaListaDestinazioni()">
                     <option value="" selected disabled>Inserire Commessa</option>
                     <option value="VODAFONE-NTD">VODAFONE SpA - NTD</option>
                     <option value="VODAFONE-FLM">VODAFONE SpA - FLM</option>
@@ -191,12 +120,11 @@
                 <input type="text" id="odp" placeholder="es. 123456789" oninput="genera()">
             </div>
 
-            <!-- DESTINO 10x10 -->
-    <div class="field" id="destinoField">
-    <label>Destino:</label>
-    <input type="text" id="destino" placeholder="Scrivi per filtrare..." autocomplete="off" oninput="filtraDestinazioni()">
-    <div id="listaDestinazioni" style="max-height:200px; overflow-y:auto; border:1px solid #aaa; border-top:none; background:white; display:none; position:absolute; width:100%; z-index:10; margin-top:-1px;"></div>
-</div>
+            <div class="field" id="destinoField">
+                <label>Destino:</label>
+                <input type="text" id="destino" placeholder="Scrivi per filtrare..." autocomplete="off" oninput="filtraDestinazioni()">
+                <div id="listaDestinazioni" style="max-height:200px; overflow-y:auto; border:1px solid #aaa; border-top:none; background:white; display:none; position:absolute; width:100%; z-index:10; margin-top:-1px;"></div>
+            </div>
 
             <div class="field" id="locationField" style="display:none;">
                 <label>Location:</label>
@@ -208,10 +136,13 @@
                 <input type="text" id="indirizzo" placeholder="si compila automaticamente" oninput="genera()">
             </div>
 
-            <div class="field"><label>Colli per pallet (es. 5,3,7):</label><input type="text" id="palletColli" placeholder="5,3,7" oninput="genera()"></div>
+            <div class="field">
+                <label>Colli per pallet (es. 5,3,7):</label>
+                <input type="text" id="palletColli" placeholder="5,3,7" oninput="genera()">
+            </div>
 
             <button class="btn" onclick="window.print()">Stampa Etichette</button>
-            <button class="btn" style="background:#ff3b30;" onclick="resetCampi()">Reset Campi</button>
+            <button class="btn reset" onclick="resetCampi()">Reset Campi</button>
         </div>
     </div>
 
@@ -1122,7 +1053,7 @@ const destinazioniPerCommessa = {
     ]
 };
 
-// ICONE COMMESSE
+
 const iconeCommessa = {
     "VODAFONE-NTD": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
     "VODAFONE-FLM": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
@@ -1130,217 +1061,111 @@ const iconeCommessa = {
     "ZAS": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo-zas.jfif"
 };
 
-// Imposta data odierna
 document.getElementById("data").value = new Date().toISOString().split('T')[0];
+let tutteDestinazioni = [];
 
-// CAMBIA FORMATO 10x10 / 10x5
+// === FUNZIONI ===
 function cambiaFormato() {
     const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
-
     document.getElementById("commessaField").style.display = piccolo ? "none" : "block";
     document.getElementById("odpField").style.display = piccolo ? "block" : "none";
     document.getElementById("destinoField").style.display = piccolo ? "none" : "block";
     document.getElementById("locationField").style.display = piccolo ? "block" : "none";
-
     document.getElementById("labelIndirizzo").textContent = piccolo ? "ID Scheda:" : "Indirizzo:";
     document.getElementById("indirizzo").readOnly = !piccolo;
     document.getElementById("indirizzo").placeholder = piccolo ? "es. 123456789" : "si compila automaticamente";
-
-    document.getElementById("palletColli").placeholder = piccolo 
-    ? "5,3,7 (Inserisci colli per ogni pallet)" 
-    : "5,3,7 (Inserisci colli totali di ogni pallet)";
-
-    if (piccolo) {
-        document.getElementById("indirizzo").value = "";
-        document.getElementById("location").value = "";
-    } else {
-        document.getElementById("destino").value = "";
-        document.getElementById("indirizzo").value = "";
-    }
-
+    if (piccolo) { document.getElementById("indirizzo").value = ""; document.getElementById("location").value = ""; }
+    else { document.getElementById("destino").value = ""; document.getElementById("indirizzo").value = ""; }
     genera();
+    aggiornaPageSize();
 }
-
-let tutteDestinazioni = [];
 
 function aggiornaListaDestinazioni() {
     const commessa = document.getElementById("commessa").value;
     tutteDestinazioni = destinazioniPerCommessa[commessa] || [];
     const input = document.getElementById("destino");
-    const lista = document.getElementById("listaDestinazioni");
-
-    input.value = "";
-    document.getElementById("indirizzo").value = "";
-    lista.innerHTML = "";
-    lista.style.display = "none";
-
-    if (tutteDestinazioni.length === 0) {
-        input.placeholder = "Nessuna destinazione per questa commessa";
-        input.disabled = true;
-    } else {
-        input.placeholder = `Scrivi per filtrare... (${tutteDestinazioni.length} destinazioni)`;
-        input.disabled = false;
-    }
-
-    aggiornaIcona();
+    input.value = ""; document.getElementById("indirizzo").value = "";
+    if (tutteDestinazioni.length === 0) { input.placeholder = "Nessuna destinazione"; input.disabled = true; }
+    else { input.placeholder = `Scrivi per filtrare... (${tutteDestinazioni.length} destinazioni)`; input.disabled = false; }
     genera();
 }
 
-// Mostra l’elenco (tutto o filtrato)
-function mostraElencoFiltrato() {
+function filtraDestinazioni() {
     const testo = document.getElementById("destino").value.toLowerCase().trim();
     const lista = document.getElementById("listaDestinazioni");
     lista.innerHTML = "";
-
-    // Calcola la larghezza dell’input e imposta la lista uguale (non più larga)
     const inputRect = document.getElementById("destino").getBoundingClientRect();
     lista.style.width = inputRect.width + "px";
-
     let daMostrare = tutteDestinazioni;
-    if (testo !== "") {
-        daMostrare = tutteDestinazioni.filter(d => 
-            d.destino.toLowerCase().includes(testo)
-        );
-    }
-
-    if (daMostrare.length === 0) {
-        lista.innerHTML = '<div style="padding:10px; color:#999;">Nessuna corrispondenza</div>';
-        lista.style.display = "block";
-        return;
-    }
-
+    if (testo !== "") daMostrare = tutteDestinazioni.filter(d => d.destino.toLowerCase().includes(testo));
+    if (daMostrare.length === 0) { lista.innerHTML = '<div style="padding:10px; color:#999;">Nessuna corrispondenza</div>'; lista.style.display = "block"; return; }
     daMostrare.forEach(d => {
         const div = document.createElement("div");
         div.textContent = d.destino;
-        div.style.padding = "10px";
-        div.style.cursor = "pointer";
-        div.style.borderBottom = "1px solid #eee";
-        div.style.whiteSpace = "nowrap";
-        div.style.overflow = "hidden";
-        div.style.textOverflow = "ellipsis";
+        div.style.padding = "10px"; div.style.cursor = "pointer"; div.style.borderBottom = "1px solid #eee";
         div.onmouseover = () => div.style.background = "#f0f0f0";
-        div.onmouseout  = () => div.style.background = "white";
-        div.onclick = () => {
-            document.getElementById("destino").value = d.destino;
-            document.getElementById("indirizzo").value = d.indirizzo;
-            lista.style.display = "none";
-            genera();
-        };
+        div.onmouseout = () => div.style.background = "white";
+        div.onclick = () => { document.getElementById("destino").value = d.destino; document.getElementById("indirizzo").value = d.indirizzo; lista.style.display = "none"; genera(); };
         lista.appendChild(div);
     });
-
     lista.style.display = "block";
 }
+document.addEventListener("click", e => { if (!e.target.closest("#destinoField")) document.getElementById("listaDestinazioni").style.display = "none"; });
+document.getElementById("destino").addEventListener("focus", filtraDestinazioni);
 
-// Quando clicchi o rientri nel campo → mostra l’elenco con il filtro attuale
-document.getElementById("destino").addEventListener("focus", mostraElencoFiltrato);
-document.getElementById("destino").addEventListener("input", mostraElencoFiltrato);
-
-// Chiudi se clicchi fuori
-document.addEventListener("click", function(e) {
-    if (!e.target.closest("#destinoField")) {
-        document.getElementById("listaDestinazioni").style.display = "none";
-    }
-});
-// VALIDAZIONE DESTINO 10x10
-function validateDestino() {
-    const commessa = document.getElementById("commessa").value;
-    const lista = destinazioniPerCommessa[commessa] || [];
-    const input = document.getElementById("destino").value;
-
-    const trovato = lista.find(d => d.destino === input);
-    if (trovato) {
-        document.getElementById("indirizzo").value = trovato.indirizzo;
-    } else {
-        document.getElementById("indirizzo").value = "";
-    }
-
-    genera();
-}
-
-// AGGIORNA ICONA COMMESSA
-function aggiornaIcona() {
-    const commessa = document.getElementById("commessa").value;
-    const icona = iconeCommessa[commessa] || "";
-    const iconElem = document.querySelector(".icon-commessa");
-    if (!iconElem) return;
-    iconElem.src = icona;
-}
-
-// GENERA ANTEPRIMA
+// === GENERA ETICHETTE (UNICA MODIFICA QUI) ===
 function genera() {
     const anteprima = document.getElementById("anteprima");
     anteprima.innerHTML = "";
-    
+
     let data = document.getElementById("data").value || new Date().toISOString().split('T')[0];
     data = data.split("-").reverse().join("/");
 
-    const palletColliInput = document.getElementById("palletColli").value.trim();
     const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
-
-    // TESTI COMUNI
     const testoPrincipale = piccolo ? (document.getElementById("odp").value || "—") : (document.getElementById("commessa").value || "—");
-    const location       = piccolo ? (document.getElementById("location").value || "—") : (document.getElementById("destino").value || "—");
-    const idscheda       = document.getElementById("indirizzo").value.trim() || "—";
+    const location = piccolo ? (document.getElementById("location").value || "—") : (document.getElementById("destino").value || "—");
+    const idscheda = document.getElementById("indirizzo").value.trim() || "—";
 
-    let etichette = [];
+    const inputColli = document.getElementById("palletColli").value.trim();
+    const numeri = inputColli ? inputColli.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0) : [1];
 
-    if (piccolo) {
-        // ==================== FORMATO 10×5 ====================
-        let palletColli = palletColliInput ? palletColliInput.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n)) : [1];
-        let palletIndex = 0;
-
-        for (let p = 0; p < palletColli.length; p++) {
-            const colliInQuestoPallet = palletColli[p] || 1;
-            for (let c = 1; c <= colliInQuestoPallet; c++) {
-                const prog = `Pallet: ${p+1}/${palletColli.length} | Colli: ${c}/${colliInQuestoPallet}`;
-                etichette.push({ prog, piccolo: true });
-            }
-        }
-    } else {
-        // ==================== FORMATO 10×10 ====================
-        // Qui l'input contiene solo "quanti colli ha ogni pallet", es. "8,12,5"
-        let numeri = palletColliInput 
-            ? palletColliInput.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0)
-            : [1];  // se vuoto → 1 pallet con 1 collo (per sicurezza)
-
-        const totalePallet = numeri.length;
-
-        numeri.forEach((colliInPallet, i) => {
-            const prog = `Pallet: ${i+1}/${totalePallet} → ${colliInPallet} colli`;
-            etichette.push({ prog, piccolo: false });
-        });
-    }
-
-    // ==================== CREAZIONE EFFETTIVA DELLE ETICHETTE ====================
     const iconaCommessaUrl = iconeCommessa[document.getElementById("commessa").value] || "";
 
-    etichette.forEach(item => {
-        const et = document.createElement("div");
-        et.className = "etichetta" + (item.piccolo ? " small" : "");
+    if (piccolo) {
+        // 10×5 → SOLO 1/8, 2/8, 1/5, 2/5 ecc.
+        numeri.forEach((colli, i) => {
+            for (let c = 1; c <= colli; c++) {
+                const prog = `${c}/${colli}`;   // ← ECCO LA MODIFICA CHE VOLEVI
 
-        if (item.piccolo) {
-            // 10×5 cm
-            et.innerHTML = `
-                <div class="header-logo">
-                    <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale" alt="ATS">
-                    ${iconaCommessaUrl ? `<img src="${iconaCommessaUrl}" class="icon-commessa" alt="Commessa">` : ''}
-                </div>
-                <div class="campo-data">${data}</div>
-                <div class="riga-odp">
-                    <div class="label-odp">ODP</div>
-                    <div class="odp">${testoPrincipale}</div>
-                </div>
-                <div class="dati-10x5">
-                    Location: ${location}<br>
-                    <div class="riga-id">
-                        <span>ID Scheda: ${idscheda}</span>
-                        <span class="colli-inline">${item.prog}</span>
+                const et = document.createElement("div");
+                et.className = "etichetta small";
+                et.innerHTML = `
+                    <div class="header-logo">
+                        <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale" alt="ATS">
+                        ${iconaCommessaUrl ? `<img src="${iconaCommessaUrl}" class="icon-commessa" alt="Commessa">` : ''}
                     </div>
-                </div>
-            `;
-        } else {
-            // 10×10 cm
+                    <div class="campo-data">${data}</div>
+                    <div class="riga-odp">
+                        <div class="label-odp">ODP</div>
+                        <div class="odp">${testoPrincipale}</div>
+                    </div>
+                    <div class="dati-10x5">
+                        Location: ${location}<br>
+                        <div class="riga-id">
+                            <span>ID Scheda: ${idscheda}</span>
+                            <span class="colli-inline">Colli : ${prog}</span>
+                        </div>
+                    </div>
+                `;
+                anteprima.appendChild(et);
+            }
+        });
+    } else {
+        // 10×10 → invariato
+        numeri.forEach((colli, i) => {
+            const prog = `Pallet: ${i+1}/${numeri.length} → ${colli} colli`;
+            const et = document.createElement("div");
+            et.className = "etichetta";
             et.innerHTML = `
                 <div class="header-logo">
                     <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale" alt="ATS">
@@ -1348,16 +1173,32 @@ function genera() {
                 </div>
                 <div class="campo-data">${data}</div>
                 <div class="odp">${testoPrincipale}</div>
-                <div class="progressivo">${item.prog}</div>
+                <div class="progressivo">${prog}</div>
                 <div class="campo"><div class="label">DESTINO</div><div class="valore">${location}</div></div>
                 <div class="campo"><div class="label">INDIRIZZO</div><div class="valore">${idscheda}</div></div>
             `;
-        }
-        anteprima.appendChild(et);
-    });
+            anteprima.appendChild(et);
+        });
+    }
+
+    aggiornaPageSize();
 }
 
-// RESET CAMPi
+// === PAGE SIZE DINAMICO ===
+function aggiornaPageSize() {
+    const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
+    const height = piccolo ? "50mm" : "100mm";
+    let style = document.getElementById("print-dynamic");
+    if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
+    style.innerHTML = `
+        @media print {
+            @page { size: 100mm ${height}; margin: 0; }
+            .etichetta { height: ${height} !important; }
+            .etichetta.small { height: ${height} !important; }
+        }
+    `;
+}
+
 function resetCampi() {
     document.getElementById("data").value = new Date().toISOString().split('T')[0];
     document.getElementById("commessa").value = "";
@@ -1366,61 +1207,14 @@ function resetCampi() {
     document.getElementById("destino").value = "";
     document.getElementById("indirizzo").value = "";
     document.getElementById("palletColli").value = "";
-    document.getElementById("anteprima").innerHTML = "";
+    anteprima.innerHTML = "";
+    aggiornaPageSize();
 }
 
-// EVENTI INIZIALI
-document.getElementById("commessa").addEventListener("change", () => {
-    aggiornaListaDestinazioni();
-    document.getElementById("destino").value = "";
-    document.getElementById("indirizzo").value = "";
-    genera();
-});
-
+// INIT
 cambiaFormato();
 aggiornaListaDestinazioni();
 genera();
-// Adatta automaticamente le dimensioni @page quando cambi formato
-function aggiornaPageSize() {
-    const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
-    const height = piccolo ? "50mm" : "100mm";
-    
-    // Crea/inserisci il CSS per la stampa
-    let style = document.getElementById("print-size-style");
-    if (!style) {
-        style = document.createElement("style");
-        style.id = "print-size-style";
-        document.head.appendChild(style);
-    }
-    
-    style.innerHTML = `
-    @media print {
-        @page { size: 100mm ${height}; margin: 0; }
-        html, body, .etichetta {
-            width: 100mm !important;
-            height: ${height} !important;
-            min-height: ${height} !important;
-            padding-top: 0 !important;
-            margin-top: 0 !important;
-        }
-        .etichetta.small { 
-            height: ${height} !important; 
-        }
-    }
-`;
-}
-
-// Chiamala ogni volta che cambi formato o generi
-document.querySelectorAll('input[name="size"]').forEach(r => {
-    r.addEventListener("change", () => {
-        cambiaFormato();
-        aggiornaPageSize();
-    });
-});
-
-// Prima stampa
-aggiornaPageSize();
-
 </script>
 </body>
 </html>
