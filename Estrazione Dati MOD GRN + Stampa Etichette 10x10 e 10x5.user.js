@@ -42,83 +42,105 @@ function toCSV(rows) {
         return '';
     }
 
-    function getDataFromLi(li) {
-        const dropdown = li.querySelector("div[id^='dropdown-']");
-        if (dropdown) dropdown.style.display = 'block';
+function getDataFromLi(li) {
+    const dropdown = li.querySelector("div[id^='dropdown-']");
+    if (dropdown) dropdown.style.display = 'block';
 
-let articolo = '';
-let codiceBP = '';
-let pn = '';
+    let articolo = '';
+    let codiceBP = '';
+    let pn = '';
 
-const headerContainer = li.querySelector("div[style*='display: flex']");
-if (headerContainer) {
-    const codeDiv = headerContainer.querySelector("div:nth-of-type(2)");
-    if (codeDiv) {
-        // Prende solo il testo diretto del div, senza badge "OK" ecc.
-        const txt = codeDiv.childNodes[0]?.textContent.trim() || '';
-
-        const parts = txt.split('|').map(p => p.trim());
-
-        // Articolo (1ª parte)
-        if (parts.length >= 1) articolo = parts[0] || '';
-
-        // Codice BP (2ª parte SEMPRE)
-        if (parts.length >= 2) codiceBP = parts[1] || '';
-        pn = parts[1] || '';
-
-    }
-}
-
-        const descrizione = findDivTextByLabel(li, 'Descrizione:');
-
-let riferimento = '';
-if (headerContainer) {
-    const firstDiv = headerContainer.querySelector("div:first-child span b");
-    if (firstDiv) {
-        riferimento = firstDiv.textContent.trim();
-    }
-}
-
-        let riferimentoOrdine = '';
-        const divRifOrd = Array.from(li.querySelectorAll('div')).find(d => d.querySelector('button[onclick*="modificaRiferimentoCliente"]'));
-        if (divRifOrd) {
-            const button = divRifOrd.querySelector('button');
-            if (button && button.nextSibling) {
-                riferimentoOrdine = (button.nextSibling.textContent || '').replace(/\s+/g,'').trim();
+    const headerContainer = li.querySelector("div[style*='display: flex']");
+    if (headerContainer) {
+        const codeDiv = headerContainer.querySelector("div:nth-of-type(2)");
+        if (codeDiv) {
+            const txt = codeDiv.childNodes[0]?.textContent.trim() || '';
+            const parts = txt.split('|').map(p => p.trim());
+            if (parts.length >= 1) articolo = parts[0] || '';
+            if (parts.length >= 2) {
+                codiceBP = parts[1] || '';
+                pn = parts[1] || '';
             }
         }
+    }
 
-        const serialRows = li.querySelectorAll("div[id^='dropdown-'] ul > li");
-        const serials = [];
+    const descrizione = findDivTextByLabel(li, 'Descrizione:');
+    let riferimento = '';
+    if (headerContainer) {
+        const firstDiv = headerContainer.querySelector("div:first-child span b");
+        if (firstDiv) {
+            riferimento = firstDiv.textContent.trim();
+        }
+    }
 
-        serialRows.forEach(sr => {
-            let quantita = '', seriale = '', stato = '';
-            Array.from(sr.querySelectorAll('strong')).forEach(str => {
-                const label = (str.textContent || '').toLowerCase();
-                const parentText = (str.parentElement.innerText || '').replace(/\s+/g, ' ').trim();
-                if (label.includes('quantità')) quantita = parentText.replace(/.*Quantità:\s*/i, '').trim();
-                if (label.includes('seriale')) seriale = parentText.replace(/.*Seriale:\s*/i, '').trim();
-                if (label.includes('stato logico')) stato = parentText.replace(/.*Stato Logico:\s*/i, '').trim();
-            });
+    let riferimentoOrdine = '';
+    const divRifOrd = Array.from(li.querySelectorAll('div')).find(d => d.querySelector('button[onclick*="modificaRiferimentoCliente"]'));
+    if (divRifOrd) {
+        const button = divRifOrd.querySelector('button');
+        if (button && button.nextSibling) {
+            riferimentoOrdine = (button.nextSibling.textContent || '').replace(/\s+/g,'').trim();
+        }
+    }
 
-            if (!seriale) {
-                const txt = (sr.innerText || '').trim();
-                const m = txt.match(/([0-9]{6,})/);
-                if (m) seriale = m[1];
+    let posizione = '';
+    const divPosizione = Array.from(li.querySelectorAll('div')).find(d => {
+        const strongTag = d.querySelector('b, strong');
+        return strongTag && /Posizione:/i.test(strongTag.textContent);
+    });
+    if (divPosizione) {
+        const match = divPosizione.textContent.match(/Posizione:\s*(.+)/i);
+        if (match) posizione = match[1].trim();
+    }
+
+    const serialRows = li.querySelectorAll("div[id^='dropdown-'] ul > li");
+    const serials = [];
+
+    serialRows.forEach(sr => {
+        let quantita = '', seriale = '', stato = '';
+
+        // 1) Cerca tra i <strong>
+        Array.from(sr.querySelectorAll('strong')).forEach(str => {
+            const label = (str.textContent || '').toLowerCase();
+            const parentText = (str.parentElement.innerText || '').replace(/\s+/g, ' ').trim();
+
+            if (label.includes('quantità')) {
+                quantita = parentText.replace(/.*Quantità:\s*/i, '').trim();
             }
-
-            if (seriale) {
-                serials.push({ quantita, seriale, stato });
+            if (label.includes('seriale') || label.includes('lotto')) {
+                // ←←← QUI LA REGEX MAGICA CHE PRENDE TUTTO ←←←
+                const m = parentText.match(/(?:Seriale|Lotto)[\s:]+([A-Za-z0-9\/_-]+)/i);
+                if (m) seriale = m[1].trim();
+            }
+            if (label.includes('stato logico')) {
+                stato = parentText.replace(/.*Stato Logico:\s*/i, '').trim();
             }
         });
 
-        return {
-            pn, articolo, codiceBP, descrizione, riferimento, riferimentoOrdine,
-            riferimentoPulito: riferimento ? riferimento.trim().substring(0, 4) : '',
-            serials
-        };
-    }
+        // 2) Fallback se non ha trovato niente con <strong>
+        if (!seriale) {
+            const txt = (sr.innerText || sr.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, ''); // pulisce zero-width
+            const m = txt.match(/(?:Seriale|Lotto)[\s:]+([A-Za-z0-9\/_-]+)/i);
+            if (m) seriale = m[1].trim();
+        }
 
+        // 3) Ultimissimo fallback (numeroni lunghi come prima)
+        if (!seriale) {
+            const txt = (sr.innerText || '').trim();
+            const m = txt.match(/([0-9]{6,})/);
+            if (m) seriale = m[1];
+        }
+
+        if (seriale) {
+            serials.push({ quantita, seriale, stato });
+        }
+    });
+
+    return {
+        pn, articolo, codiceBP, descrizione, riferimento, riferimentoOrdine,
+        riferimentoPulito: riferimento ? riferimento.trim().substring(0, 4) : '',
+        posizione, serials
+    };
+}
     function estraiRighe() {
         const out = [];
         out.push([
@@ -230,6 +252,7 @@ async function downloadCSV() {
                     articolo: data.articolo || '',
                     po: data.riferimentoOrdine || data.riferimento || '',
                     pn: data.pn || '',
+                    posizione: data.posizione || '',
                     seriale: s.seriale || ''
                 });
             });
@@ -419,7 +442,6 @@ html, body {
 <body>
 <div id="labels" class="labels"></div>
 
-
 <script>
 (function(){
     const labels = JSON.parse(decodeURIComponent("${payload}"));
@@ -505,15 +527,35 @@ html, body {
             line2.className = 'line';
             left.appendChild(line2);
 
-            // Po Nr° + PN
+            // Container flessibile per Po Nr° e Posizione affiancati
+            const poPosContainer = document.createElement('div');
+            poPosContainer.style.display = 'flex';
+            poPosContainer.style.justifyContent = 'space-between';
+            poPosContainer.style.marginBottom = '20px';
+
+            // Po Nr°
             const poDiv = document.createElement('div');
             poDiv.className = 'field-block';
             const poLab = document.createElement('div');
             poLab.className = 'small';
             poLab.innerHTML = '<b>Po Nr°</b><div style="font-weight:700;font-size: 16px;">'+(lab.po||'')+'</div>';
             poDiv.appendChild(poLab);
-            left.appendChild(poDiv);
-            poDiv.style.marginBottom = '20px';
+
+            // Posizione
+            const posDiv = document.createElement('div');
+            posDiv.className = 'field-block';
+            posDiv.style.marginLeft = 'auto';
+            posDiv.style.marginRight = '130px';
+            const posLab = document.createElement('div');
+            posLab.className = 'small';
+            posLab.innerHTML = '<b>Posizione</b><div style="font-weight:700;font-size: 16px;">'+(lab.posizione||'')+'</div>';
+            posDiv.appendChild(posLab);
+
+            // Aggiungo entrambi al contenitore
+            poPosContainer.appendChild(poDiv);
+            poPosContainer.appendChild(posDiv);
+
+            left.appendChild(poPosContainer);
 
             const pnBlock = document.createElement('div');
             pnBlock.className = 'pn-block';
@@ -652,7 +694,7 @@ function printLabels10x5(labels) {
         alert('Bloccato popup: permetti finestre popup per poter stampare.');
         return;
     }
-        // 2) helper: inietta script (testo) nella head della finestra di stampa
+    // 2) helper: inietta script (testo) nella head della finestra di stampa
     function injectScriptText(win, code) {
         const s = win.document.createElement('script');
         s.type = 'text/javascript';
@@ -828,7 +870,6 @@ body {
 <body>
 <div id="labels"></div>
 
-
 <script>
 (function(){
     const labels = JSON.parse(decodeURIComponent("${payload}"));
@@ -900,10 +941,42 @@ body {
             const details = document.createElement('div');
             details.className = 'details';
 
-            // PO Number
-            const poRow = document.createElement('div');
-            poRow.className = 'detail-row';
-            poRow.innerHTML = \`<span class="detail-label">Po Nr°:</span><span class="detail-value">\${lab.po || ''}</span>\`;
+            // Container flessibile per Po Nr° e Posizione
+            const poPosRow = document.createElement('div');
+            poPosRow.className = 'detail-row';
+            poPosRow.style.justifyContent = 'space-between';
+            poPosRow.style.marginBottom = '0.5mm';
+
+            // Po Nr°
+            const poDiv = document.createElement('div');
+            poDiv.style.display = 'flex';
+            poDiv.style.alignItems = 'center';
+            const poLabel = document.createElement('span');
+            poLabel.className = 'detail-label';
+            poLabel.style.marginRight = '2mm';
+            poLabel.textContent = 'Po Nr°:';
+            const poValue = document.createElement('span');
+            poValue.className = 'detail-value';
+            poValue.textContent = lab.po || '';
+            poDiv.appendChild(poLabel);
+            poDiv.appendChild(poValue);
+
+            // Posizione
+            const posDiv = document.createElement('div');
+            posDiv.style.display = 'flex';
+            posDiv.style.alignItems = 'center';
+            const posLabel = document.createElement('span');
+            posLabel.className = 'detail-label';
+            posLabel.style.marginRight = '2mm';
+            posLabel.textContent = 'Pos:';
+            const posValue = document.createElement('span');
+            posValue.className = 'detail-value';
+            posValue.textContent = lab.posizione || '';
+            posDiv.appendChild(posLabel);
+            posDiv.appendChild(posValue);
+
+            poPosRow.appendChild(poDiv);
+            poPosRow.appendChild(posDiv);
 
             // Part Number
             const pnRow = document.createElement('div');
@@ -914,6 +987,7 @@ body {
             const serialRow = document.createElement('div');
             serialRow.className = 'detail-row';
             serialRow.style.marginBottom = '0';
+            serialRow.style.marginTop = '0';
             const serialContent = document.createElement('div');
             serialContent.style.flexGrow = '1';
             serialContent.innerHTML = \`<span class="detail-label">Seriale:</span><span class="detail-value">\${lab.seriale || ''}</span>\`;
@@ -932,7 +1006,8 @@ body {
 
             serialRow.appendChild(serialContent);
             serialRow.appendChild(qrSerialContainer);
-            details.appendChild(poRow);
+
+            details.appendChild(poPosRow);
             details.appendChild(pnRow);
             details.appendChild(serialRow);
             label.appendChild(details);
@@ -1049,7 +1124,7 @@ function printAllLabelsFromPNInfo() {
         );
         if (!serialeDiv) return;
 
-        const serialeMatch = serialeDiv.textContent.match(/Seriale\s*Atteso:\s*([A-Za-z0-9]+)/i);
+       const serialeMatch = serialeDiv.textContent.match(/(?:Seriale|Lotto)\s*Atteso?:\s*([^<\s]+)(?=\s|<|$)/i);
         if (!serialeMatch) return;
 
         const seriale = serialeMatch[1].trim();
@@ -1061,6 +1136,7 @@ function printAllLabelsFromPNInfo() {
             articolo: data.articolo || '',
             po: data.riferimentoOrdine || data.riferimento || '',
             pn: data.pn || '',
+            posizione: data.posizione || '',
             seriale: seriale
         });
     });
@@ -1090,6 +1166,7 @@ function printAllLabelsFromPNInfo() {
             articolo: dataRow.articolo || '',
             po: dataRow.riferimentoOrdine || dataRow.riferimento || '',
             pn: dataRow.pn || '',
+            posizione: dataRow.posizione || '',
             seriale: s.seriale || ''
         }));
 
