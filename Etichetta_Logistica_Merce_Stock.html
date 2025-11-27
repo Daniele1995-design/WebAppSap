@@ -9,9 +9,30 @@
   @page { size: 100mm 100mm; margin:0; }
   body { margin:20px; background:#f0f0f0; font-family:Arial,sans-serif; }
   .no-print { margin-bottom:20px; }
+  .header-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .header-logo {
+    height: 50px;
+    margin-right: 15px;
+  }
+  .header-title {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #2c3e50;
+    margin: 0;
+  }
+
   .btn-stampa {
-    background:#007bff; color:white; padding:12px 24px; font-size:16pt;
+    background:#007bff; color:white; padding:10px 20px; font-size:13pt;
     border:none; border-radius:5px; cursor:pointer; font-weight:bold;
+    margin-right:8px; margin-bottom:8px;
   }
   .btn-stampa:hover { background:#0056b3; }
  
@@ -41,7 +62,11 @@
   .barcode-svg { width:72mm; height:26px; margin:0 auto 0.8mm; display:block; }
   .wms { text-align:center; font-size:10.5pt; font-weight:bold; margin-bottom:1mm; }
  
-  .po-row { margin-top:1.2mm; margin-bottom:1mm; }
+  .po-row { 
+    margin-top:1.2mm; margin-bottom:1mm; 
+    display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .po-col { flex:1; }
   .po-label { font-size:9pt; font-weight:bold; }
   .po-value { font-size:18pt; font-weight:bold; line-height:1; display:block; }
  
@@ -56,7 +81,6 @@
   .part-value { font-size:16pt; font-weight:bold; line-height:1; display:block; }
   .qr-part { position:absolute; top:0; right:3.5mm; width:11mm; height:11mm; }
  
-  /* Serial Number */
   .sn-section {
     position: relative;
     margin: 2mm 0 0.5mm;
@@ -70,11 +94,10 @@
     width: 11mm;
     height: 11mm;
   }
-  /* SN verticale salita di 8px → ora perfetta al centro del QR */
   .label-sn {
     position: absolute;
     right: 0;
-    bottom: 2.8mm;          /* salita di 8px rispetto alla versione precedente */
+    bottom: 2.8mm;
     font-size: 7pt;
     font-weight: bold;
     writing-mode: vertical-rl;
@@ -82,15 +105,31 @@
     letter-spacing: 0.3px;
   }
 
-  /* Ubicazione salita di 8px */
   .ubicazione-under-sn {
-    margin-top: -0.5mm;     /* ora è 8px più in alto rispetto a prima */
+    margin-top: -0.5mm;
   }
   .ubicazione-under-sn .pos-label {
     font-size:9pt; font-weight:bold; display:block;
   }
   .ubicazione-under-sn .pos-value {
     font-size:12pt; font-weight:bold; line-height:1.2; word-break:break-all;
+  }
+
+  #formManuale {
+    background:white; padding:20px; border:2px solid #000; 
+    border-radius:8px; max-width:600px; margin-bottom:20px;
+  }
+  #formManuale h3 {
+    margin-top: 0;
+    color: #2c3e50;
+    font-size: 18pt;
+  }
+  #formManuale label {
+    display:block; margin:8px 0;
+    font-size: 12pt;
+  }
+  #formManuale input {
+    width:100%; padding:6px; box-sizing:border-box; font-size:12pt;
   }
  
   @media print {
@@ -102,28 +141,141 @@
 </head>
 <body>
 <div class="no-print">
-  <h2>Etichette ATS 100×100</h2>
-  <input type="file" id="excelFile" accept=".xlsx,.xls,.csv">
+  <div class="header-container">
+    <img class="header-logo" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" alt="ATS Logo">
+    <h1 class="header-title">Sistema di Gestione Etichette ATS 10×10</h1>
+  </div>
+  
+  <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" style="margin-right:10px;">
+  <button class="btn-stampa" onclick="apriFormManuale()" style="background:#6c757d;">COMPILA MANUALMENTE</button>
   <button class="btn-stampa" onclick="window.print()">STAMPA TUTTE</button>
   <button class="btn-stampa" onclick="resetFile()" style="background:#dc3545;">RESET</button>
   <button class="btn-stampa" onclick="downloadTemplate()" style="background:#28a745;">SCARICA TEMPLATE</button>
   <br><br>
+  
+  <div id="formManuale" style="display:none;">
+    <h3>Compila Etichetta Manualmente</h3>
+    <label>Codice BP: <input type="text" id="m_CodiceBP"></label>
+    <label>Part Number: <input type="text" id="m_PartNumber"></label>
+    <label>Serial Number/Lotto: <input type="text" id="m_SerialNumber"></label>
+    <label>Articolo WMS: <input type="text" id="m_ArticoloWMS"></label>
+    <label>PO: <input type="text" id="m_PO"></label>
+    <label>Posizione: <input type="text" id="m_Posizione"></label>
+    <label>Ubicazione: <input type="text" id="m_Ubicazione"></label>
+    <br>
+    <button class="btn-stampa" onclick="aggiungiEtichettaManuale()">AGGIUNGI ETICHETTA</button>
+    <button class="btn-stampa" onclick="chiudiFormManuale()" style="background:#6c757d;">CHIUDI</button>
+  </div>
 </div>
 <div id="output"></div>
 
 <script>
+let etichettaCounter = 1000;
+
 function resetFile() {
   document.getElementById('excelFile').value = '';
   document.getElementById('output').innerHTML = '';
 }
+
 function downloadTemplate() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet([
-    ['CodiceBP', 'PartNumber', 'SerialNumber/Lotto', 'ArticoloWMS', 'PO', 'Ubicazione'],
-    ['000000000302059612', '02310CET', '2102310CET10E5001574', 'WMS0006047-FLM', '471005225', '71-STK-S11-C14-05-003']
+    ['CodiceBP', 'PartNumber', 'SerialNumber/Lotto', 'ArticoloWMS', 'PO', 'Posizione', 'Ubicazione'],
+    ['000000000302059612', '02310CET', '2102310CET10E5001574', 'WMS0006047-FLM', '471005225', 'A-001', '71-STK-S11-C14-05-003']
   ]);
   XLSX.utils.book_append_sheet(wb, ws, 'Etichette');
   XLSX.writeFile(wb, 'Template_Etichette_ATS.xlsx');
+}
+
+function creaEtichetta(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, bcId) {
+  return `<div class="etichetta">
+    <div class="logo-container">
+      <img class="logo-img" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg">
+      <div class="label-cod-bp">COD BP</div>
+    </div>
+   
+    <div class="bp-section">
+      <div class="bp-label">Codice BP</div>
+      <div class="bp-value">${CodiceBP}</div>
+    </div>
+    <img class="qr-bp" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(CodiceBP)}">
+    <hr>
+    <div class="art-label">Articolo</div>
+    <svg class="barcode-svg" id="${bcId}"></svg>
+    <div class="wms">${ArticoloWMS}</div>
+    <hr>
+
+    <div class="po-row">
+      <div class="po-col">
+        <span class="po-label">Po Nr°</span>
+        <span class="po-value">${PO}</span>
+      </div>
+      <div class="po-col" style="text-align:right;">
+        <span class="po-label">Posizione</span>
+        <span class="po-value">${Posizione}</span>
+      </div>
+    </div>
+
+    <div class="label-tpn">TPN</div>
+    <hr class="thin">
+
+    <div class="part-section">
+      <span class="part-label">Part Number</span>
+      <span class="part-value">${PartNumber}</span>
+      <img class="qr-part" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(PartNumber)}">
+    </div>
+    <hr class="thin">
+
+    <div class="sn-section">
+      <span class="sn-label">SerialNumber/Lotto</span>
+      <span class="sn-value">${SerialNumber}</span>
+      <img class="qr-sn" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(SerialNumber)}">
+      <div class="label-sn">SN</div>
+    </div>
+
+    <div class="ubicazione-under-sn">
+      <span class="pos-label">Ubicazione</span>
+      <div class="pos-value">${Ubicazione}</div>
+    </div>
+  </div>`;
+}
+
+function apriFormManuale() {
+  document.getElementById('formManuale').style.display = 'block';
+}
+
+function chiudiFormManuale() {
+  document.getElementById('formManuale').style.display = 'none';
+}
+
+function aggiungiEtichettaManuale() {
+  const CodiceBP = document.getElementById('m_CodiceBP').value.trim();
+  const PartNumber = document.getElementById('m_PartNumber').value.trim();
+  const SerialNumber = document.getElementById('m_SerialNumber').value.trim();
+  const ArticoloWMS = document.getElementById('m_ArticoloWMS').value.trim();
+  const PO = document.getElementById('m_PO').value.trim();
+  const Posizione = document.getElementById('m_Posizione').value.trim();
+  const Ubicazione = document.getElementById('m_Ubicazione').value.trim();
+
+  const bcId = 'bc-manual-' + (etichettaCounter++);
+  const html = creaEtichetta(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, bcId);
+  
+  document.getElementById('output').innerHTML += html;
+
+  setTimeout(() => {
+    if (ArticoloWMS && document.getElementById(bcId)) {
+      JsBarcode('#'+bcId, ArticoloWMS, {format:"CODE128", height:26, width:1.8, displayValue:false, margin:0});
+    }
+  }, 100);
+
+  // Reset form
+  document.getElementById('m_CodiceBP').value = '';
+  document.getElementById('m_PartNumber').value = '';
+  document.getElementById('m_SerialNumber').value = '';
+  document.getElementById('m_ArticoloWMS').value = '';
+  document.getElementById('m_PO').value = '';
+  document.getElementById('m_Posizione').value = '';
+  document.getElementById('m_Ubicazione').value = '';
 }
 
 document.getElementById('excelFile').addEventListener('change', e => {
@@ -141,53 +293,10 @@ document.getElementById('excelFile').addEventListener('change', e => {
       const SerialNumber = (rows[i][2]||'').toString().trim();
       const ArticoloWMS  = (rows[i][3]||'').toString().trim();
       const PO           = (rows[i][4]||'').toString().trim();
-      const Ubicazione   = (rows[i][5]||'').toString().trim();
+      const Posizione    = (rows[i][5]||'').toString().trim();
+      const Ubicazione   = (rows[i][6]||'').toString().trim();
 
-      html += `<div class="etichetta">
-        <div class="logo-container">
-          <img class="logo-img" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg">
-          <div class="label-cod-bp">COD BP</div>
-        </div>
-       
-        <div class="bp-section">
-          <div class="bp-label">Codice BP</div>
-          <div class="bp-value">${CodiceBP}</div>
-        </div>
-        <img class="qr-bp" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(CodiceBP)}">
-        <hr>
-        <div class="art-label">Articolo</div>
-        <svg class="barcode-svg" id="bc-${i}"></svg>
-        <div class="wms">${ArticoloWMS}</div>
-        <hr>
-
-        <div class="po-row">
-          <span class="po-label">Po Nr°</span>
-          <span class="po-value">${PO}</span>
-        </div>
-
-        <div class="label-tpn">TPN</div>
-        <hr class="thin">
-
-        <div class="part-section">
-          <span class="part-label">Part Number</span>
-          <span class="part-value">${PartNumber}</span>
-          <img class="qr-part" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(PartNumber)}">
-        </div>
-        <hr class="thin">
-
-        <div class="sn-section">
-          <span class="sn-label">SerialNumber/Lotto</span>
-          <span class="sn-value">${SerialNumber}</span>
-          <img class="qr-sn" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(SerialNumber)}">
-          <div class="label-sn">SN</div>
-        </div>
-
-        <div class="ubicazione-under-sn">
-          <span class="pos-label">Ubicazione</span>
-          <div class="pos-value">${Ubicazione}</div>
-        </div>
-
-      </div>`;
+      html += creaEtichetta(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, 'bc-'+i);
     }
     document.getElementById('output').innerHTML = html;
 
@@ -205,4 +314,3 @@ document.getElementById('excelFile').addEventListener('change', e => {
 </script>
 </body>
 </html>
-
