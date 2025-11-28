@@ -164,6 +164,7 @@
     <label>Ubicazione: <input type="text" id="m_Ubicazione"></label>
     <br>
     <button class="btn-stampa" onclick="aggiungiEtichettaManuale()">AGGIUNGI ETICHETTA</button>
+    <button class="btn-stampa" onclick="resetFormManuale()" style="background:#ffc107;">RESET CAMPI</button>
     <button class="btn-stampa" onclick="chiudiFormManuale()" style="background:#6c757d;">CHIUDI</button>
   </div>
 </div>
@@ -248,6 +249,16 @@ function chiudiFormManuale() {
   document.getElementById('formManuale').style.display = 'none';
 }
 
+function resetFormManuale() {
+  document.getElementById('m_CodiceBP').value = '';
+  document.getElementById('m_PartNumber').value = '';
+  document.getElementById('m_SerialNumber').value = '';
+  document.getElementById('m_ArticoloWMS').value = '';
+  document.getElementById('m_PO').value = '';
+  document.getElementById('m_Posizione').value = '';
+  document.getElementById('m_Ubicazione').value = '';
+}
+
 function aggiungiEtichettaManuale() {
   const CodiceBP = document.getElementById('m_CodiceBP').value.trim();
   const PartNumber = document.getElementById('m_PartNumber').value.trim();
@@ -267,15 +278,6 @@ function aggiungiEtichettaManuale() {
       JsBarcode('#'+bcId, ArticoloWMS, {format:"CODE128", height:26, width:1.8, displayValue:false, margin:0});
     }
   }, 100);
-
-  // Reset form
-  document.getElementById('m_CodiceBP').value = '';
-  document.getElementById('m_PartNumber').value = '';
-  document.getElementById('m_SerialNumber').value = '';
-  document.getElementById('m_ArticoloWMS').value = '';
-  document.getElementById('m_PO').value = '';
-  document.getElementById('m_Posizione').value = '';
-  document.getElementById('m_Ubicazione').value = '';
 }
 
 document.getElementById('excelFile').addEventListener('change', e => {
@@ -314,4 +316,3 @@ document.getElementById('excelFile').addEventListener('change', e => {
 </script>
 </body>
 </html>
-
