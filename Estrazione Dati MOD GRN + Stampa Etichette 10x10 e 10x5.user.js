@@ -145,7 +145,7 @@ function getDataFromLi(li) {
         const out = [];
         out.push([
             'Part Number', 'Articolo', 'Codice BP', 'Descrizione',
-            'Riferimento Riga', 'Riferimento Ordine', 'Quantità', 'Seriale', 'Stato Logico', 'Ubicazione'
+            'Riferimento Riga', 'Riferimento Ordine', 'Quantità', 'Seriale', 'Stato Logico', 'UbicazioneDestinazione' , 'UbicazionePrelievo'
         ]);
 
         const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
