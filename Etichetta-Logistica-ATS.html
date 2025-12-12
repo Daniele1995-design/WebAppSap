@@ -63,6 +63,16 @@
     .etichetta:not(.small) {
         height: 100mm !important;
     }
+       #anteprima {
+        display: block !important;          /* forza un solo flusso */
+        height: 50mm !important;            /* altezza ESATTA di una sola etichetta */
+        overflow: hidden !important;        /* nasconde tutto il resto */
+        gap: 0 !important;
+    }
+
+    .etichetta.small ~ .etichetta.small {
+        display: none !important;           /* stampa solo la PRIMA etichetta 10×5 */
+    }
 }
     .header-logo { border-bottom:1px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; min-height:50px; padding:0 10px; }
     .logo-principale { height:42px; width:auto; object-fit:contain; }
