@@ -25,41 +25,50 @@
     .btn.admin:hover { background:#32b94a; }
     .btn:disabled { background:#aaa; cursor:not-allowed; }
     #anteprima { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; padding:30px 15px; background:#e5e5e5; border-radius:12px; margin-top:20px; }
-    .etichetta { width:100mm; min-height:50mm; border:1px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; }
-    .etichetta:not(.small) { min-height:100mm; }
 
-    /* ==================== FIX 10x5 - UNICA MODIFICA REALE ==================== */
+    .etichetta {
+        width:100mm;
+        background:white;
+        border:1px solid #ddd;
+        box-shadow:0 6px 20px rgba(0,0,0,0.25);
+        page-break-after:always;
+    }
+    .etichetta.small   { height:50mm; }
+    .etichetta:not(.small) { height:100mm; }
+
+    /* ==================== STAMPA PERFETTA ==================== */
     @media print {
+        @page { size: 100mm 50mm; margin:0 !important; }
         body * { visibility:hidden; }
         #anteprima, #anteprima * { visibility:visible; }
-        #anteprima { position:absolute; left:0; top:0; padding:0; background:white; }
-
-        @page { size:100mm auto; margin:0 !important; }
-        @page :first { margin-top:0 !important; }
-
-        .etichetta { page-break-after:always; }
-        .etichetta:not(.small) { height:100mm !important; }
-
-        .etichetta.small {
-            height:50mm !important;
-            padding:0 !important;
+        #anteprima {
+            position:absolute; left:0; top:0; width:100mm; padding:0; background:white;
+        }
+        .etichetta {
+            display:block !important;
+            page-break-after:always;
+            page-break-before:avoid;
+            page-break-inside:avoid;
             margin:0 !important;
+            padding:0 !important;
             overflow:hidden;
         }
-        .etichetta.small > .inner {
-            padding:4mm 5mm 3mm;
+        .etichetta.small   { height:50mm !important; }
+        .etichetta:not(.small) { height:100mm !important; }
+
+        .inner {
+            padding:3.5mm 5mm;
             height:100%;
             display:flex;
             flex-direction:column;
         }
-        .etichetta.small .header-logo   { padding:2mm 0 1.5mm; margin-bottom:1.5mm; border-bottom:1px solid black; min-height:auto; display:flex; justify-content:space-between; align-items:center; }
-        .etichetta.small .campo-data    { margin:0 0 2mm; padding:2mm 4mm; border:1px solid black; text-align:center; font-size:14px; font-weight:bold; }
-        .etichetta.small .riga-odp      { margin-bottom:2mm; display:flex; align-items:center; justify-content:space-between; padding:0 3mm; }
+        .etichetta.small .header-logo   { padding-bottom:1.5mm; margin-bottom:1.5mm; border-bottom:1px solid black; display:flex; justify-content:space-between; align-items:center; }
+        .etichetta.small .campo-data    { margin-bottom:2mm; padding:1.5mm 3mm; border:1px solid black; text-align:center; font-size:14px; font-weight:bold; }
+        .etichetta.small .riga-odp      { margin-bottom:2mm; display:flex; align-items:center; justify-content:space-between; padding:0 2mm; }
         .etichetta.small .odp           { font-size:26px; font-weight:bold; text-align:center; flex:1; }
         .etichetta.small .label-odp     { font-size:14px; font-weight:bold; }
-        .etichetta.small .dati-10x5     { font-size:13px; font-weight:bold; line-height:1.35; }
+        .etichetta.small .dati-10x5     { font-size:13px; font-weight:bold; line-height:1.4; }
     }
-    /* ========================================================================= */
 
     .header-logo { border-bottom:1px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; min-height:50px; padding:0 10px; }
     .logo-principale { height:42px; width:auto; object-fit:contain; }
@@ -191,38 +200,24 @@
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbzP-L7wJgg6njb6FKUGGYaceMHYm0vQ0nQAIte5W7hWiSorKykQYHjYfO140bC0TyhH/exec";
-const GID = {
-    "ZAS": 0,
-    "VODAFONE-NTD": 422824578,
-    "VODAFONE-FLM": 655395330,
-    "INWIT": 1836812344,
-    "GREENCHEM": 783261315,
-    "JOIGUM": 114825062,
-    "AG-LOGISTICA": 414795981
-};
+const GID = { "ZAS":0, "VODAFONE-NTD":422824578, "VODAFONE-FLM":655395330, "INWIT":1836812344, "GREENCHEM":783261315, "JOIGUM":114825062, "AG-LOGISTICA":414795981 };
 const iconeCommessa = {
-    "VODAFONE-NTD": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
-    "VODAFONE-FLM": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
-    "INWIT": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/a6818037dcd5d038508a396f155ce4c9eb23f5bb/INWIT_logo_(2020-present).png",
-    "ZAS": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo-zas.jfif",
-    "GREENCHEM": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/greenchem.png",
-    "JOIGUM": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/joigum.png",
-    "AG-LOGISTICA": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/ag-logistica.png"
+    "VODAFONE-NTD":"https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
+    "VODAFONE-FLM":"https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
+    "INWIT":"https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/a6818037dcd5d038508a396f155ce4c9eb23f5bb/INWIT_logo_(2020-present).png",
+    "ZAS":"https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo-zas.jfif",
+    "GREENCHEM":"https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/greenchem.png",
+    "JOIGUM":"https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/joigum.png",
+    "AG-LOGISTICA":"https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/ag-logistica.png"
 };
 let destinazioni = {};
 
 // === PASSWORD ADMIN ===
-function chiediPassword() {
-    document.getElementById("modalPassword").classList.add("show");
-    setTimeout(() => document.getElementById("inputPassword").focus(), 100);
-}
+function chiediPassword() { document.getElementById("modalPassword").classList.add("show"); setTimeout(() => document.getElementById("inputPassword").focus(), 100); }
 function verificaPassword() {
     if (document.getElementById("inputPassword").value === "Ats2025") {
-        document.getElementById("modalPassword").classList.remove("show");
-        apriModal();
-    } else {
-        alert("Password errata!");
-    }
+        document.getElementById("modalPassword").classList.remove("show"); apriModal();
+    } else { alert("Password errata!"); }
 }
 document.getElementById("inputPassword").addEventListener("keyup", e => { if(e.key==="Enter") verificaPassword(); });
 
@@ -244,8 +239,7 @@ function caricaDestinazioni() {
     const arr = destinazioni[commessa] || [];
     const input = document.getElementById("destino");
     input.placeholder = arr.length ? `Scrivi per filtrare... (${arr.length})` : "Nessuna destinazione";
-    input.value = "";
-    document.getElementById("indirizzo").value = "";
+    input.value = ""; document.getElementById("indirizzo").value = "";
     filtraDestinazioni();
 }
 function filtraDestinazioni() {
@@ -254,12 +248,7 @@ function filtraDestinazioni() {
     lista.innerHTML = "";
     const commessa = document.getElementById("commessa").value;
     const filtrati = (destinazioni[commessa] || []).filter(d => d.destino.toLowerCase().includes(testo));
-   
-    if (filtrati.length === 0) {
-        lista.style.display = "none";
-        return;
-    }
-   
+    if (filtrati.length === 0) { lista.style.display = "none"; return; }
     filtrati.forEach(d => {
         const div = document.createElement("div");
         div.textContent = d.destino;
@@ -273,22 +262,12 @@ function filtraDestinazioni() {
     });
     lista.style.display = "block";
 }
-document.addEventListener("click", e => {
-    if (!e.target.closest("#destinoField")) {
-        document.getElementById("listaDestinazioni").style.display = "none";
-    }
-});
+document.addEventListener("click", e => { if (!e.target.closest("#destinoField")) document.getElementById("listaDestinazioni").style.display = "none"; });
 document.getElementById("destino").addEventListener("focus", filtraDestinazioni);
 
 // === MODAL ADMIN ===
-function apriModal() {
-    document.getElementById("adminCommessa").value = document.getElementById("commessa").value || "ZAS";
-    aggiornaTabellaAdmin();
-    document.getElementById("modalAdmin").classList.add("show");
-}
-function chiudiModal() {
-    document.getElementById("modalAdmin").classList.remove("show");
-}
+function apriModal() { document.getElementById("adminCommessa").value = document.getElementById("commessa").value || "ZAS"; aggiornaTabellaAdmin(); document.getElementById("modalAdmin").classList.add("show"); }
+function chiudiModal() { document.getElementById("modalAdmin").classList.remove("show"); }
 function aggiornaTabellaAdmin() {
     const c = document.getElementById("adminCommessa").value;
     const lista = destinazioni[c] || [];
@@ -296,31 +275,23 @@ function aggiornaTabellaAdmin() {
     tb.innerHTML = "";
     lista.forEach(d => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${d.destino}</td><td>${d.indirizzo}</td>
-            <td><button class="btn-small btn-delete" onclick="elimina('${c}',${d.row})">Elimina</button></td>`;
+        tr.innerHTML = `<td>${d.destino}</td><td>${d.indirizzo}</td><td><button class="btn-small btn-delete" onclick="elimina('${c}',${d.row})">Elimina</button></td>`;
         tb.appendChild(tr);
     });
     document.getElementById("nomeCommessa").textContent = c;
     document.getElementById("totaleDest").textContent = lista.length;
 }
 document.getElementById("btnAggiungiAdmin").addEventListener("click", async () => {
-    const btn = document.getElementById("btnAggiungiAdmin");
-    if (btn.disabled) return;
-    btn.disabled = true;
+    const btn = document.getElementById("btnAggiungiAdmin"); if (btn.disabled) return; btn.disabled = true;
     const c = document.getElementById("adminCommessa").value;
     const dest = document.getElementById("adminDestino").value.trim();
     const ind = document.getElementById("adminIndirizzo").value.trim();
     if (!dest || !ind) { alert("Compila tutto"); btn.disabled = false; return; }
-    if (destinazioni[c]?.some(x => x.destino.toLowerCase() === dest.toLowerCase())) {
-        alert("Destinazione già esistente!");
-        btn.disabled = false;
-        return;
-    }
+    if (destinazioni[c]?.some(x => x.destino.toLowerCase() === dest.toLowerCase())) { alert("Destinazione già esistente!"); btn.disabled = false; return; }
     await fetch(API_URL, {method:"POST", body:JSON.stringify({mode:"add", gid:GID[c], destino:dest, indirizzo:ind})});
     const res = await fetch(API_URL, {method:"POST", body:JSON.stringify({mode:"list", gid:GID[c]})}).then(r=>r.json());
     destinazioni[c] = res.data || [];
-    document.getElementById("adminDestino").value = "";
-    document.getElementById("adminIndirizzo").value = "";
+    document.getElementById("adminDestino").value = ""; document.getElementById("adminIndirizzo").value = "";
     aggiornaTabellaAdmin();
     if (document.getElementById("commessa").value === c) caricaDestinazioni();
     btn.disabled = false;
@@ -346,13 +317,11 @@ function cambiaFormato() {
     document.getElementById("indirizzo").placeholder = piccolo ? "es. 123456789" : "si compila automaticamente";
     if (piccolo) { document.getElementById("indirizzo").value = ""; document.getElementById("location").value = ""; }
     else { document.getElementById("destino").value = ""; document.getElementById("indirizzo").value = ""; }
-    genera();
-    aggiornaPageSize();
+    genera(); aggiornaPageSize();
 }
 
 function genera() {
-    const anteprima = document.getElementById("anteprima");
-    anteprima.innerHTML = "";
+    const anteprima = document.getElementById("anteprima"); anteprima.innerHTML = "";
     let data = document.getElementById("data").value || new Date().toISOString().split('T')[0];
     data = data.split("-").reverse().join("/");
     const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
@@ -416,9 +385,12 @@ function genera() {
 function aggiornaPageSize() {
     const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
     const height = piccolo ? "50mm" : "100mm";
-    let style = document.getElementById("print-dynamic");
-    if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
-    style.innerHTML = `@media print { @page { size: 100mm ${height}; margin: 0; } .etichetta, .etichetta.small { height: ${height} !important; } }`;
+    const existing = document.getElementById("print-size");
+    if (existing) existing.remove();
+    const style = document.createElement("style");
+    style.id = "print-size";
+    style.innerHTML = `@media print { @page { size: 100mm ${height} !important; margin:0 !important; } }`;
+    document.head.appendChild(style);
 }
 
 function resetCampi() {
@@ -429,9 +401,7 @@ function resetCampi() {
     document.getElementById("destino").value = "";
     document.getElementById("indirizzo").value = "";
     document.getElementById("palletColli").value = "";
-    document.getElementById("anteprima").innerHTML = "";
     genera();
-    aggiornaPageSize();
 }
 
 cambiaFormato();
