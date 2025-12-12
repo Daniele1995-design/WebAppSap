@@ -32,7 +32,8 @@
   }
   #formManuale h3 { margin-top:0; color:#2c3e50; font-size:18pt; }
   #formManuale label { display:block; margin:8px 0; font-size:12pt; }
-  #formManuale input { width:100%; padding:6px; box-sizing:border-box; font-size:12pt; }
+  #formManuale input, #formManuale textarea { width:100%; padding:6px; box-sizing:border-box; font-size:12pt; }
+  #formManuale textarea { height:80px; }
   @media print { .no-print { display:none; } }
 
   /* ---------- Etichetta 10x10 originale ---------- */
@@ -41,7 +42,6 @@
     padding:2mm 3.5mm; box-sizing:border-box; page-break-after:always;
     position:relative; margin-bottom:10mm;
   }
-  /* Copia esatta dei tuoi stili della 10x10... */
   .logo-container { height:10mm; margin-bottom:0.5mm; position:relative; }
   .logo-img { height:9mm; }
   .label-cod-bp { position:absolute; right:0; top:12mm; font-size:7pt; font-weight:bold; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.3px; }
@@ -79,8 +79,8 @@
     padding:2mm 3mm; box-sizing:border-box; page-break-after:always;
     position:relative; font-size:8pt;
   }
-  .et5-logo { height:11mm; display:inline-block; vertical-align:middle; }
-  .et5-codbp { display:inline-block; float:right; text-align:right; font-weight:bold; font-size:17pt; }
+  .et5-logo { height:8mm; display:inline-block; vertical-align:middle; }
+  .et5-codbp { display:inline-block; float:right; text-align:right; font-weight:bold; font-size:16pt; }
   .et5-qr-bp { width:10mm; height:10mm; vertical-align:middle; margin-left:2mm; }
   .et5-barcode { width:55mm; height:20px; display:block; margin:2mm auto 1mm; }
   .et5-wms { text-align:center; font-weight:bold; font-size:9pt; margin-bottom:1mm; }
@@ -112,10 +112,10 @@
 
   <div id="formManuale" style="display:none;">
     <h3>Compila Etichetta Manualmente</h3>
-    <label>Codice BP: <input type="text" id="m_CodiceBP"></label>
-    <label>Part Number: <input type="text" id="m_PartNumber"></label>
-    <label>Serial Number/Lotto: <input type="text" id="m_SerialNumber"></label>
-    <label>Articolo WMS: <input type="text" id="m_ArticoloWMS"></label>
+    <label>Codice BP: <input type="text" id="m_CodiceBP" placeholder="Inserisci Codice BP"></label>
+    <label>Part Number: <input type="text" id="m_PartNumber" readonly></label>
+    <label>Articolo WMS: <input type="text" id="m_ArticoloWMS" readonly></label>
+    <label>Serial Number/Lotto: <textarea id="m_SerialNumber" placeholder="Inserisci un seriale per riga"></textarea></label>
     <label>PO: <input type="text" id="m_PO"></label>
     <label>Posizione: <input type="text" id="m_Posizione"></label>
     <label>Ubicazione: <input type="text" id="m_Ubicazione"></label>
@@ -146,7 +146,7 @@ function downloadTemplate() {
   XLSX.writeFile(wb, 'Template_Etichette_ATS.xlsx');
 }
 
-// ---------- CREA ETICHETTA 10x10 ---------- //
+// ---------- CREA ETICHETTA 10x10 ----------
 function creaEtichetta10x10(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, bcId){
   return `<div class="etichetta-10x10">
     <div class="logo-container"><img class="logo-img" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg"><div class="label-cod-bp">COD BP</div></div>
@@ -169,7 +169,7 @@ function creaEtichetta10x10(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO,
   </div>`;
 }
 
-// ---------- CREA ETICHETTA 10x5 ---------- //
+// ---------- CREA ETICHETTA 10x5 ----------
 function creaEtichetta10x5(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, bcId){
   return `<div class="etichetta-10x5">
     <img class="et5-logo" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg">
@@ -177,36 +177,89 @@ function creaEtichetta10x5(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, 
     <svg class="et5-barcode" id="${bcId}"></svg>
     <div class="et5-wms">${ArticoloWMS}</div>
     <div class="et5-info">
-      <div>PO Nr°: ${PO}<br>Part Number: ${PartNumber}<br>Seriale: ${SerialNumber}</div>
+      <div>PO Nr°: ${PO} / Pos: ${Posizione}<br>Part Number: ${PartNumber}<br>Seriale: ${SerialNumber}</div>
       <img class="et5-qr-sn" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(SerialNumber)}">
     </div>
   </div>`;
 }
 
-// ---------- AGGIUNGI ETICHETTA MANUALE ---------- //
+// ---------- DATABASE BP ----------
+let bpDatabase = [];
+fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSC8jBRzMHrA7IMzvnjbvQ0shOg2Eg5q1UpJZlk2VmT1TEHQ3bKrYlj8MX7J405NPcO7TwK5R5QHlXD/pub?output=csv')
+.then(r=>r.text())
+.then(csv=>{
+  const lines = csv.split(/\r?\n/);
+  bpDatabase = lines.slice(1).map(l=>{
+    const [CodiceBP, ArticoloWMS, PartNumber] = l.split(',');
+    return {CodiceBP: CodiceBP?.trim(), ArticoloWMS: ArticoloWMS?.trim(), PartNumber: PartNumber?.trim()};
+  }).filter(r => r.CodiceBP);
+  console.log('BP database pronto', bpDatabase.length);
+});
+
+// ---------- EVENTI FORM MANUALE ----------
+document.getElementById('m_CodiceBP').addEventListener('blur', e=>{
+  const bp = e.target.value.trim();
+  if(!bp) return;
+  const matches = bpDatabase.filter(r=>r.CodiceBP===bp);
+  if(matches.length===0) return alert('Codice BP non trovato.');
+  if(matches.length===1){
+    document.getElementById('m_ArticoloWMS').value = matches[0].ArticoloWMS;
+    document.getElementById('m_PartNumber').value = matches[0].PartNumber;
+  } else {
+    const popup = document.createElement('div');
+    popup.id = 'bp-popup';
+    popup.style.position='fixed';
+    popup.style.left='50%';
+    popup.style.top='50%';
+    popup.style.transform='translate(-50%,-50%)';
+    popup.style.background='#fff';
+    popup.style.padding='20px';
+    popup.style.border='2px solid #000';
+    popup.style.zIndex=9999;
+    let html = '<div>Scegli Articolo WMS:</div><ul style="padding-left:0;">';
+    matches.forEach((m,i)=>{
+      html += `<li style="list-style:none;margin:5px 0;cursor:pointer;padding:4px;border:1px solid #000;" onclick="scegliArticolo(${i})">${m.ArticoloWMS} / ${m.PartNumber}</li>`;
+    });
+    html += '</ul>';
+    popup.innerHTML = html;
+    document.body.appendChild(popup);
+    window.scegliArticolo = function(index){
+      document.getElementById('m_ArticoloWMS').value = matches[index].ArticoloWMS;
+      document.getElementById('m_PartNumber').value = matches[index].PartNumber;
+      document.body.removeChild(document.getElementById('bp-popup'));
+    }
+  }
+});
+
+// ---------- AGGIUNGI ETICHETTA MANUALE MULTIPLE SERIALI ----------
 function aggiungiEtichettaManuale(){
   const CodiceBP = document.getElementById('m_CodiceBP').value.trim();
   const PartNumber = document.getElementById('m_PartNumber').value.trim();
-  const SerialNumber = document.getElementById('m_SerialNumber').value.trim();
   const ArticoloWMS = document.getElementById('m_ArticoloWMS').value.trim();
+  const SerialNumbers = document.getElementById('m_SerialNumber').value.trim().split(/\r?\n/).filter(s=>s.trim());
   const PO = document.getElementById('m_PO').value.trim();
   const Posizione = document.getElementById('m_Posizione').value.trim();
   const Ubicazione = document.getElementById('m_Ubicazione').value.trim();
   const formato = document.getElementById('formatoEtichetta').value;
-  const bcId = 'bc-manual-'+(etichettaCounter++);
-  let html = '';
-  if(formato==='10x10'){
-    html = creaEtichetta10x10(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, bcId);
-  } else {
-    html = creaEtichetta10x5(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, bcId);
-  }
-  document.getElementById('output').innerHTML += html;
-  setTimeout(()=>{
-    if(document.getElementById(bcId)) JsBarcode('#'+bcId, ArticoloWMS, {format:"CODE128", height:formato==='10x10'?26:20, width:1.8, displayValue:false, margin:0});
-  },100);
+
+  if(!CodiceBP || !PartNumber || !ArticoloWMS) return alert('Compila Codice BP e seleziona Articolo WMS.');
+
+  SerialNumbers.forEach(serial=>{
+    const bcId = 'bc-manual-'+(etichettaCounter++);
+    let html = '';
+    if(formato==='10x10'){
+      html = creaEtichetta10x10(CodiceBP, PartNumber, serial, ArticoloWMS, PO, Posizione, Ubicazione, bcId);
+    } else {
+      html = creaEtichetta10x5(CodiceBP, PartNumber, serial, ArticoloWMS, PO, Posizione, bcId);
+    }
+    document.getElementById('output').innerHTML += html;
+    setTimeout(()=>{
+      if(document.getElementById(bcId)) JsBarcode('#'+bcId, ArticoloWMS, {format:"CODE128", height:formato==='10x10'?26:20, width:1.8, displayValue:false, margin:0});
+    },100);
+  });
 }
 
-// ---------- CARICAMENTO FILE EXCEL ---------- //
+// ---------- CARICAMENTO FILE EXCEL ----------
 document.getElementById('excelFile').addEventListener('change', e=>{
   const f = e.target.files[0]; if(!f) return;
   const r = new FileReader();
