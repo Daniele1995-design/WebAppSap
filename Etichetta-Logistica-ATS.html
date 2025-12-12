@@ -25,27 +25,20 @@
     .btn.admin:hover { background:#32b94a; }
     .btn:disabled { background:#aaa; cursor:not-allowed; }
     #anteprima { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; padding:30px 15px; background:#e5e5e5; border-radius:12px; margin-top:20px; }
-    .etichetta { width:100mm; min-height:50mm; border:1px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; }
+    .etichetta { width:100mm; min-height:50mm; border:1px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; display:flex; flex-direction:column; }
     .etichetta:not(.small) { min-height:100mm; }
-    @media print {
-        body * { visibility:hidden; }
-        #anteprima, #anteprima * { visibility:visible; }
-        #anteprima { position:absolute; left:0; top:0; padding:0; background:white; }
-        .etichetta { page-break-after:always; height:50mm !important; }
-        .etichetta:not(.small) { height:100mm !important; }
-        @page { size:100mm auto ; margin:0; }
-    }
-    .header-logo { border-bottom:1px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; min-height:50px; padding:0 10px; }
+    
+    .header-logo { border-bottom:1px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; height:50px; padding:0 10px; }
     .logo-principale { height:42px; width:auto; object-fit:contain; }
     .icon-commessa { height:38px; width:auto; object-fit:contain; }
-    .campo-data { border:1px solid black; padding:4px 8px; text-align:center; font-size:16px; font-weight:bold; margin-bottom:4px; }
+    .campo-data { border:1px solid black; padding:4px 8px; text-align:center; font-size:25px; font-weight:bold; margin-bottom:4px; }
     .riga-odp { display:flex; align-items:center; justify-content:space-between; padding:0 8px; }
     .odp { font-size:28px; font-weight:bold; text-align:center; flex:1; }
     .dati-10x5 { font-size:13.5px; font-weight:bold; line-height:1.4; margin-left:8px; margin-top:2px; }
     .progressivo { text-align:center; font-size:24px; font-weight:bold; margin:8px 0; }
-    .campo { border:1px solid black; padding:6px 8px; margin-bottom:8px; }
+    .campo { border:1px solid black; padding:6px 8px; margin-bottom:8px; flex-shrink:0; }
     .label { font-size:11px; font-weight:bold; }
-    .valore { font-size:17px; font-weight:bold; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .valore { font-size:25px; font-weight:bold; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .riga-id { display:flex; justify-content:space-between; width:100%; }
     .colli-inline { font-weight:bold; margin-left:10px; white-space:nowrap; }
     .label-odp { font-size:14px; font-weight:bold; }
@@ -63,9 +56,7 @@
         margin-top:4px;
     }
     #listaDestinazioni div { padding:12px; cursor:pointer; border-bottom:1px solid #eee; }
-   
-
- #listaDestinazioni div:hover { background:#f0f0f0; }
+    #listaDestinazioni div:hover { background:#f0f0f0; }
     #modalAdmin, #modalPassword { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; }
     #modalAdmin.show, #modalPassword.show { display:flex; }
     .modal-content { background:white; border-radius:18px; width:90%; max-width:900px; max-height:90vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.4); }
@@ -80,6 +71,19 @@
     td { padding:12px; border-bottom:1px solid #eee; }
     .btn-small { padding:6px 12px; border:none; border-radius:8px; color:white; cursor:pointer; font-size:13px; }
     .btn-delete { background:#ff3b30; }
+@media print {
+    .etichetta:not(.small) {
+        padding-top: 8mm !important;  /* questo SI STAMPA sempre */
+    }
+
+    .etichetta:not(.small) .campo {
+        margin-top: 5mm !important;   /* margini interni che Chrome mantiene */
+    }
+
+    .etichetta:not(.small) .campo-data {
+        margin-top: 2mm !important;   /* la data ancora più in basso */
+    }
+}
 </style>
 </head>
 <body>
@@ -224,7 +228,7 @@ async function caricaTutto() {
         destinazioni[c] = res.data || [];
     }
     document.getElementById("data").valueAsDate = new Date();
-    genera(); // per mostrare il logo anche all'avvio se c'è già una commessa
+    genera();
 }
 caricaTutto();
 
@@ -329,7 +333,7 @@ async function elimina(commessa, row) {
     if (document.getElementById("commessa").value === commessa) caricaDestinazioni();
 }
 
-// === ETICHETTE (logo appare subito al cambio commessa) ===
+// === ETICHETTE ===
 function cambiaFormato() {
     const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
     document.getElementById("commessaField").style.display = piccolo ? "none" : "block";
@@ -410,9 +414,37 @@ function genera() {
 function aggiornaPageSize() {
     const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
     const height = piccolo ? "50mm" : "100mm";
+    const numEtichette = document.querySelectorAll('.etichetta').length;
+    
     let style = document.getElementById("print-dynamic");
     if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
-    style.innerHTML = `@media print { @page { size: 100mm ${height}; margin: 0; } .etichetta, .etichetta.small { height: ${height} !important; } }`;
+    
+    // Se è 10x5 e c'è solo 1 etichetta, usa page-break-after: avoid
+    const pageBreakLast = (piccolo && numEtichette === 1) ? 'avoid' : 'auto';
+    
+    style.innerHTML = `@media print { 
+        @page { size: 100mm ${height}; margin: 0; padding: 0; } 
+        * { margin: 0 !important; padding: 0 !important; }
+        body { margin: 0 !important; padding: 0 !important; visibility: hidden; }
+        #anteprima { visibility: visible; position: absolute; left: 0; top: 0; margin: 0 !important; padding: 0 !important; }
+        #anteprima * { visibility: visible; }
+        .etichetta { 
+            height: ${height} !important; 
+            width: 100mm !important;
+            margin: 0 !important;
+            padding: 5mm !important;
+            box-sizing: border-box !important;
+            page-break-after: always;
+            page-break-inside: avoid;
+            border: none !important;
+            box-shadow: none !important;
+            display: block !important;
+            background: white !important;
+        }
+        .etichetta:last-child { 
+            page-break-after: ${pageBreakLast} !important;
+        }
+    }`;
 }
 
 function resetCampi() {
