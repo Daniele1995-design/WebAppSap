@@ -28,13 +28,42 @@
     .etichetta { width:100mm; min-height:50mm; border:1px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; }
     .etichetta:not(.small) { min-height:100mm; }
     @media print {
-        body * { visibility:hidden; }
-        #anteprima, #anteprima * { visibility:visible; }
-        #anteprima { position:absolute; left:0; top:0; padding:0; background:white; }
-        .etichetta { page-break-after:always; height:50mm !important; }
-        .etichetta:not(.small) { height:100mm !important; }
-        @page { size:100mm auto; margin:0; }
+    @page { size: 100mm 50mm; margin:0 !important; }
+
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 50mm !important;
     }
+
+    body * { visibility: hidden; }
+    #anteprima, #anteprima * { visibility: visible; }
+
+    #anteprima {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100mm !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: white !important;
+    }
+
+    .etichetta.small {
+        width: 100mm !important;
+        height: 50mm !important;
+        padding: 5mm !important;
+        margin: 0 !important;
+        page-break-after: always;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* la 10×10 rimane esattamente come prima */
+    .etichetta:not(.small) {
+        height: 100mm !important;
+    }
+}
     .header-logo { border-bottom:1px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; min-height:50px; padding:0 10px; }
     .logo-principale { height:42px; width:auto; object-fit:contain; }
     .icon-commessa { height:38px; width:auto; object-fit:contain; }
