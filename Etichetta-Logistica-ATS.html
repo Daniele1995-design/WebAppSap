@@ -27,14 +27,40 @@
     #anteprima { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; padding:30px 15px; background:#e5e5e5; border-radius:12px; margin-top:20px; }
     .etichetta { width:100mm; min-height:50mm; border:1px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; }
     .etichetta:not(.small) { min-height:100mm; }
+
+    /* ==================== FIX 10x5 - UNICA MODIFICA REALE ==================== */
     @media print {
         body * { visibility:hidden; }
         #anteprima, #anteprima * { visibility:visible; }
         #anteprima { position:absolute; left:0; top:0; padding:0; background:white; }
-        .etichetta { page-break-after:always; height:50mm !important; }
+
+        @page { size:100mm auto; margin:0 !important; }
+        @page :first { margin-top:0 !important; }
+
+        .etichetta { page-break-after:always; }
         .etichetta:not(.small) { height:100mm !important; }
-        @page { size:100mm auto; margin:0; }
+
+        .etichetta.small {
+            height:50mm !important;
+            padding:0 !important;
+            margin:0 !important;
+            overflow:hidden;
+        }
+        .etichetta.small > .inner {
+            padding:4mm 5mm 3mm;
+            height:100%;
+            display:flex;
+            flex-direction:column;
+        }
+        .etichetta.small .header-logo   { padding:2mm 0 1.5mm; margin-bottom:1.5mm; border-bottom:1px solid black; min-height:auto; display:flex; justify-content:space-between; align-items:center; }
+        .etichetta.small .campo-data    { margin:0 0 2mm; padding:2mm 4mm; border:1px solid black; text-align:center; font-size:14px; font-weight:bold; }
+        .etichetta.small .riga-odp      { margin-bottom:2mm; display:flex; align-items:center; justify-content:space-between; padding:0 3mm; }
+        .etichetta.small .odp           { font-size:26px; font-weight:bold; text-align:center; flex:1; }
+        .etichetta.small .label-odp     { font-size:14px; font-weight:bold; }
+        .etichetta.small .dati-10x5     { font-size:13px; font-weight:bold; line-height:1.35; }
     }
+    /* ========================================================================= */
+
     .header-logo { border-bottom:1px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; min-height:50px; padding:0 10px; }
     .logo-principale { height:42px; width:auto; object-fit:contain; }
     .icon-commessa { height:38px; width:auto; object-fit:contain; }
@@ -49,23 +75,9 @@
     .riga-id { display:flex; justify-content:space-between; width:100%; }
     .colli-inline { font-weight:bold; margin-left:10px; white-space:nowrap; }
     .label-odp { font-size:14px; font-weight:bold; }
-    #listaDestinazioni {
-        position:absolute;
-        background:white;
-        border:1px solid #aaa;
-        width:100%;
-        max-height:200px;
-        overflow-y:auto;
-        z-index:10;
-        display:none;
-        box-shadow:0 8px 20px rgba(0,0,0,0.15);
-        border-radius:8px;
-        margin-top:4px;
-    }
+    #listaDestinazioni { position:absolute; background:white; border:1px solid #aaa; width:100%; max-height:200px; overflow-y:auto; z-index:10; display:none; box-shadow:0 8px 20px rgba(0,0,0,0.15); border-radius:8px; margin-top:4px; }
     #listaDestinazioni div { padding:12px; cursor:pointer; border-bottom:1px solid #eee; }
-   
-
- #listaDestinazioni div:hover { background:#f0f0f0; }
+    #listaDestinazioni div:hover { background:#f0f0f0; }
     #modalAdmin, #modalPassword { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; }
     #modalAdmin.show, #modalPassword.show { display:flex; }
     .modal-content { background:white; border-radius:18px; width:90%; max-width:900px; max-height:90vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.4); }
@@ -132,7 +144,7 @@
     <div id="anteprima"></div>
 </div>
 
-<!-- Password Modal -->
+<!-- Modal Password -->
 <div id="modalPassword">
     <div class="modal-content" style="width:320px;">
         <div class="modal-header">Accesso Admin</div>
@@ -144,7 +156,7 @@
     </div>
 </div>
 
-<!-- Admin Modal -->
+<!-- Modal Admin -->
 <div id="modalAdmin">
     <div class="modal-content">
         <div class="modal-header">
@@ -188,7 +200,6 @@ const GID = {
     "JOIGUM": 114825062,
     "AG-LOGISTICA": 414795981
 };
-
 const iconeCommessa = {
     "VODAFONE-NTD": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
     "VODAFONE-FLM": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/3ce9084239885145e00c0fffb5551103814ffdcf/Fastweb_%2B_Vodafone_logo.png",
@@ -198,7 +209,6 @@ const iconeCommessa = {
     "JOIGUM": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/joigum.png",
     "AG-LOGISTICA": "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/ag-logistica.png"
 };
-
 let destinazioni = {};
 
 // === PASSWORD ADMIN ===
@@ -224,7 +234,7 @@ async function caricaTutto() {
         destinazioni[c] = res.data || [];
     }
     document.getElementById("data").valueAsDate = new Date();
-    genera(); // per mostrare il logo anche all'avvio se c'è già una commessa
+    genera();
 }
 caricaTutto();
 
@@ -238,19 +248,18 @@ function caricaDestinazioni() {
     document.getElementById("indirizzo").value = "";
     filtraDestinazioni();
 }
-
 function filtraDestinazioni() {
     const testo = (document.getElementById("destino").value || "").toLowerCase();
     const lista = document.getElementById("listaDestinazioni");
     lista.innerHTML = "";
     const commessa = document.getElementById("commessa").value;
     const filtrati = (destinazioni[commessa] || []).filter(d => d.destino.toLowerCase().includes(testo));
-    
+   
     if (filtrati.length === 0) {
         lista.style.display = "none";
         return;
     }
-    
+   
     filtrati.forEach(d => {
         const div = document.createElement("div");
         div.textContent = d.destino;
@@ -264,7 +273,6 @@ function filtraDestinazioni() {
     });
     lista.style.display = "block";
 }
-
 document.addEventListener("click", e => {
     if (!e.target.closest("#destinoField")) {
         document.getElementById("listaDestinazioni").style.display = "none";
@@ -281,7 +289,6 @@ function apriModal() {
 function chiudiModal() {
     document.getElementById("modalAdmin").classList.remove("show");
 }
-
 function aggiornaTabellaAdmin() {
     const c = document.getElementById("adminCommessa").value;
     const lista = destinazioni[c] || [];
@@ -296,7 +303,6 @@ function aggiornaTabellaAdmin() {
     document.getElementById("nomeCommessa").textContent = c;
     document.getElementById("totaleDest").textContent = lista.length;
 }
-
 document.getElementById("btnAggiungiAdmin").addEventListener("click", async () => {
     const btn = document.getElementById("btnAggiungiAdmin");
     if (btn.disabled) return;
@@ -319,7 +325,6 @@ document.getElementById("btnAggiungiAdmin").addEventListener("click", async () =
     if (document.getElementById("commessa").value === c) caricaDestinazioni();
     btn.disabled = false;
 });
-
 async function elimina(commessa, row) {
     if (!confirm("Eliminare?")) return;
     await fetch(API_URL, {method:"POST", body:JSON.stringify({mode:"delete", gid:GID[commessa], row})});
@@ -329,7 +334,7 @@ async function elimina(commessa, row) {
     if (document.getElementById("commessa").value === commessa) caricaDestinazioni();
 }
 
-// === ETICHETTE (logo appare subito al cambio commessa) ===
+// === ETICHETTE ===
 function cambiaFormato() {
     const piccolo = document.querySelector('input[name="size"]:checked').value === "10x5";
     document.getElementById("commessaField").style.display = piccolo ? "none" : "block";
@@ -365,23 +370,24 @@ function genera() {
                 const et = document.createElement("div");
                 et.className = "etichetta small";
                 et.innerHTML = `
-                    <div class="header-logo">
-                        <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale">
-                        ${icona ? `<img src="${icona}" class="icon-commessa">` : ''}
-                    </div>
-                    <div class="campo-data">${data}</div>
-                    <div class="riga-odp">
-                        <div class="label-odp">ODP</div>
-                        <div class="odp">${testoPrincipale}</div>
-                    </div>
-                    <div class="dati-10x5">
-                        Location: ${location}<br>
-                        <div class="riga-id">
-                            <span>ID Scheda: ${idscheda}</span>
-                            <span class="colli-inline">Colli : ${prog}</span>
+                    <div class="inner">
+                        <div class="header-logo">
+                            <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale">
+                            ${icona ? `<img src="${icona}" class="icon-commessa">` : ''}
                         </div>
-                    </div>
-                `;
+                        <div class="campo-data">${data}</div>
+                        <div class="riga-odp">
+                            <div class="label-odp">ODP</div>
+                            <div class="odp">${testoPrincipale}</div>
+                        </div>
+                        <div class="dati-10x5">
+                            Location: ${location}<br>
+                            <div class="riga-id">
+                                <span>ID Scheda: ${idscheda}</span>
+                                <span class="colli-inline">Colli: ${prog}</span>
+                            </div>
+                        </div>
+                    </div>`;
                 anteprima.appendChild(et);
             }
         });
