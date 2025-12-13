@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      13.0
+// @version      14.0
 // @description  Esporta seriali + PN in CSV e aggiunge funzionalità di stampa etichette 10x10 e 10x5
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
@@ -1199,43 +1199,89 @@ function addPrintButtonsToRows() {
         const existingBtns = li.querySelectorAll('.btn-print-etichetta, .btn-print-etichetta-small, .btn-container');
         existingBtns.forEach(btn => btn.remove());
 
-        // Crea un contenitore per i pulsanti
-        const btnContainer = document.createElement('div');
-        btnContainer.className = 'btn-container';
-        btnContainer.style.cssText = 'display: flex; flex-wrap: nowrap; gap: 4px; margin-left: 8px;';
+// === SOLO UN PULSANTE STAMPA CON DROPDOWN - VERSIONE FINALE ===
+// Evita di aggiungere più volte lo stesso pulsante sulla stessa riga
+if (li.querySelector('.stampa-wrapper')) {
+    return;
+}
+// Contenitore relativo per il dropdown
+const wrapper = document.createElement('div');
+wrapper.className = 'stampa-wrapper';
+wrapper.style.cssText = 'position: relative; display: inline-block; margin-right: 8px;';
+// Pulsante principale (quello visibile: solo icona stampante)
+const btnStampa = document.createElement('button');
+btnStampa.style.cssText = 'padding: 0px 0px; border-radius: 4px; cursor: pointer; background: #343a40; border: 2px solid #23272b; color: white; font-size: 25px;';
+btnStampa.innerText = '🖨️';
+btnStampa.title = 'Opzioni di stampa etichetta';
+// Dropdown menu - nascosto all'inizio e orizzontale quando aperto
+const dropdown = document.createElement('div');
+dropdown.style.cssText = `
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    padding: 6px;
+    margin-top: 4px;
+    gap: 8px;
+    min-width: fit-content;
+    flex-direction: row;
+`;
+// Opzione 10x10
+const opt10x10 = document.createElement('button');
+opt10x10.style.cssText = 'padding: 14px 20px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 18px; cursor: pointer; white-space: nowrap;';
+opt10x10.innerText = '🖨️ 10x10';
+opt10x10.onclick = async (e) => {
+    e.stopPropagation();
+    dropdown.style.display = 'none';
+    await waitForSerials(5000);
+    const data = getDataFromLi(li);
+    printLabelsForRow(data);
+};
+// Opzione 10x5
+const opt10x5 = document.createElement('button');
+opt10x5.style.cssText = 'padding: 14px 20px; background: #17a2b8; color: white; border: none; border-radius: 4px; font-size: 18px; cursor: pointer; white-space: nowrap;';
+opt10x5.innerText = '🖨️ 10x5 ';
+opt10x5.onclick = async (e) => {
+    e.stopPropagation();
+    dropdown.style.display = 'none';
+    await waitForSerials(5000);
+    const data = getDataFromLi(li);
+    printLabels10x5ForRow(data);
+};
+dropdown.appendChild(opt10x10);
+dropdown.appendChild(opt10x5);
+// Apri/chiudi dropdown al click sul pulsante principale
+btnStampa.onclick = (e) => {
+    e.stopPropagation(); // impedisce che si chiuda subito
 
-        // Crea il pulsante per l'etichetta 10x10
-        const btn10x10 = document.createElement('button');
-        btn10x10.className = 'btn-print-etichetta';
-        btn10x10.style.cssText = 'padding: 4px 6px; border-radius: 4px; cursor: pointer; background: #28a745; border: 1px solid #218838; color: white; font-size: 12px; white-space: nowrap;';
-        btn10x10.title = 'Stampa etichetta 10x10';
-        btn10x10.innerText = '🖨️ 10x10';
+    const isOpen = dropdown.style.display === 'flex';
 
-        btn10x10.addEventListener('click', async (ev) => {
-            ev.preventDefault();
-            await waitForSerials(5000);
-            const data = getDataFromLi(li);
-            printLabelsForRow(data);
-        });
+    // Chiudi tutti i menu aperti (inclusi quelli delle altre righe)
+    document.querySelectorAll('.stampa-wrapper > div:nth-child(2)').forEach(d => {
+        d.style.display = 'none';
+    });
 
-        // Crea il pulsante per l'etichetta 10x5
-        const btn10x5 = document.createElement('button');
-        btn10x5.className = 'btn-print-etichetta-small';
-        btn10x5.style.cssText = 'padding: 4px 6px; border-radius: 4px; cursor: pointer; background: #17a2b8; border: 1px solid #117a8b; color: white; font-size: 12px; white-space: nowrap;';
-        btn10x5.title = 'Stampa etichetta 10x5';
-        btn10x5.innerText = '🖨️ 10x5';
+    // Se era chiuso, aprilo (con flex per orizzontale), altrimenti resta chiuso
+    if (!isOpen) {
+        dropdown.style.display = 'flex';
+    }
+};
+wrapper.appendChild(btnStampa);
+wrapper.appendChild(dropdown);
+// AGGIUNGI IL WRAPPER ALLA RIGA (questa è la riga importante!)
+li.appendChild(wrapper);
 
-        btn10x5.addEventListener('click', async (ev) => {
-            ev.preventDefault();
-            await waitForSerials(5000);
-            const data = getDataFromLi(li);
-            printLabels10x5ForRow(data);
-        });
-
-        // Aggiungi i pulsanti al contenitore
-        btnContainer.appendChild(btn10x10);
-        btnContainer.appendChild(btn10x5);
-
+        // Chiudi tutti i menu dropdown se clicchi fuori
+document.addEventListener('click', () => {
+    document.querySelectorAll('.stampa-wrapper > div:nth-child(2)').forEach(d => {
+        d.style.display = 'none';
+    });
+});
         // Aggiungi il contenitore all'area azioni
         const actionArea = li.querySelector('.item-media, .item-after, .item-title, .item-inner') || li;
 
@@ -1254,9 +1300,9 @@ function addPrintButtonsToRows() {
 
                 // Aggiungi il contenitore del testo e i pulsanti
                 actionArea.appendChild(textContainer);
-                actionArea.appendChild(btnContainer);
+                actionArea.appendChild(wrapper);
             } else {
-                actionArea.appendChild(btnContainer);
+                actionArea.appendChild(wrapper);
             }
         }
     });
