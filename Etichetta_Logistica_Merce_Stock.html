@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <style>
   /* ---------- Stili comuni ---------- */
-  body { margin:20px; background:#f0f0f0; font-family:Arial,sans-serif; }
+  body { margin: 0px; background:#f0f0f0; font-family:Arial,sans-serif; }
   .no-print { margin-bottom:20px; }
   .header-container {
     display: flex;
@@ -38,7 +38,7 @@
 
   /* ---------- Etichetta 10x10 originale ---------- */
   .etichetta-10x10 {
-    width:100mm; height:100mm; border:2px solid #000; background:white;
+    width:100mm; height:100mm; border: 0.5px solid #000; background:white;
     padding:2mm 3.5mm; box-sizing:border-box; page-break-after:always;
     position:relative; margin-bottom:10mm;
   }
@@ -75,7 +75,7 @@
   /* ---------- Etichetta 10x5 compatta ---------- */
   @page { size: 100mm 50mm; }
   .etichetta-10x5 {
-    width:100mm; height:50mm; border:2px solid #000; background:white;
+    width:100mm; height:50mm; border:0.5px solid #000; background:white;
     padding:2mm 3mm; box-sizing:border-box; page-break-after:always;
     position:relative; font-size:8pt;
   }
@@ -295,3 +295,4 @@ document.getElementById('excelFile').addEventListener('change', e=>{
 </script>
 </body>
 </html>
+
