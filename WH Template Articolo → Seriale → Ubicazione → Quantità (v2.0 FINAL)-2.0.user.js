@@ -153,16 +153,21 @@
     }
 
     function downloadReport() {
-        const txt = [
-            "Articolo;Seriale;Ubicazione;Quantità;Stato;Errore",
-            ...report.map(r => `${r.articolo};${r.seriale};${r.ubicazione};${r.quantita};${r.stato};${r.errore}`)
-        ].join("\n");
-        GM_download({
-            url: "data:text/csv;charset=utf-8," + encodeURIComponent(txt),
-            name: "report_lotti.csv",
-            saveAs: true
-        });
-    }
+    const header = "Articolo;Seriale;Ubicazione;Quantità;Stato;Errore";
+
+    const rows = report.map(r => {
+        const serialeTesto = r.seriale ? "'" + r.seriale : '';
+        return `${r.articolo || ''};${serialeTesto};${r.ubicazione || ''};${r.quantita || ''};${r.stato};${r.errore}`;
+    });
+
+    const txt = [header, ...rows].join("\n");
+
+    GM_download({
+        url: "data:text/csv;charset=utf-8," + encodeURIComponent(txt),
+        name: "report_lotti.csv",
+        saveAs: true
+    });
+}
 
     // PULSANTE IDENTICO ALL'ALTRO SCRIPT (rosso con camion, sopra Trasferisci)
     const addMenuBtn = () => {
