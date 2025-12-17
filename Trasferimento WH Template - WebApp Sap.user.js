@@ -144,18 +144,21 @@
     }
 
     function downloadCSV() {
-        const csvContent = ['Seriale;Ubicazione;Stato;TipoErrore']
-            .concat(report.map(e =>
-                [e.seriale, e.ubicazione, e.stato, e.tipoErrore].join(';')
-            ))
-            .join('\n');
+    const header = 'Seriale;Ubicazione;Stato;TipoErrore';
 
-        GM_download({
-            url: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent),
-            name: 'report_seriali.csv',
-            saveAs: true
-        });
-    }
+    const rows = report.map(e => {
+        const serialeTesto = e.seriale ? "'" + e.seriale : '';
+        return `${serialeTesto};${e.ubicazione || ''};${e.stato || ''};${e.tipoErrore || ''}`;
+    });
+
+    const csvContent = [header, ...rows].join('\n');
+
+    GM_download({
+        url: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent),
+        name: 'report_seriali.csv',
+        saveAs: true
+    });
+}
 
     // ===================================================
     // PULSANTE MENU
