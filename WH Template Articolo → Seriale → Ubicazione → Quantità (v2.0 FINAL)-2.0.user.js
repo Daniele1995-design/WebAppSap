@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         WH Template Articolo → Seriale → Ubicazione → Quantità (v2.0 FINAL)
+// @name         WH Template Articolo → Seriale → Ubicazione → Quantità (v2.4 FIX 18.12.25)
 // @namespace    http://tampermonkey.net/
-// @version      2.0
-// @description  Funziona sempre + pulsante bello come l'altro + 40% più veloce
+// @version      3.0
+// @description  Forza apertura keypad cliccando su #lastQty se necessario (focus su qty)
 // @match        http://172.18.20.20:8095/Transfer/Whs/*
 // @grant        GM_download
 // ==/UserScript==
@@ -20,7 +20,7 @@
         while(Date.now() - start < timeout) {
             const el = document.querySelector(selector);
             if(el) return el;
-            await delay(70); // ridotto da 150 → più veloce
+            await delay(70);
         }
         return null;
     }
@@ -28,20 +28,40 @@
     async function clearKeyboard() {
         const delBtn = await waitForElement(".keypad-delete-button", 2000);
         if (!delBtn) return;
-        for(let i=0; i<20; i++) { delBtn.click(); await delay(50); } // da 70ms → 50ms
+        for(let i=0; i<20; i++) { delBtn.click(); await delay(50); }
     }
 
     async function writeQuantity(qty) {
+        // ✅ PRIMA: Verifica se l'input esiste e se il keypad è già aperto
+        const inputQty = document.querySelector('#lastQty');
+        if (!inputQty) {
+            console.warn("[writeQuantity] Input #lastQty non trovato!");
+            return false;
+        }
+
+        // ✅ Aspetta che il keypad appaia o forza l'apertura
         let keypad = null;
-        for (let i = 0; i < 10; i++) { // ridotto da 20 → 15
+        for (let i = 0; i < 15; i++) {
             keypad = document.querySelector(".keypad-buttons");
             if (keypad) break;
+
+            // ✅ Se il keypad non c'è, clicca sull'input per aprirlo
+            if (i === 5 || i === 10) {
+                console.log(`[writeQuantity] Tentativo ${i}: clicco su #lastQty per aprire keypad`);
+                inputQty.click();
+                inputQty.focus();
+            }
+
             await delay(100);
         }
-        if (!keypad) return false;
+
+        if (!keypad) {
+            console.error("[writeQuantity] Keypad non trovato dopo 15 tentativi!");
+            return false;
+        }
 
         await clearKeyboard();
-        await delay(70); // da 150 → 100
+        await delay(70);
 
         for (const digit of qty) {
             const btn = [...document.querySelectorAll(".keypad-button")]
@@ -49,13 +69,13 @@
                           b.querySelector(".keypad-button-number")?.textContent === digit);
             if (btn) {
                 btn.click();
-                await delay(50); // da 100 → 80
+                await delay(50);
             }
         }
 
         const okBtn = document.querySelector('.popover-close, a.link.sheet-close');
         if (okBtn) okBtn.click();
-        await delay(150); // da 250 → 200
+        await delay(150);
         return true;
     }
 
@@ -64,10 +84,10 @@
         const checkbox = document.querySelector('li[class*="pointer"] input[type="checkbox"][name="wm-checkbox-label"]');
         if (checkbox && !checkbox.checked) {
             checkbox.click();
-            await delay(70); // da 120 → 100
+            await delay(70);
         }
         wm.scanG(ubicazione);
-        await delay(400); // da 600 → 500
+        await delay(400);
         if (checkbox && checkbox.checked) {
             checkbox.click();
             await delay(100);
@@ -83,10 +103,10 @@
         let entry = { articolo: r.articolo, seriale: r.seriale, ubicazione: r.ubicazione, quantita: r.quantita, stato: "OK", errore: "" };
 
         wm.scanG(r.articolo);
-        await delay(400); // da 600 → 500
+        await delay(400);
 
         let hasKeypad = false;
-        for (let t = 0; t < 5; t++) { // da 10 → 8
+        for (let t = 0; t < 5; t++) {
             if (document.querySelector(".keypad-buttons")) { hasKeypad = true; break; }
             await delay(100);
         }
@@ -113,9 +133,9 @@
             } else {
                 if (r.ubicazionePrelievo) {
                     await insertUbicazioneWithCheckbox(r.ubicazionePrelievo);
-                    await delay(300);
+                    await delay(400); // ✅ Torno a 400ms (timing originale)
                 }
-                await writeQuantity(r.quantita);
+                await writeQuantity(r.quantita); // ✅ Ora forza l'apertura del keypad se necessario
             }
             await insertUbicazioneWithCheckbox(r.ubicazione);
         }
@@ -153,21 +173,21 @@
     }
 
     function downloadReport() {
-    const header = "Articolo;Seriale;Ubicazione;Quantità;Stato;Errore";
+        const header = "Articolo;Seriale;Ubicazione;Quantità;Stato;Errore";
 
-    const rows = report.map(r => {
-        const serialeTesto = r.seriale ? "'" + r.seriale : '';
-        return `${r.articolo || ''};${serialeTesto};${r.ubicazione || ''};${r.quantita || ''};${r.stato};${r.errore}`;
-    });
+        const rows = report.map(r => {
+            const serialeTesto = r.seriale ? "'" + r.seriale : '';
+            return `${r.articolo || ''};${serialeTesto};${r.ubicazione || ''};${r.quantita || ''};${r.stato};${r.errore}`;
+        });
 
-    const txt = [header, ...rows].join("\n");
+        const txt = [header, ...rows].join("\n");
 
-    GM_download({
-        url: "data:text/csv;charset=utf-8," + encodeURIComponent(txt),
-        name: "report_lotti.csv",
-        saveAs: true
-    });
-}
+        GM_download({
+            url: "data:text/csv;charset=utf-8," + encodeURIComponent(txt),
+            name: "report_lotti.csv",
+            saveAs: true
+        });
+    }
 
     // PULSANTE IDENTICO ALL'ALTRO SCRIPT (rosso con camion, sopra Trasferisci)
     const addMenuBtn = () => {
