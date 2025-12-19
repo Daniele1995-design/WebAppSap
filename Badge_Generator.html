@@ -26,6 +26,12 @@
             padding: 40px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
+        .header-logo {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 20px;
+            display: block;
+        }
         h1 {
             color: #333;
             margin-bottom: 10px;
@@ -157,6 +163,14 @@
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
+        .badge-logo {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 40px;
+            height: auto;
+            opacity: 0.9;
+        }
         .qr-section {
             flex-shrink: 0;
             display: flex;
@@ -234,7 +248,7 @@
                 background: white !important;
                 border-radius: 0 !important;
             }
-            .controls, h1, .subtitle, .info, .preview-title, #status, button, .file-label {
+            .controls, h1, .subtitle, .info, .preview-title, #status, button, .file-label, .header-logo {
                 display: none !important;
             }
             .preview-section {
@@ -275,6 +289,15 @@
                 right: 0 !important;
                 height: 2mm !important;
                 background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
+            }
+            .badge-logo {
+                display: block !important;
+                position: absolute !important;
+                top: 3mm !important;
+                right: 3mm !important;
+                width: 10mm !important;
+                height: auto !important;
+                opacity: 0.9 !important;
             }
             .qr-section {
                 display: flex !important;
@@ -483,6 +506,12 @@
                 const topBar = document.createElement('div');
                 topBar.className = 'badge-top-bar';
                 badge.appendChild(topBar);
+
+                const logoImg = document.createElement('img');
+                logoImg.className = 'badge-logo';
+                logoImg.src = 'https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg';
+                logoImg.alt = 'ATS Logo';
+                badge.appendChild(logoImg);
 
                 const qrSection = document.createElement('div');
                 qrSection.className = 'qr-section';
