@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generatore Badge Operatori</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px dashed #667eea;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-label {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .file-label:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        .info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #0c5460;
+            line-height: 1.6;
+        }
+        .preview-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 3px solid #667eea;
+        }
+        .preview-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .badges-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+        }
+        .badge {
+            width: 378px;
+            height: 189px;
+            border: 3px solid #333;
+            border-radius: 12px;
+            padding: 15px;
+            background: white;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            page-break-inside: avoid;
+            position: relative;
+            overflow: hidden;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .badge-top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .qr-section {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .qr-code {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 5px;
+        }
+        .operator-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #667eea;
+            text-align: center;
+        }
+        .info-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+            padding-left: 10px;
+            border-left: 3px solid #ddd;
+        }
+        .operator-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+            line-height: 1.1;
+        }
+        .operator-surname {
+            font-size: 24px;
+            font-weight: 600;
+            color: #555;
+            line-height: 1.1;
+        }
+        .badge-footer {
+            position: absolute;
+            bottom: 12px;
+            right: 20px;
+            font-size: 15px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* STAMPA SU ETICHETTE 10x5 CM - UNA PER FOGLIO */
+        @media print {
+            @page {
+                size: 100mm 50mm;
+                margin: 0 !important;
+            }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            body {
+                width: 100mm;
+                height: 50mm;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .container {
+                max-width: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                background: white !important;
+                border-radius: 0 !important;
+            }
+            .controls, h1, .subtitle, .info, .preview-title, #status, button, .file-label {
+                display: none !important;
+            }
+            .preview-section {
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important;
+                display: block !important;
+            }
+            .badges-container {
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .badge {
+                width: 100mm !important;
+                height: 50mm !important;
+                margin: 0 !important;
+                padding: 3mm !important;
+                page-break-after: always !important;
+                box-shadow: none !important;
+                border: 1px solid #333 !important;
+                border-radius: 3mm !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 3mm !important;
+                background: white !important;
+                overflow: hidden !important;
+                position: relative !important;
+            }
+            .badge:last-child {
+                page-break-after: auto !important;
+            }
+            .badge-top-bar {
+                display: block !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                height: 2mm !important;
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
+            }
+            .qr-section {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 2mm !important;
+                flex-shrink: 0 !important;
+            }
+            .qr-code {
+                width: 30mm !important;
+                height: 30mm !important;
+                padding: 1mm !important;
+                border: 1px solid #333 !important;
+                border-radius: 2mm !important;
+            }
+            .qr-code img {
+                width: 100% !important;
+                height: 100% !important;
+            }
+            .operator-title {
+                font-size: 8pt !important;
+                font-weight: 700 !important;
+                color: #667eea !important;
+                text-align: center !important;
+            }
+            .info-section {
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                gap: 2mm !important;
+                flex: 1 !important;
+                padding-left: 3mm !important;
+                border-left: 1mm solid #ddd !important;
+            }
+            .operator-name {
+                font-size: 25pt !important;
+                font-weight: 700 !important;
+                color: #333 !important;
+                line-height: 1.1 !important;
+            }
+            .operator-surname {
+                font-size: 24pt !important;
+                font-weight: 600 !important;
+                color: #555 !important;
+                line-height: 1.1 !important;
+            }
+            .badge-footer {
+                display: block !important;
+                position: absolute !important;
+                bottom: 2mm !important;
+                right: 3mm !important;
+                font-size: 20pt !important;
+                color: #333 !important;
+                font-weight: 600 !important;
+            }
+            .empty-state {
+                display: none !important;
+            }
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 1.2em;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎫 Generatore Badge Operatori</h1>
+        <p class="subtitle">Badge professionali 10 × 5 cm con QR code scansionabile</p>
+        <div class="controls">
+            <div class="button-group">
+                <button class="btn-success" onclick="downloadTemplate()">
+                    📥 Scarica Template Excel
+                </button>
+                <label class="file-label">
+                    📤 Carica Excel
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(event)">
+                </label>
+                <button class="btn-primary" onclick="window.print()" id="printBtn" style="display:none;">
+                    🖨️ Stampa Badge
+                </button>
+                <button class="btn-secondary" onclick="clearBadges()">
+                    🗑️ Pulisci
+                </button>
+            </div>
+            <div class="info">
+                <strong>🖨️ ISTRUZIONI PER STAMPA SU ETICHETTE 10×5 CM:</strong><br>
+                1. Genera i badge dal tuo Excel<br>
+                2. Clicca "Stampa Badge"<br>
+                3. Nella finestra di stampa imposta:<br>
+                &nbsp;&nbsp;• <strong>Formato carta: PERSONALIZZATO 10cm × 5cm</strong><br>
+                &nbsp;&nbsp;• <strong>Margini: Nessuno</strong><br>
+                &nbsp;&nbsp;• <strong>Scala: 100%</strong><br>
+                &nbsp;&nbsp;• <strong>Spunta "Grafica in background"</strong><br>
+                → Ogni badge verrà stampato su una singola etichetta 10×5 cm!
+            </div>
+            <div id="status"></div>
+        </div>
+        <div class="preview-section">
+            <h2 class="preview-title"> Anteprima Badge</h2>
+            <div class="badges-container" id="badgesContainer">
+                <div class="empty-state">
+                    Nessun badge caricato. Scarica il template e carica il file Excel.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function downloadTemplate() {
+            try {
+                const wb = XLSX.utils.book_new();
+                const wsData = [
+                    ['Nome', 'Cognome', 'ID'],
+                    ['Mario', 'Rossi', '12345']
+                ];
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                ws['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 15 }];
+                XLSX.utils.book_append_sheet(wb, ws, 'Operatori');
+                XLSX.writeFile(wb, 'template_badge_operatori.xlsx');
+                showStatus('Template scaricato con successo!', 'success');
+            } catch (error) {
+                showStatus('Errore download: ' + error.message, 'error');
+            }
+        }
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    if (jsonData.length === 0) {
+                        showStatus('Il file Excel è vuoto!', 'error');
+                        return;
+                    }
+                    generateBadges(jsonData);
+                    showStatus(`${jsonData.length} badge generati – pronti per la stampa!`, 'success');
+                    document.getElementById('printBtn').style.display = 'flex';
+                } catch (error) {
+                    showStatus('Errore: ' + error.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function createQRCode(text, container) {
+            container.innerHTML = '';
+            new QRCode(container, {
+                text: text,
+                width: 110,
+                height: 110,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function generateBadges(data) {
+            const container = document.getElementById('badgesContainer');
+            container.innerHTML = '';
+            let badgeCount = 0;
+
+            data.forEach((person) => {
+                let nome = '', cognome = '', id = '';
+                Object.keys(person).forEach(key => {
+                    const k = key.toLowerCase().trim();
+                    if (k === 'nome') nome = person[key];
+                    if (k === 'cognome') cognome = person[key];
+                    if (k === 'id') id = person[key];
+                });
+                nome = (nome || '').toString().trim();
+                cognome = (cognome || '').toString().trim();
+                id = String(id || '').trim();
+
+                if (!nome || !cognome || !id) return;
+
+                const badge = document.createElement('div');
+                badge.className = 'badge';
+
+                const topBar = document.createElement('div');
+                topBar.className = 'badge-top-bar';
+                badge.appendChild(topBar);
+
+                const qrSection = document.createElement('div');
+                qrSection.className = 'qr-section';
+
+                const qrDiv = document.createElement('div');
+                qrDiv.className = 'qr-code';
+                createQRCode(id, qrDiv);
+
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'operator-title';
+                titleDiv.textContent = 'Operatore SAP B1';
+
+                qrSection.appendChild(qrDiv);
+                qrSection.appendChild(titleDiv);
+
+                const infoSection = document.createElement('div');
+                infoSection.className = 'info-section';
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'operator-name';
+                nameDiv.textContent = nome;
+
+                const surnameDiv = document.createElement('div');
+                surnameDiv.className = 'operator-surname';
+                surnameDiv.textContent = cognome;
+
+                infoSection.appendChild(nameDiv);
+                infoSection.appendChild(surnameDiv);
+
+                const footer = document.createElement('div');
+                footer.className = 'badge-footer';
+                footer.textContent = 'ID: ' + id;
+
+                badge.appendChild(qrSection);
+                badge.appendChild(infoSection);
+                badge.appendChild(footer);
+
+                container.appendChild(badge);
+                badgeCount++;
+            });
+
+            if (badgeCount === 0) {
+                container.innerHTML = '<div class="empty-state">Nessun badge valido generato. Controlla le colonne Excel.</div>';
+            }
+        }
+
+        function clearBadges() {
+            document.getElementById('badgesContainer').innerHTML = '<div class="empty-state">Nessun badge caricato. Scarica il template e carica il file Excel.</div>';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('printBtn').style.display = 'none';
+            showStatus('Badge cancellati', 'success');
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'status';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
