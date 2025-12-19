@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      14.0
+// @version      14.1
 // @description  Esporta seriali + PN in CSV e aggiunge funzionalità di stampa etichette 10x10 e 10x5
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
@@ -92,6 +92,19 @@ function getDataFromLi(li) {
         if (match) posizione = match[1].trim();
     }
 
+    // ===== NUOVO: Estrazione CDC =====
+    let cdc = '';
+    const divCDC = Array.from(li.querySelectorAll('div')).find(d => {
+        const text = (d.innerText || '').replace(/\s+/g, ' ').trim();
+        return text.startsWith('CDC :');
+    });
+    if (divCDC) {
+        const text = divCDC.innerText.replace(/\s+/g, ' ').trim();
+        cdc = text.slice('CDC :'.length).trim();
+    }
+    // ===== FINE NUOVO =====
+
+
     const serialRows = li.querySelectorAll("div[id^='dropdown-'] ul > li");
     const serials = [];
 
@@ -138,9 +151,10 @@ function getDataFromLi(li) {
     return {
         pn, articolo, codiceBP, descrizione, riferimento, riferimentoOrdine,
         riferimentoPulito: riferimento ? riferimento.trim().substring(0, 4) : '',
-        posizione, serials
+        posizione, serials , cdc
     };
 }
+
     function estraiRighe() {
         const out = [];
         out.push([
@@ -253,7 +267,8 @@ async function downloadCSV() {
                     po: data.riferimentoOrdine || data.riferimento || '',
                     pn: data.pn || '',
                     posizione: data.posizione || '',
-                    seriale: s.seriale || ''
+                    seriale: s.seriale || '',
+                    cdc: data.cdc || ''
                 });
             });
         });
@@ -332,7 +347,7 @@ html, body {
     width: 100mm;
     height: 100mm;
     box-sizing: border-box;
-    padding: 4mm;
+    padding: 3mm;
     border: none;
     display: block;
     page-break-after: always;
@@ -363,8 +378,8 @@ html, body {
     color: #222;
 }
 .line {
-    border-top: 1px solid #000;
-    margin: 4px 0;
+    border-top: 0.3px solid #000;
+    margin: 1px 0;
     width: 100%;
 }
 .barcode {
@@ -616,6 +631,38 @@ html, body {
             serialBlock.appendChild(sRight);
             left.appendChild(serialBlock);
 
+            // ===== RIGA CDC - SEMPRE VISIBILE (stile uguale alle altre) =====
+            const cdcBlock = document.createElement('div');
+            cdcBlock.style.display = 'flex';
+            cdcBlock.style.justifyContent = 'flex-start';
+            cdcBlock.style.alignItems = 'center';
+            cdcBlock.style.marginTop = '6px';
+            cdcBlock.style.marginBottom = '4px';
+
+            const cdcLeft = document.createElement('div');
+            cdcLeft.className = 'small';  // usa la stessa classe delle altre righe (Po, PN, Serial)
+
+            // Crea l'etichetta "CDC" in grassetto piccolo
+            const cdcLabel = document.createElement('b');
+            cdcLabel.textContent = 'CDC';
+
+            // Crea il valore grande
+            const cdcValueDiv = document.createElement('div');
+            cdcValueDiv.style.fontWeight = '700';
+            cdcValueDiv.style.fontSize = '16px';
+
+            // Metti il valore reale o "-" se vuoto
+            const valoreCDC = (lab.cdc && lab.cdc.trim() !== '') ? lab.cdc.trim() : '-';
+            cdcValueDiv.textContent = valoreCDC;
+
+            // Assembla tutto
+            cdcLeft.appendChild(cdcLabel);
+            cdcLeft.appendChild(cdcValueDiv);
+            cdcBlock.appendChild(cdcLeft);
+
+            left.appendChild(cdcBlock);
+            // ===== FINE RIGA CDC =====
+
             containerInner.appendChild(left);
             label.appendChild(containerInner);
             container.appendChild(label);
@@ -624,21 +671,30 @@ html, body {
             try {
                 new QRCode(qrCod, {
                     text: lab.codiceBP || '',
-                    width: 39,
-                    height: 39,
-                    correctLevel: QRCode.CorrectLevel.H
+                    width: 45,
+                    height: 45,
+                    colorDark : "#000000",   // nero pieno
+                    colorLight : "#FFFFFF",  // bianco pieno
+                    correctLevel: QRCode.CorrectLevel.H,
+                    useSVG: true             // <<< IMPORTANTISSIMO: genera SVG invece di table!
                 });
                 new QRCode(qrPn, {
                     text: lab.pn || '',
-                    width: 39,
-                    height: 39,
-                    correctLevel: QRCode.CorrectLevel.H
+                    width: 45,
+                    height: 45,
+                    colorDark : "#000000",   // nero pieno
+                    colorLight : "#FFFFFF",  // bianco pieno
+                    correctLevel: QRCode.CorrectLevel.H,
+                    useSVG: true             // <<< IMPORTANTISSIMO: genera SVG invece di table!
                 });
                 new QRCode(qrSerial, {
                     text: lab.seriale || '',
-                    width: 39,
-                    height: 39,
-                    correctLevel: QRCode.CorrectLevel.H
+                    width: 45,
+                    height: 45,
+                    colorDark : "#000000",   // nero pieno
+                    colorLight : "#FFFFFF",  // bianco pieno
+                    correctLevel: QRCode.CorrectLevel.H,
+                    useSVG: true             // <<< IMPORTANTISSIMO: genera SVG invece di table!
                 });
                 JsBarcode(svgBarcode, (lab.articolo||''), {
                     format: "CODE128",
@@ -745,10 +801,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    border-bottom: 1px solid #000;
-    padding-bottom: 1mm;
-    margin-bottom: 1mm;
-    height: 15mm;
+    border-bottom: 0.5px solid #000;
+    padding-bottom: 0.5mm;
+    margin-bottom: 0.5mm;
+    height: 12mm;
 }
 .logo {
     height: 10mm;
@@ -795,7 +851,7 @@ body {
 }
 .barcode-container {
     text-align: center;
-    margin: 1mm 0;
+    margin: 0.5mm 0;
     height: 15mm;
     display: flex;
     flex-direction: column;
@@ -810,15 +866,15 @@ body {
 }
 .barcode-text {
     font-size: 9px;
-    margin-top: 1px;
+    margin-top: 0.5px;
     text-align: left;
     font-weight: bold;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 }
 .details {
     margin-top: 1mm;
     font-size: 9px;
-    line-height: 1.3;
+    line-height: 1;
 }
 .detail-row {
     display: flex;
@@ -945,7 +1001,7 @@ body {
             const poPosRow = document.createElement('div');
             poPosRow.className = 'detail-row';
             poPosRow.style.justifyContent = 'space-between';
-            poPosRow.style.marginBottom = '0.5mm';
+            poPosRow.style.marginBottom = '0.1mm';
 
             // Po Nr°
             const poDiv = document.createElement('div');
@@ -967,7 +1023,7 @@ body {
             posDiv.style.alignItems = 'center';
             const posLabel = document.createElement('span');
             posLabel.className = 'detail-label';
-            posLabel.style.marginRight = '2mm';
+            posLabel.style.marginRight = '10mm';
             posLabel.textContent = 'Pos:';
             const posValue = document.createElement('span');
             posValue.className = 'detail-value';
@@ -1010,6 +1066,32 @@ body {
             details.appendChild(poPosRow);
             details.appendChild(pnRow);
             details.appendChild(serialRow);
+
+            // ===== NUOVO: Riga CDC per 10x5 - sempre visibile =====
+            const cdcRow = document.createElement('div');
+            cdcRow.className = 'detail-row';
+            cdcRow.style.marginTop = '1mm';
+            cdcRow.style.marginBottom = '0';
+
+            const cdcContent = document.createElement('div');
+            cdcContent.style.flexGrow = '1';
+
+            const cdcLabelSpan = document.createElement('span');
+            cdcLabelSpan.className = 'detail-label';
+            cdcLabelSpan.textContent = 'CDC:';
+
+            const cdcValueSpan = document.createElement('span');
+            cdcValueSpan.className = 'detail-value';
+            const valoreCDC = (lab.cdc && lab.cdc.trim() !== '') ? lab.cdc.trim() : '-';
+            cdcValueSpan.textContent = valoreCDC;
+
+            cdcContent.appendChild(cdcLabelSpan);
+            cdcContent.appendChild(cdcValueSpan);
+            cdcRow.appendChild(cdcContent);
+
+            details.appendChild(cdcRow);
+            // ===== FINE NUOVO =====
+
             label.appendChild(details);
             container.appendChild(label);
 
@@ -1020,16 +1102,21 @@ body {
 
                 new QRCode(qrBp, {
                     text: paddedCodiceBP || '',
-                    width: 30,
-                    height: 30,
-                    correctLevel: QRCode.CorrectLevel.H
+                    width: 40,
+                    height: 40,
+                    colorDark : "#000000",   // nero pieno
+                    colorLight : "#FFFFFF",  // bianco pieno
+                    correctLevel: QRCode.CorrectLevel.H,
+                    useSVG: true             // <<< IMPORTANTISSIMO: genera SVG invece di table!
                 });
 
                 new QRCode(qrSerial, {
                     text: paddedSeriale,
-                    width: 30,
-                    height: 30,
-                    correctLevel: QRCode.CorrectLevel.H
+                    width: 40,
+                    height: 40,
+                    colorDark : "#000000",   // nero pieno
+                    colorLight : "#FFFFFF",  // bianco pieno
+                    correctLevel: QRCode.CorrectLevel.H,
                 });
 
                 JsBarcode(barcodeSvg, lab.articolo || '', {
@@ -1154,7 +1241,8 @@ function printAllLabelsFromPNInfo() {
             articolo: dataRow.articolo || '',
             po: dataRow.riferimentoOrdine || dataRow.riferimento || '',
             pn: dataRow.pn || '',
-            seriale: s.seriale || ''
+            seriale: s.seriale || '',
+            cdc: dataRow.cdc || ''
         }));
 
         printLabels(labels);
