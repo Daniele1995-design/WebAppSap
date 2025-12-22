@@ -369,7 +369,7 @@ html, body {
     align-items: flex-start;
 }
 .codicebp {
-    font-size: 18px;
+    font-size: 25px;
     font-weight: 700;
     letter-spacing: 1px;
 }
@@ -553,7 +553,7 @@ html, body {
             poDiv.className = 'field-block';
             const poLab = document.createElement('div');
             poLab.className = 'small';
-            poLab.innerHTML = '<b>Po Nr°</b><div style="font-weight:700;font-size: 20px;">'+(lab.po||'')+'</div>';
+            poLab.innerHTML = '<b>Po Nr°</b><div style="font-weight:700;font-size: 22px;">'+(lab.po||'')+'</div>';
             poDiv.appendChild(poLab);
 
             // Posizione
