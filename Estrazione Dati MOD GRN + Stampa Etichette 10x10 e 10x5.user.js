@@ -427,10 +427,10 @@ html, body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 4px;
+    margin-top: -5px;
 }
 .pn-block .qr-container {
-    margin-top: -25px;
+    margin-top: -55px;
 }
 .serial-block {
     display: flex;
@@ -553,7 +553,7 @@ html, body {
             poDiv.className = 'field-block';
             const poLab = document.createElement('div');
             poLab.className = 'small';
-            poLab.innerHTML = '<b>Po Nr°</b><div style="font-weight:700;font-size: 16px;">'+(lab.po||'')+'</div>';
+            poLab.innerHTML = '<b>Po Nr°</b><div style="font-weight:700;font-size: 20px;">'+(lab.po||'')+'</div>';
             poDiv.appendChild(poLab);
 
             // Posizione
@@ -563,7 +563,7 @@ html, body {
             posDiv.style.marginRight = '130px';
             const posLab = document.createElement('div');
             posLab.className = 'small';
-            posLab.innerHTML = '<b>Posizione</b><div style="font-weight:700;font-size: 16px;">'+(lab.posizione||'')+'</div>';
+            posLab.innerHTML = '<b>Posizione</b><div style="font-weight:700;font-size: 20px;">'+(lab.posizione||'')+'</div>';
             posDiv.appendChild(posLab);
 
             // Aggiungo entrambi al contenitore
@@ -576,7 +576,7 @@ html, body {
             pnBlock.className = 'pn-block';
             const pnLeft = document.createElement('div');
             pnLeft.className = 'small';
-            pnLeft.innerHTML = '<b>Part Number</b><div style="font-weight:700;font-size: 16px;">'+(lab.pn||'')+'</div>';
+            pnLeft.innerHTML = '<b>Part Number</b><div style="font-weight:700;font-size: 20px;">'+(lab.pn||'')+'</div>';
             const pnRight = document.createElement('div');
             pnRight.style.display='flex';
             pnRight.style.flexDirection='column';
@@ -608,7 +608,7 @@ html, body {
             serialBlock.className = 'serial-block';
             const sLeft = document.createElement('div');
             sLeft.className = 'small';
-            sLeft.innerHTML = '<b>Serial Number</b><div style="font-weight:700;font-size: 16px;">'+(lab.seriale||'')+'</div>';
+            sLeft.innerHTML = '<b>Serial Number</b><div style="font-weight:700;font-size: 20px;">'+(lab.seriale||'')+'</div>';
             const sRight = document.createElement('div');
             sRight.style.display='flex';
             sRight.style.flexDirection='column';
