@@ -105,7 +105,7 @@
             });
         }
 
-        // Una volta agganciato l'input, non serve più osservare
+        // agganciato l'input, non serve più osservare
         observer.disconnect();
     });
 
