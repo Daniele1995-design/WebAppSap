@@ -1,19 +1,17 @@
 // ==UserScript==
 // @name         GRN - Controllo BOM + CSV + Etichette Collo Singole (Definitivo Perfetto)
 // @namespace    http://tampermonkey.net/
-// @version      4.2
-// @description  BOM perfetto + CSV + Etichette con QR kjua + pulsanti SOLO su padri
+// @version      4.4
+// @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati
 // @author       Daniele
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
 // @require      https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js
-// @require      https://cdn.jsdelivr.net/gh/lrsjng/kjua@master/dist/kjua.min.js
 // @grant        GM_download
 // ==/UserScript==
 
 (function() {
     'use strict';
-
     const LOGO_URL = "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg";
     const LOGO_URL2 = "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/PackingList.png";
 
@@ -21,8 +19,7 @@
     const DRIVE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvprxVE4qAvY5PMFEoz1tUi3yIynkE0fjCAebj10_v3wJEj-ezdtgYvJawAh2DqLX40f3pH6WUcDbS/pub?output=csv";
     const BOM_CSV_URL = "https://corsproxy.io/?" + encodeURIComponent(DRIVE_CSV_URL);
     let bomData = {};
-
-    console.log(" Avvio BOM definitivo...");
+    console.log("Avvio BOM definitivo...");
     Papa.parse(BOM_CSV_URL, {
         download: true,
         header: false,
@@ -58,14 +55,12 @@
         if (!codeDiv) return '';
         return codeDiv.textContent.split('|')[0].trim().toUpperCase();
     }
-
     function getQtaRichiesta(li) {
         const div = Array.from(li.querySelectorAll('div')).find(d => d.textContent.includes('Qta richiesta:'));
         if (!div) return 0;
         const match = div.textContent.match(/Qta richiesta:\s*(\d+)/i);
         return match ? parseInt(match[1], 10) : 0;
     }
-
     function getSeriali(li) {
         const serials = [];
         li.querySelectorAll("div[id^='dropdown-'] ul > li").forEach(sr => {
@@ -76,6 +71,39 @@
             }
         });
         return serials;
+    }
+    function getDescrizione(li) {
+        const divs = li.querySelectorAll('div');
+        for (let div of divs) {
+            const txt = div.textContent;
+            if (txt.includes('Descrizione:')) {
+                const match = txt.match(/Descrizione:\s*(.+)/i);
+                return match ? match[1].trim() : '';
+            }
+        }
+        return '';
+    }
+    function getRif(li) {
+        const divs = li.querySelectorAll('div');
+        for (let div of divs) {
+            const txt = div.textContent;
+            if (txt.includes('Rif:')) {
+                const match = txt.match(/Rif:\s*(\d+)/i);
+                return match ? match[1].trim() : '';
+            }
+        }
+        return '';
+    }
+    function getPosizione(li) {
+        const divs = li.querySelectorAll('div');
+        for (let div of divs) {
+            const txt = div.textContent;
+            if (txt.includes('Posizione:')) {
+                const match = txt.match(/Posizione:\s*(\d+)/i);
+                return match ? match[1].trim() : '';
+            }
+        }
+        return '';
     }
 
     // ===================== POPUP BOM =====================
@@ -135,19 +163,13 @@
     // ===================== PULSANTI RIGA – SOLO SU PADRI =====================
     function aggiungiPulsantiBOM() {
         document.querySelectorAll('li.item-content.item-input.item-input-outline').forEach(li => {
-            // Evita di aggiungere più volte
             if (li.querySelector('.bom-definitivo')) return;
-
             const articolo = getArticolo(li);
             if (!articolo) return;
-
-            // === MODIFICA CHIAVE: mostra pulsanti SOLO se è un PADRE nella BOM ===
-            if (!bomData[articolo]) return;
-            // ===================================================================
+            if (!bomData[articolo]) return; // solo padri
 
             const stampaBtn = li.querySelector('button[title="Opzioni di stampa etichetta"]');
             if (!stampaBtn) return;
-
             const container = stampaBtn.parentNode;
             container.style.display = 'inline-flex';
             container.style.alignItems = 'center';
@@ -191,7 +213,9 @@
     // ===================== GENERAZIONE ETICHETTA =====================
     function generaEtichettaHTML(padre, data, seriale, commessa, rif) {
         const materialCode = data.materialCode || '—';
-        const qrId = 'qr-' + Math.random().toString(36).substr(2, 9);
+        const qrIdMaterial = 'qr-material-' + Math.random().toString(36).substr(2, 9);
+        const qrIdSeriale = 'qr-seriale-' + Math.random().toString(36).substr(2, 9);
+
         return `
         <div class="etichetta">
             <div class="header">
@@ -199,12 +223,19 @@
                 <h2>CONTENUTO COLLO</h2>
             </div>
             <div class="info">
-                <p class="line"><strong>Padre:</strong> <span class="codice">${padre}</span></p>
+                <p class="line compact"><strong>Padre:</strong> <span class="codice">${padre}</span></p>
+
+                <!-- Material Code + QR 50x50 -->
                 <div class="line material-row">
                     <span><strong>Material Code:</strong> ${materialCode}</span>
-                    <div id="${qrId}" class="qr-code" data-text="${materialCode}"></div>
+                    <canvas id="${qrIdMaterial}" class="qr-code" data-text="${materialCode}"></canvas>
                 </div>
-                <p class="line"><strong>Seriale:</strong> <span class="seriale">${seriale}</span></p>
+
+                <!-- Seriale + QR 50x50 sotto -->
+                <div class="line material-row">
+                    <span><strong>Seriale:</strong> <span class="seriale">${seriale}</span></span>
+                    <canvas id="${qrIdSeriale}" class="qr-code" data-text="${seriale}"></canvas>
+                </div>
             </div>
             <hr>
             <h3>Componenti:</h3>
@@ -229,18 +260,20 @@
             <title>${titolo}</title>
             <style>
                 body { margin:0; padding:12px; background:#f8f8f8; font-family:Arial,sans-serif; }
-                .etichetta { width:9.5cm; height:9.5cm; margin:0 auto 20px; padding:6px; box-sizing:border-box; background:white; border:2px solid #333; page-break-after:always; display:flex; flex-direction:column; }
-                .header { display:flex; align-items:center; margin-bottom:4px; }
+                .etichetta { width:9.5cm; height:10cm; margin:0 auto 10px; padding:6px; box-sizing:border-box; background:white; border:2px solid #333; page-break-after:always; display:flex; flex-direction:column; }
+                .header { display:flex; align-items:center; margin-bottom:1px; }
                 .logo { width:55px; height:55px; object-fit:contain; margin-right:8px; }
                 h2 { margin:0; font-size:1.15em; color:#003087; flex-grow:1; text-align:center; }
-                .info { font-size:0.78em; line-height:1.1; margin-bottom:4px; }
+                .info { font-size:0.78em; line-height:1; margin-bottom:2px; }
                 .line { margin:1px 0; }
-                .material-row { display:flex; align-items:center; justify-content:space-between; margin:2px 0; }
-                .qr-code { width:60px; height:60px; flex-shrink:0; }
+                .line.compact { margin:0px 0; }
+                .material-row { display:flex; align-items:center; justify-content:space-between; margin:2px 0;gap:12px; }
+                .material-row:first-of-type { margin-top:-2px; }
+                .qr-code { width:30px; height:30px; flex-shrink:0; margin:2px 0; }
                 .codice { font-size:1.05em; font-weight:bold; color:#d32f2f; }
                 .seriale { font-size:1.15em; font-weight:bold; color:#1976d2; }
-                hr { margin:6px 0; border-top:1px solid #ccc; }
-                h3 { margin:4px 0 2px; font-size:0.82em; }
+                hr { margin:2px 0; border-top:1px solid #ccc; }
+                h3 { margin:1px 0 2px; font-size:0.82em; }
                 table { width:100%; border-collapse:collapse; font-size:0.66em; flex-grow:1; }
                 th, td { border:1px solid #999; padding:1px 2px; text-align:left; }
                 th { background:#f0f0f0; font-weight:bold; }
@@ -250,25 +283,17 @@
         </head>
         <body onload="generaQR(); setTimeout(() => window.print(), 500);">
             ${contenutoHTML}
-            <script src="https://cdn.jsdelivr.net/gh/lrsjng/kjua@master/dist/kjua.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
             <script>
                 function generaQR() {
-                    document.querySelectorAll('.qr-code').forEach(div => {
-                        const text = div.getAttribute('data-text');
+                    document.querySelectorAll('.qr-code').forEach(canvas => {
+                        const text = canvas.getAttribute('data-text');
                         if (text && text !== '—') {
-                            const qr = kjua({
-                                text: text.trim(),
-                                size: 60,
-                                fill: '#000',
-                                back: '#fff',
-                                rounded: 100,
-                                quiet: 2,
-                                mode: 'plain',
-                                mSize: 10,
-                                mPosX: 50,
-                                mPosY: 50
+                            QRCode.toCanvas(canvas, text.trim(), {
+                                errorCorrectionLevel: 'M',
+                                width: 30,
+                                margin: 1
                             });
-                            div.appendChild(qr);
                         }
                     });
                 }
@@ -318,43 +343,43 @@
         apriFinestraStampa(html, 'Tutte le Etichette Collo');
     }
 
-    // ===================== CSV, UI, OSSERVATORE =====================
-
+    // ===================== CSV CON NUMERO RIGA =====================
     const forceText = v => `="${String(v ?? '').replace(/"/g, '""')}"`;
     function toCSV(rows) {
         return 'sep=;\n' + rows.map(r => r.map(forceText).join(';')).join('\n');
     }
 
-function estraiReportBOM() {
-    const out = [['Padre','Material Code Padre','Seriale','Codice','PN','Quantità']];
+    function estraiReportBOM() {
+        const out = [['Riga', 'Padre', 'Material Code Padre', 'Descrizione', 'Rif', 'Posizione', 'Seriale', 'Codice', 'PN', 'Quantità']];
 
-    document.querySelectorAll('li.item-content.item-input.item-input-outline').forEach(li => {
-        const articolo = getArticolo(li);
-        const seriali = getSeriali(li);
-        if (!articolo || seriali.length === 0) return; // salta se non ha codice o seriali
+        document.querySelectorAll('li.item-content.item-input.item-input-outline').forEach(li => {
+            // Estrai numero riga #001 ecc.
+            const rigaSpan = li.querySelector('span[style*="background-color: bisque"] b');
+            const numeroRiga = rigaSpan ? rigaSpan.textContent.trim() : '';
 
-        // Caso 1: È un PADRE nella BOM → struttura completa (padre + figli)
-        if (bomData[articolo]) {
-            const data = bomData[articolo];
-            seriali.forEach(seriale => {
-                // Riga del padre
-                out.push([articolo, data.materialCode || '', seriale, '', '', 1]);
-                // Righe dei figli
-                data.figli.forEach(f => {
-                    out.push([articolo, data.materialCode || '', '', f.figlio, f.pn || '', f.qty]);
+            const articolo = getArticolo(li);
+            const descrizione = getDescrizione(li);
+            const rif = getRif(li);
+            const posizione = getPosizione(li);
+            const seriali = getSeriali(li);
+            if (!articolo || seriali.length === 0) return;
+
+            if (bomData[articolo]) {
+                const data = bomData[articolo];
+                seriali.forEach(seriale => {
+                    out.push([numeroRiga, articolo, data.materialCode || '', descrizione, rif, posizione, seriale, '', '', 1]);
+                    data.figli.forEach(f => {
+                        out.push([numeroRiga, articolo, data.materialCode || '', descrizione, rif, posizione, '', f.figlio, f.pn || '', f.qty]);
+                    });
                 });
-            });
-        }
-        // Caso 2: NON è un padre → lo inseriamo comunque come riga singola
-        else {
-            seriali.forEach(seriale => {
-                out.push([articolo, '', seriale, '', '', 1]);
-            });
-        }
-    });
-
-    return out;
-}
+            } else {
+                seriali.forEach(seriale => {
+                    out.push([numeroRiga, articolo, '', descrizione, rif, posizione, seriale, '', '', 1]);
+                });
+            }
+        });
+        return out;
+    }
 
     function downloadCSVBOM() {
         const rows = estraiReportBOM();
@@ -372,81 +397,49 @@ function estraiReportBOM() {
         });
     }
 
+    // ===================== UI EXPORT =====================
     function addExportUI() {
-    // Cerchiamo il wrapper nativo con i 4 pulsanti di stampa
-    let wrapper = document.getElementById('export-print-wrapper');
+        let wrapper = document.getElementById('export-print-wrapper');
+        if (!wrapper) {
+            const modal = document.querySelector('.sheet-modal-inner .sheet-modal-swipe-step');
+            if (!modal) return;
+            wrapper = document.createElement('div');
+            wrapper.id = 'export-print-wrapper';
+            wrapper.style.cssText = `
+                display: flex; flex-flow: wrap; gap: 10px; padding: 10px; margin-top: 20px;
+                border-top: 1px solid #ddd; justify-content: space-between; width: 100%; box-sizing: border-box;
+            `;
+            modal.appendChild(wrapper);
+        }
+        if (document.getElementById('btn-custom-csv-bom')) return;
 
-    // Se non esiste (per sicurezza), ne creiamo uno identico subito dopo il modal step
-    if (!wrapper) {
-        const modal = document.querySelector('.sheet-modal-inner .sheet-modal-swipe-step');
-        if (!modal) return;
-
-        wrapper = document.createElement('div');
-        wrapper.id = 'export-print-wrapper';
-        wrapper.style.cssText = `
-            display: flex;
-            flex-flow: wrap;
-            gap: 10px;
-            padding: 10px;
-            margin-top: 20px;
-            border-top: 1px solid #ddd;
-            justify-content: space-between;
-            width: 100%;
-            box-sizing: border-box;
+        const btnCSV = document.createElement('button');
+        btnCSV.id = 'btn-custom-csv-bom';
+        btnCSV.innerHTML = '📄 CSV CON INTEGRAZIONE BOM';
+        btnCSV.title = 'Estrai Report CSV BOM';
+        btnCSV.style.cssText = `
+            flex: 1 1 0%; min-width: 120px; text-align: center; padding: 8px 5px; margin: 2px;
+            font-size: 12px; border: none; border-radius: 4px; cursor: pointer; color: white;
+            font-weight: bold; background-color: blue;
         `;
-        modal.appendChild(wrapper);
+        btnCSV.onclick = downloadCSVBOM;
+
+        const btnAll = document.createElement('button');
+        btnAll.id = 'btn-custom-stampa-tutte';
+        btnAll.innerHTML = '📋 Stampa Tutte PL BOM';
+        btnAll.title = 'Stampa Tutte le PackingList 10x10';
+        btnAll.style.cssText = `
+            flex: 1 1 0%; min-width: 120px; text-align: center; padding: 8px 5px; margin: 2px;
+            font-size: 12px; border: none; border-radius: 4px; cursor: pointer; color: white;
+            font-weight: bold; background-color: orange;
+        `;
+        btnAll.onclick = stampaTutteEtichette;
+
+        wrapper.appendChild(btnCSV);
+        wrapper.appendChild(btnAll);
     }
 
-    // Evitiamo di aggiungere più volte
-    if (document.getElementById('btn-custom-csv-bom')) return;
-
-    // Pulsante CSV BOM - stile IDENTICO agli altri
-    const btnCSV = document.createElement('button');
-    btnCSV.id = 'btn-custom-csv-bom';
-    btnCSV.innerHTML = '📄 CSV CON INTEGRAZIONE BOM';
-    btnCSV.title = 'Estrai Report CSV BOM';
-    btnCSV.style.cssText = `
-        flex: 1 1 0%;
-        min-width: 120px;
-        text-align: center;
-        padding: 8px 5px;
-        margin: 2px;
-        font-size: 12px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        color: white;
-        font-weight: bold;
-        background-color: blue;
-    `;
-    btnCSV.onclick = downloadCSVBOM;
-
-    // Pulsante Stampa Tutte - stile IDENTICO
-    const btnAll = document.createElement('button');
-    btnAll.id = 'btn-custom-stampa-tutte';
-    btnAll.innerHTML = '📋 Stampa Tutte PL BOM';
-    btnAll.title = 'Stampa Tutte le PackingList 10x10';
-    btnAll.style.cssText = `
-        flex: 1 1 0%;
-        min-width: 120px;
-        text-align: center;
-        padding: 8px 5px;
-        margin: 2px;
-        font-size: 12px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        color: white;
-        font-weight: bold;
-        background-color: orange;
-    `;
-    btnAll.onclick = stampaTutteEtichette;
-
-    // Li aggiungiamo in fondo al wrapper (dopo gli altri 4)
-    wrapper.appendChild(btnCSV);
-    wrapper.appendChild(btnAll);
-}
-
+    // ===================== OSSERVATORI =====================
     setInterval(() => {
         const el = document.querySelector('#ArticoloScansionato-text');
         if (!el || el.dataset.bomChecked) return;
