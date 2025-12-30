@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GRN - Controllo BOM + CSV + Etichette Collo Singole (Definitivo Perfetto)
 // @namespace    http://tampermonkey.net/
-// @version      4.4
+// @version      4.5
 // @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati
 // @author       Daniele
 // @match        http://172.18.20.20/GRN/*
@@ -258,28 +258,135 @@
         <head>
             <meta charset="utf-8">
             <title>${titolo}</title>
-            <style>
-                body { margin:0; padding:12px; background:#f8f8f8; font-family:Arial,sans-serif; }
-                .etichetta { width:9.5cm; height:10cm; margin:0 auto 10px; padding:6px; box-sizing:border-box; background:white; border:2px solid #333; page-break-after:always; display:flex; flex-direction:column; }
-                .header { display:flex; align-items:center; margin-bottom:1px; }
-                .logo { width:55px; height:55px; object-fit:contain; margin-right:8px; }
-                h2 { margin:0; font-size:1.15em; color:#003087; flex-grow:1; text-align:center; }
-                .info { font-size:0.78em; line-height:1; margin-bottom:2px; }
-                .line { margin:1px 0; }
-                .line.compact { margin:0px 0; }
-                .material-row { display:flex; align-items:center; justify-content:space-between; margin:2px 0;gap:12px; }
-                .material-row:first-of-type { margin-top:-2px; }
-                .qr-code { width:30px; height:30px; flex-shrink:0; margin:2px 0; }
-                .codice { font-size:1.05em; font-weight:bold; color:#d32f2f; }
-                .seriale { font-size:1.15em; font-weight:bold; color:#1976d2; }
-                hr { margin:2px 0; border-top:1px solid #ccc; }
-                h3 { margin:1px 0 2px; font-size:0.82em; }
-                table { width:100%; border-collapse:collapse; font-size:0.66em; flex-grow:1; }
-                th, td { border:1px solid #999; padding:1px 2px; text-align:left; }
-                th { background:#f0f0f0; font-weight:bold; }
-                .footer { text-align:center; font-size:0.58em; color:#555; margin-top:4px; }
-                @media print { body { padding:0; background:white; } .etichetta { border:none; margin:0; page-break-after:always; } }
-            </style>
+           <style>
+    body {
+        margin:0;
+        padding:12px;
+        background:#f8f8f8;
+        font-family:Arial,sans-serif;
+    }
+
+    .etichetta {
+        width:9.5cm;
+        min-height:10cm;          /* ✅ NON height */
+        margin:0 auto 10px;
+        padding:6px;
+        box-sizing:border-box;
+        background:white;
+        border:2px solid #333;
+
+        display:flex;
+        flex-direction:column;
+
+        page-break-inside: avoid;
+        break-after: page;        /* ✅ moderno */
+    }
+
+    .header {
+        display:flex;
+        align-items:center;
+        margin-bottom:1px;
+    }
+
+    .logo {
+        width:55px;
+        height:55px;
+        object-fit:contain;
+        margin-right:8px;
+    }
+
+    h2 {
+        margin:0;
+        font-size:1.15em;
+        color:#003087;
+        flex-grow:1;
+        text-align:center;
+    }
+
+    .info {
+        font-size:0.78em;
+        line-height:1;
+        margin-bottom:2px;
+    }
+
+    .line { margin:1px 0; }
+    .line.compact { margin:0; }
+
+    .material-row {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin:2px 0;
+        gap:12px;
+    }
+
+    .qr-code {
+        width:30px;
+        height:30px;
+        flex-shrink:0;
+        margin:2px 0;
+    }
+
+    .codice {
+        font-size:1.05em;
+        font-weight:bold;
+        color:#d32f2f;
+    }
+
+    .seriale {
+        font-size:1.15em;
+        font-weight:bold;
+        color:#1976d2;
+    }
+
+    hr {
+        margin:2px 0;
+        border-top:1px solid #ccc;
+    }
+
+    h3 {
+        margin:1px 0 2px;
+        font-size:0.82em;
+    }
+
+    table {
+        width:100%;
+        border-collapse:collapse;
+        font-size:0.66em;
+        flex-grow:1;
+    }
+
+    th, td {
+        border:1px solid #999;
+        padding:1px 2px;
+        text-align:left;
+    }
+
+    th {
+        background:#f0f0f0;
+        font-weight:bold;
+    }
+
+    .footer {
+        text-align:center;
+        font-size:0.58em;
+        color:#555;
+        margin-top:4px;
+    }
+
+    @media print {
+        body {
+            padding:0;
+            background:white;
+        }
+
+        .etichetta {
+            border:none;
+            margin:0;
+            break-after: page;
+        }
+    }
+</style>
         </head>
         <body onload="generaQR(); setTimeout(() => window.print(), 500);">
             ${contenutoHTML}
