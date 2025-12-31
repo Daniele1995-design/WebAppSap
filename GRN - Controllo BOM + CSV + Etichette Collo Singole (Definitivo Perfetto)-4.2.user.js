@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GRN - Controllo BOM + CSV + Etichette Collo Singole (Definitivo Perfetto)
 // @namespace    http://tampermonkey.net/
-// @version      4.5
+// @version      4.6
 // @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati
 // @author       Daniele
 // @match        http://172.18.20.20/GRN/*
@@ -107,12 +107,15 @@
     }
 
     // ===================== POPUP BOM =====================
-    function mostraPopup(articolo, qta) {
-        const data = bomData[articolo];
-        if (!data) return;
-        const figli = data.figli;
-        let html = `
-            <div style="font-family: system-ui, sans-serif; font-size: 1.5em; min-width: 380px; max-width: 520px;">
+   function mostraPopup(articolo, qta) {
+    const data = bomData[articolo];
+    if (!data) return;
+    const figli = data.figli;
+
+    let html = `
+        <div style="font-family: system-ui, sans-serif; font-size: 1.5em; width: 90vw; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column;">
+            <!-- Header fisso -->
+            <div style="padding: 20px 24px 12px; flex-shrink: 0;">
                 <h2 style="margin:0 0 16px; color:#1565c0; font-size:1.4em;">📦 BOM</h2>
                 <p style="margin:8px 0;"><strong>Padre:</strong> <span style="color:#d32f2f; font-weight:bold;">${articolo}</span></p>
                 <p style="margin:8px 0;"><strong>Material Code:</strong> <span style="color:#1976d2;">${data.materialCode || '—'}</span></p>
@@ -120,45 +123,60 @@
                     <span style="font-size:2em; font-weight:bold; color:#c62828;">${qta}</span>
                 </p>
                 <hr style="margin:18px 0; border:0.5px solid #ccc;">
-        `;
-        if (figli.length === 0) {
-            html += `<p style="color:#ff9800; font-weight:bold; text-align:center; margin:20px 0; font-size:1.1em;">Nessun componente figlio</p>`;
-        } else {
-            html += `<h3 style="margin:14px 0 8px; font-size:1.1em;">Componenti:</h3>
-                     <table style="width:100%; border-collapse:collapse; font-size:0.70em;">
-                     <thead><tr style="background:#f5f8ff;">
-                         <th style="padding:8px 6px; text-align:left;">Codice Figlio</th>
-                         <th style="padding:8px 6px; text-align:left;">P/N</th>
-                         <th style="padding:8px 6px; text-align:center;">Qty x1</th>
-                         <th style="padding:8px 6px; text-align:center; font-weight:bold; color:#1565c0;">Tot.</th>
-                     </tr></thead><tbody>`;
-            figli.forEach(f => {
-                const totale = qta * f.qty;
-                html += `<tr style="border-bottom:1px solid #eee;">
-                    <td style="padding:8px 6px;"><strong>${f.figlio}</strong></td>
-                    <td style="padding:8px 6px;">${f.pn || '—'}</td>
-                    <td style="padding:8px 6px; text-align:center;">${f.qty}</td>
-                    <td style="padding:8px 6px; text-align:center; font-weight:bold; color:#1565c0;">${totale}</td>
-                </tr>`;
-            });
-            html += `</tbody></table>`;
-        }
-        html += `<div style="margin-top:20px; text-align:right;">
-                    <button id="chiudi" style="padding:10px 24px; background:#1565c0; color:white; border:none; border-radius:6px; cursor:pointer; font-size:1em;">
-                        Chiudi
-                    </button>
-                 </div>
-            </div>`;
-        const overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;';
-        const modal = document.createElement('div');
-        modal.style.cssText = 'background:white;padding:24px;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.3);';
-        modal.innerHTML = html;
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
-        overlay.querySelector('#chiudi').onclick = () => overlay.remove();
-        overlay.onclick = e => e.target === overlay && overlay.remove();
+            </div>
+
+            <!-- Area scrollabile -->
+            <div style="flex: 1; overflow-y: auto; padding: 0 24px; min-height: 0;">
+    `;
+
+    if (figli.length === 0) {
+        html += `<p style="color:#ff9800; font-weight:bold; text-align:center; margin:20px 0; font-size:1.1em;">Nessun componente figlio</p>`;
+    } else {
+                          //Modifica Percentuali per adattamento tabella anteprima
+        html += `<h3 style="margin:14px 0 8px; font-size:1.1em;">Componenti:</h3>
+                 <table style="width:100%; border-collapse:collapse; font-size:0.70em; table-layout:fixed;">
+                 <thead><tr style="background:#f5f8ff;">
+                     <th style="padding:8px 6px; text-align:left; width:35%;">Codice Figlio</th>
+                     <th style="padding:8px 6px; text-align:left; width:30%;">P/N</th>
+                     <th style="padding:8px 6px; text-align:center; width:8%;">Qty x1</th>
+                     <th style="padding:8px 6px; text-align:center; font-weight:bold; color:#1565c0; width:7%;">Tot.</th>
+                 </tr></thead><tbody>`;
+        figli.forEach(f => {
+            const totale = qta * f.qty;
+            html += `<tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px 6px; word-wrap:break-word; overflow-wrap:break-word;"><strong>${f.figlio}</strong></td>
+                <td style="padding:8px 6px; word-wrap:break-word; overflow-wrap:break-word; max-width:0;">${f.pn || '—'}</td>
+                <td style="padding:8px 6px; text-align:center;">${f.qty}</td>
+                <td style="padding:8px 6px; text-align:center; font-weight:bold; color:#1565c0;">${totale}</td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
     }
+
+    html += `
+            </div>
+
+            <!-- Footer fisso -->
+            <div style="padding: 12px 24px 20px; flex-shrink: 0; text-align:right;">
+                <button id="chiudi" style="padding:10px 24px; background:#1565c0; color:white; border:none; border-radius:6px; cursor:pointer; font-size:1em;">
+                    Chiudi
+                </button>
+            </div>
+        </div>`;
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'background:white;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.3);max-height:100%;overflow:hidden;';
+    modal.innerHTML = html;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#chiudi').onclick = () => overlay.remove();
+    overlay.onclick = e => e.target === overlay && overlay.remove();
+}
 
     // ===================== PULSANTI RIGA – SOLO SU PADRI =====================
     function aggiungiPulsantiBOM() {
