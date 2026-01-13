@@ -51,11 +51,17 @@
     .etichetta.conf-piccola .campo { padding:3px 5px; margin-bottom:3px; }
     .etichetta.conf-piccola .label { font-size:6px; }
     .etichetta.conf-piccola .valore { font-size:12px; margin-top:1px; }
+   /* Riduce padding superiore per 10x5 in stampa */
+@media print {
+    .etichetta:not(.grande):not(.extra-grande) {
+        padding-top: 2mm !important;
+    }
+}
     
     /* Stili specifici per Conf. 10×15 */
-    .etichetta.conf-extra .header-logo { height:60px; padding-bottom:8px; margin-bottom:8px; }
-    .etichetta.conf-extra .logo-principale { height:50px; }
-    .etichetta.conf-extra .icon-commessa { height:46px; }
+.etichetta.conf-extra .header-logo { height:50px; padding-bottom:6px; margin-bottom:6px; }
+.etichetta.conf-extra .logo-principale { height:42px; }
+.etichetta.conf-extra .icon-commessa { height:38px; }
     .etichetta.conf-extra .campo-data { font-size:32px; padding:6px 10px; margin-bottom:8px; }
     .etichetta.conf-extra .odp { font-size:36px; }
     .etichetta.conf-extra .progressivo { font-size:30px; margin:12px 0; }
@@ -508,7 +514,7 @@ style.innerHTML = `@media print {
         height: ${height} !important; 
         width: 100mm !important;
         margin: 0 !important;
-        padding: 5mm !important;
+        padding: ${tipo === "conf-10x5" || tipo === "odp-10x5" ? "2mm 5mm 5mm 5mm" : "5mm"} !important;
         box-sizing: border-box !important;
         page-break-after: ${numEtichette > 1 ? 'always' : 'avoid'};
         page-break-inside: avoid;
