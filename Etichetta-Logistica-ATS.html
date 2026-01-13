@@ -30,15 +30,15 @@
     .etichetta.grande { min-height:100mm; }
     .etichetta.extra-grande { min-height:150mm; }
     
-    .header-logo { border-bottom:1px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; height:50px; padding:0 10px; }
+    .header-logo { border-bottom:0.5px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; height:50px; padding:0 10px; }
     .logo-principale { height:42px; width:auto; object-fit:contain; }
     .icon-commessa { height:38px; width:auto; object-fit:contain; }
-    .campo-data { border:1px solid black; padding:4px 8px; text-align:center; font-size:25px; font-weight:bold; margin-bottom:4px; }
+    .campo-data { border:0.5px solid black; padding:4px 8px; text-align:center; font-size:25px; font-weight:bold; margin-bottom:4px; }
     .riga-odp { display:flex; align-items:center; justify-content:space-between; padding:0 8px; }
     .odp { font-size:28px; font-weight:bold; text-align:center; flex:1; }
     .dati-10x5 { font-size:13.5px; font-weight:bold; line-height:1.4; margin-left:8px; margin-top:2px; }
     .progressivo { text-align:center; font-size:24px; font-weight:bold; margin:8px 0; }
-    .campo { border:1px solid black; padding:6px 8px; margin-bottom:8px; flex-shrink:0; }
+    .campo { border:0.5px solid black; padding:6px 8px; margin-bottom:8px; flex-shrink:0; }
     .label { font-size:11px; font-weight:bold; }
     .valore { font-size:25px; font-weight:bold; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     
@@ -499,7 +499,7 @@ if (tipo === "conf-10x15") height = "150mm";
 let style = document.getElementById("print-dynamic");
 if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
 
-const pageBreakLast = (tipo !== "conf-10x10" && numEtichette === 1) ? 'avoid' : 'auto';
+const pageBreakLast = 'avoid';
 
 style.innerHTML = `@media print { 
     @page { size: 100mm ${height}; margin: 0; padding: 0; } 
