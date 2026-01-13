@@ -508,29 +508,51 @@ function aggiornaPageSize() {
         document.head.appendChild(style); 
     }
 
-    style.innerHTML = `@media print { 
-        @page { size: 100mm ${height}; margin: 0; padding: 0; } 
-        * { margin: 0 !important; padding: 0 !important; }
-        body { margin: 0 !important; padding: 0 !important; visibility: hidden; }
-        #anteprima { visibility: visible; position: absolute; left: 0; top: 0; margin: 0 !important; padding: 0 !important; display: block !important; }
-        #anteprima * { visibility: visible; }
-        .etichetta { 
-            height: ${height} !important; 
-            width: 100mm !important;
-            margin: 0 !important;
-            padding: ${tipo === "conf-10x5" || tipo === "odp-10x5" ? "3mm" : "5mm"} !important;
-            box-sizing: border-box !important;
-            page-break-after: ${numEtichette > 1 ? 'always' : 'avoid'};
-            page-break-inside: avoid;
-            border: none !important;
-            box-shadow: none !important;
-            display: block !important;
-            background: white !important;
-        }
-        .etichetta:last-child { 
-            page-break-after: avoid !important;
-        }
-    }`;
+    style.innerHTML = `
+@media print {
+    @page {
+        size: 100mm ${height};
+        margin: 0;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+
+    #anteprima, #anteprima * {
+        visibility: visible;
+    }
+
+    #anteprima {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100mm;
+    }
+
+    .etichetta {
+        width: 100mm;
+        height: ${height};
+        margin: 0;
+        padding: ${tipo === "conf-10x5" || tipo === "odp-10x5" ? "2mm" : "5mm"};
+        box-sizing: border-box;
+        page-break-after: always;
+        page-break-inside: avoid;
+        border: none;
+        box-shadow: none;
+        background: white;
+    }
+
+    .etichetta:last-of-type {
+        page-break-after: auto;
+    }
+}
+`;
 }
 function resetCampi() {
 document.getElementById("data").valueAsDate = new Date();
