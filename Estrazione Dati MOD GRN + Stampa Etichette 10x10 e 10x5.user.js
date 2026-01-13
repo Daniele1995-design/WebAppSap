@@ -103,7 +103,13 @@ function getDataFromLi(li) {
         cdc = text.slice('CDC :'.length).trim();
     }
     // ===== FINE NUOVO =====
-
+// ===== ESTRAZIONE UBICAZIONE DESTINAZIONE RIGA PRINCIPALE =====
+let ubicazioneDestinazionePrincipale = '';
+const inputUbicRigaPrincipale = li.querySelector('input[data-ubic-principale]');
+if (inputUbicRigaPrincipale) {
+    ubicazioneDestinazionePrincipale = inputUbicRigaPrincipale.value.trim();
+}
+// ===== FINE =====
 
     const serialRows = li.querySelectorAll("div[id^='dropdown-'] ul > li");
     const serials = [];
@@ -144,8 +150,18 @@ function getDataFromLi(li) {
         }
 
         if (seriale) {
-            serials.push({ quantita, seriale, stato });
-        }
+    // Prendi ubicazione dalla sottoriga, se vuota usa quella principale
+    let ubicazioneDest = '';
+    const inputUbicSerial = sr.querySelector('input[data-ubic-serial]');
+    if (inputUbicSerial) {
+        ubicazioneDest = inputUbicSerial.value.trim();
+    }
+    if (!ubicazioneDest) {
+        ubicazioneDest = ubicazioneDestinazionePrincipale;
+    }
+
+    serials.push({ quantita, seriale, stato, ubicazioneDestinazione: ubicazioneDest });
+}
     });
 
     return {
@@ -153,6 +169,255 @@ function getDataFromLi(li) {
         riferimentoPulito: riferimento ? riferimento.trim().substring(0, 4) : '',
         posizione, serials , cdc
     };
+}
+    function aggiungiCampiUbicazione() {
+    const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
+
+    righe.forEach((li, idx) => {
+        // Salta la riga di ricerca
+        if (li.querySelector('#shootInput')) return;
+
+        // ===== INPUT RIGA PRINCIPALE =====
+        if (!li.querySelector('input[data-ubic-principale]')) {
+            // Cerca il contenitore principale con display flex (quello in alto)
+            const headerContainer = li.querySelector("div[style*='display: flex']");
+            if (headerContainer) {
+                const inputPrincipale = document.createElement('input');
+                inputPrincipale.setAttribute('data-ubic-principale', 'true');
+                inputPrincipale.type = 'text';
+                inputPrincipale.placeholder = 'Ubicazione Destinazione Righe';
+
+                // Recupera valore salvato in localStorage
+                const savedValue = localStorage.getItem('ubic-principale-' + idx);
+                if (savedValue) {
+                    inputPrincipale.value = savedValue;
+                }
+
+                // Variabili per gestire la propagazione
+                let valoreIniziale = inputPrincipale.value;
+                let propagatoConInvio = false;
+
+                inputPrincipale.style.cssText = `
+                    width: 200px;
+                    height: 26px;
+                    padding: 4px 8px;
+                    margin-left: auto;
+                    margin-right: 40px;
+                    border: 2px solid #007bff;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    background: #f8f9fa;
+                    transition: all 0.3s;
+                    outline: none;
+                    box-sizing: border-box;
+                `;
+
+                // Funzione per aggiornare lo stile in base al contenuto
+                function aggiornaStile() {
+                    if (inputPrincipale.value.trim()) {
+                        inputPrincipale.style.background = '#007bff';
+                        inputPrincipale.style.color = '#ffffff';
+                        inputPrincipale.style.fontWeight = '700';
+                    } else {
+                        inputPrincipale.style.background = '#f8f9fa';
+                        inputPrincipale.style.color = '#000000';
+                        inputPrincipale.style.fontWeight = '500';
+                    }
+                }
+
+                // Effetto focus - salva il valore iniziale
+                inputPrincipale.addEventListener('focus', function() {
+                    valoreIniziale = this.value.trim();
+                    propagatoConInvio = false;
+                    this.style.borderColor = '#0056b3';
+                    this.style.boxShadow = '0 0 5px rgba(0,123,255,0.5)';
+                });
+
+                // Funzione per propagare con conferma
+                function propagaConConferma() {
+                    const valore = inputPrincipale.value.trim();
+                    if (!valore) return false;
+
+                    if (confirm(`Vuoi propagare l'ubicazione "${valore}" a tutte le sottorighe?`)) {
+                        const dropdown = li.querySelector("div[id^='dropdown-']");
+                        if (dropdown) {
+                            dropdown.style.display = 'block';
+                            const serialRows = dropdown.querySelectorAll("ul > li");
+                            serialRows.forEach((sr, srIdx) => {
+                                const inputSerial = sr.querySelector('input[data-ubic-serial]');
+                                if (inputSerial) {
+                                    inputSerial.value = valore;
+                                    // Aggiorna lo stile del campo seriale
+                                    inputSerial.style.background = '#007bff';
+                                    inputSerial.style.color = '#ffffff';
+                                    inputSerial.style.fontWeight = '700';
+                                    // Salva in localStorage
+                                    localStorage.setItem('ubic-serial-' + idx + '-' + srIdx, valore);
+                                }
+                            });
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+
+                // Effetto blur - controlla se il valore è cambiato
+                inputPrincipale.addEventListener('blur', function() {
+                    this.style.borderColor = '#007bff';
+                    this.style.boxShadow = 'none';
+
+                    const valoreAttuale = this.value.trim();
+
+                    // Propaga SOLO se il valore è cambiato E non è già stato propagato con INVIO
+                    if (valoreAttuale && valoreAttuale !== valoreIniziale && !propagatoConInvio) {
+                        propagaConConferma();
+                    }
+
+                    aggiornaStile();
+                    // Salva in localStorage
+                    localStorage.setItem('ubic-principale-' + idx, valoreAttuale);
+
+                    // Reset del flag
+                    propagatoConInvio = false;
+                });
+
+                // Quando premi INVIO, propaga con conferma
+                inputPrincipale.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const valoreAttuale = this.value.trim();
+
+                        // Propaga solo se il valore è cambiato
+                        if (valoreAttuale && valoreAttuale !== valoreIniziale) {
+                            propagatoConInvio = true; // Imposta il flag
+                            propagaConConferma();
+                        }
+
+                        aggiornaStile();
+                        this.blur(); // Esce dal campo dopo INVIO
+                    }
+                });
+
+                // Aggiorna stile al caricamento se ha già un valore
+                aggiornaStile();
+
+                // Inserisci dentro il contenitore flex in alto a destra
+                headerContainer.style.display = 'flex';
+                headerContainer.style.alignItems = 'center';
+                headerContainer.appendChild(inputPrincipale);
+            }
+        }
+
+        // ===== INPUT SOTTORIGHE SERIALI =====
+        const dropdown = li.querySelector("div[id^='dropdown-']");
+        if (dropdown) {
+            dropdown.style.display = 'block';
+            const serialRows = dropdown.querySelectorAll("ul > li");
+
+            serialRows.forEach((sr, serialIdx) => {
+                // Cerca il div con "Stato Logico:"
+                const statoLogicoDiv = Array.from(sr.querySelectorAll('div')).find(d => {
+                    const strongTag = d.querySelector('strong');
+                    return strongTag && /Stato Logico:/i.test(strongTag.textContent);
+                });
+
+                if (statoLogicoDiv && !sr.querySelector('input[data-ubic-serial]')) {
+                    const inputSerial = document.createElement('input');
+                    inputSerial.setAttribute('data-ubic-serial', 'true');
+                    inputSerial.type = 'text';
+                    inputSerial.placeholder = 'Ubicazione Destinazione Riga';
+
+                    // Recupera valore salvato in localStorage
+                    const savedValue = localStorage.getItem('ubic-serial-' + idx + '-' + serialIdx);
+                    if (savedValue) {
+                        inputSerial.value = savedValue;
+                    }
+                    const labelUbic = document.createElement('span');
+                     labelUbic.textContent = 'Ubicazione:';
+                     labelUbic.style.fontWeight = '700';
+                     labelUbic.style.marginRight = '6px';
+                     labelUbic.style.color = '#1f2937';
+
+                    inputSerial.style.cssText = `
+                        width: 180px;
+                        height: 26px;
+                        padding: 4px 8px;
+                        margin-left: 15px;
+                        border: 1.5px solid #17a2b8;
+                        border-radius: 5px;
+                        font-size: 13px;
+                        font-weight: 500;
+                        background: #f8f9fa;
+                        transition: all 0.2s;
+                        outline: none;
+                        display: inline-block;
+                        vertical-align: middle;
+                        box-sizing: border-box;
+                    `;
+
+                    // Funzione per aggiornare lo stile in base al contenuto
+                    function aggiornaStileSerial() {
+                        if (inputSerial.value.trim()) {
+                            inputSerial.style.background = '#007bff';
+                            inputSerial.style.color = '#ffffff';
+                            inputSerial.style.fontWeight = '700';
+                        } else {
+                            inputSerial.style.background = '#f8f9fa';
+                            inputSerial.style.color = '#000000';
+                            inputSerial.style.fontWeight = '500';
+                        }
+                    }
+
+                    // Effetto focus
+                    inputSerial.addEventListener('focus', function() {
+                        this.style.borderColor = '#117a8b';
+                        this.style.boxShadow = '0 0 4px rgba(23,162,184,0.5)';
+                    });
+
+                    inputSerial.addEventListener('blur', function() {
+                        this.style.borderColor = '#17a2b8';
+                        this.style.boxShadow = 'none';
+                        aggiornaStileSerial();
+                        // Salva in localStorage
+                        localStorage.setItem('ubic-serial-' + idx + '-' + serialIdx, this.value.trim());
+                    });
+
+                    // Quando premi INVIO, esci dal campo
+                    inputSerial.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            aggiornaStileSerial();
+                            this.blur(); // Esce dal campo dopo INVIO
+                        }
+                    });
+
+                    // Prendi il valore principale SOLO se non ha un valore salvato
+                    if (!savedValue) {
+                        const inputPrincipale = li.querySelector('input[data-ubic-principale]');
+                        if (inputPrincipale && inputPrincipale.value.trim()) {
+                            inputSerial.value = inputPrincipale.value.trim();
+                        }
+                    }
+
+                    // Aggiorna stile al caricamento se ha già un valore
+                    aggiornaStileSerial();
+
+                    // Inserisci DENTRO il div Stato Logico, alla fine
+                    const wrapper = document.createElement('div');
+wrapper.style.display = 'flex';
+wrapper.style.alignItems = 'center';
+
+wrapper.appendChild(labelUbic);
+wrapper.appendChild(inputSerial);
+
+statoLogicoDiv.appendChild(wrapper);
+
+                }
+
+            });
+        }
+    });
 }
 
     function estraiRighe() {
@@ -179,7 +444,8 @@ function getDataFromLi(li) {
                     seriale.quantita ? `="${seriale.quantita}"`  : '',
                     `="${seriale.seriale}"` ,
                     seriale.stato || '',
-                    '' // Colonna Ubicazione vuota
+                    seriale.ubicazioneDestinazione || '', // Ubicazione Destinazione
+                    '' // Colonna Ubicazione prelievo
                 ]);
                 totalSeriali++;
             });
@@ -268,7 +534,8 @@ async function downloadCSV() {
                     pn: data.pn || '',
                     posizione: data.posizione || '',
                     seriale: s.seriale || '',
-                    cdc: data.cdc || ''
+                    cdc: data.cdc || '',
+                    ubicazioneDestinazione: s.ubicazioneDestinazione || ''
                 });
             });
         });
@@ -631,38 +898,59 @@ html, body {
             serialBlock.appendChild(sRight);
             left.appendChild(serialBlock);
 
-            // ===== RIGA CDC - SEMPRE VISIBILE (stile uguale alle altre) =====
-            const cdcBlock = document.createElement('div');
-            cdcBlock.style.display = 'flex';
-            cdcBlock.style.justifyContent = 'flex-start';
-            cdcBlock.style.alignItems = 'center';
-            cdcBlock.style.marginTop = '6px';
-            cdcBlock.style.marginBottom = '4px';
+ // ===== RIGA CDC + UBICAZIONE - IN BASSO A DESTRA =====
+const bottomRightBlock = document.createElement('div');
+bottomRightBlock.style.display = 'flex';
+bottomRightBlock.style.justifyContent = 'flex-start';
+bottomRightBlock.style.alignItems = 'center';
+bottomRightBlock.style.marginTop = '6px';
+bottomRightBlock.style.marginBottom = '4px';
+bottomRightBlock.style.gap = '150px'; // Spazio tra CDC e Ubicazione
 
-            const cdcLeft = document.createElement('div');
-            cdcLeft.className = 'small';  // usa la stessa classe delle altre righe (Po, PN, Serial)
+// === CDC ===
+const cdcDiv = document.createElement('div');
+cdcDiv.className = 'small';
+cdcDiv.style.textAlign = 'left';
 
-            // Crea l'etichetta "CDC" in grassetto piccolo
-            const cdcLabel = document.createElement('b');
-            cdcLabel.textContent = 'CDC';
+const cdcLabel = document.createElement('b');
+cdcLabel.textContent = 'CDC';
 
-            // Crea il valore grande
-            const cdcValueDiv = document.createElement('div');
-            cdcValueDiv.style.fontWeight = '700';
-            cdcValueDiv.style.fontSize = '16px';
+const cdcValueDiv = document.createElement('div');
+cdcValueDiv.style.fontWeight = '700';
+cdcValueDiv.style.fontSize = '16px';
 
-            // Metti il valore reale o "-" se vuoto
-            const valoreCDC = (lab.cdc && lab.cdc.trim() !== '') ? lab.cdc.trim() : '-';
-            cdcValueDiv.textContent = valoreCDC;
+const valoreCDC = (lab.cdc && lab.cdc.trim() !== '') ? lab.cdc.trim() : '-';
+cdcValueDiv.textContent = valoreCDC;
 
-            // Assembla tutto
-            cdcLeft.appendChild(cdcLabel);
-            cdcLeft.appendChild(cdcValueDiv);
-            cdcBlock.appendChild(cdcLeft);
+cdcDiv.appendChild(cdcLabel);
+cdcDiv.appendChild(cdcValueDiv);
 
-            left.appendChild(cdcBlock);
-            // ===== FINE RIGA CDC =====
+// === UBICAZIONE DESTINAZIONE ===
+const ubicDiv = document.createElement('div');
+ubicDiv.className = 'small';
+ubicDiv.style.textAlign = 'left';
 
+const ubicLabel = document.createElement('b');
+ubicLabel.textContent = 'Ubicazione';
+
+const ubicValueDiv = document.createElement('div');
+ubicValueDiv.style.fontWeight = '700';
+ubicValueDiv.style.fontSize = '16px';
+
+const valoreUbic = (lab.ubicazioneDestinazione && lab.ubicazioneDestinazione.trim() !== '')
+    ? lab.ubicazioneDestinazione.trim()
+    : '-';
+ubicValueDiv.textContent = valoreUbic;
+
+ubicDiv.appendChild(ubicLabel);
+ubicDiv.appendChild(ubicValueDiv);
+
+// Assembla tutto
+bottomRightBlock.appendChild(cdcDiv);
+bottomRightBlock.appendChild(ubicDiv);
+
+left.appendChild(bottomRightBlock);
+// ===== FINE RIGA CDC + UBICAZIONE =====
             containerInner.appendChild(left);
             label.appendChild(containerInner);
             container.appendChild(label);
@@ -1242,7 +1530,8 @@ function printAllLabelsFromPNInfo() {
             po: dataRow.riferimentoOrdine || dataRow.riferimento || '',
             pn: dataRow.pn || '',
             seriale: s.seriale || '',
-            cdc: dataRow.cdc || ''
+            cdc: dataRow.cdc || '',
+            ubicazioneDestinazione: s.ubicazioneDestinazione || ''
         }));
 
         printLabels(labels);
@@ -1476,14 +1765,20 @@ document.addEventListener('click', () => {
 
     // Avvio dello script
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            addExportAndPrintUI();
-            setInterval(addPrintButtonsToRows, 1500);
-        });
-    } else {
+    document.addEventListener('DOMContentLoaded', function() {
         addExportAndPrintUI();
-        setInterval(addPrintButtonsToRows, 1500);
-    }
+        setInterval(() => {
+            addPrintButtonsToRows();
+            aggiungiCampiUbicazione();
+        }, 1500);
+    });
+} else {
+    addExportAndPrintUI();
+    setInterval(() => {
+        addPrintButtonsToRows();
+        aggiungiCampiUbicazione();
+    }, 1500);
+}
 // Salviamo la funzione originale
 const originalSalvaDocumento = grn.salvaDocumento;
 
