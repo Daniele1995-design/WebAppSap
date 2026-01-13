@@ -39,8 +39,8 @@
     flex-direction:column;
     padding:5mm;
 }
-    .etichetta.grande { min-height:100mm; }
-    .etichetta.extra-grande { min-height:150mm; }
+    .etichetta.grande { }
+     .etichetta.extra-grande { }
     
     .header-logo { border-bottom:0.5px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; height:50px; padding:0 10px; }
     .logo-principale { height:42px; width:auto; object-fit:contain; }
@@ -65,24 +65,7 @@
     .etichetta.conf-piccola .label { font-size:6px; }
     .etichetta.conf-piccola .valore { font-size:12px; margin-top:1px; }
    /* Riduce padding superiore per 10x5 in stampa */
-    /* ===== FIX STAMPA 10x5 ===== */
-@media print {
-
-    /* SOLO 10x5 */
-    .etichetta:not(.grande):not(.extra-grande) {
-        padding-top: 2mm !important;
-        padding-bottom: 2mm !important;
-    }
-
-    .etichetta.conf-piccola .header-logo {
-        margin-bottom: 2mm !important;
-        padding-bottom: 2mm !important;
-    }
-
-    .etichetta.conf-piccola .campo-data {
-        margin-bottom: 1mm !important;
-    }
-}
+   
     /* Stili specifici per Conf. 10×15 */
 .etichetta.conf-extra .header-logo { height:50px; padding-bottom:6px; margin-bottom:6px; }
 .etichetta.conf-extra .logo-principale { height:42px; }
@@ -153,20 +136,36 @@
     }
 
     .etichetta {
-        width: 100mm !important;
-        margin: 0 !important;
-        box-sizing: border-box !important;
-        border: none !important;
-        box-shadow: none !important;
-        background: white !important;
+    width: 100mm !important;
+    margin: 0 !important;
+    padding: 2mm !important; 
+    box-sizing: border-box !important;
 
-        page-break-after: always;
-        page-break-inside: avoid;
-    }
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+
+    page-break-after: always;
+    page-break-inside: avoid;
+}
 
     .etichetta:last-of-type {
         page-break-after: auto !important;
     }
+      /* FIX SOLO 10x5 */
+.etichetta:not(.grande):not(.extra-grande) {
+    padding-top: 2mm !important;
+    padding-bottom: 2mm !important;
+}
+
+.etichetta.conf-piccola .header-logo {
+    margin-bottom: 2mm !important;
+    padding-bottom: 2mm !important;
+}
+
+.etichetta.conf-piccola .campo-data {
+    margin-bottom: 1mm !important;
+}
 }
 
 </style>
