@@ -27,6 +27,7 @@
     #anteprima { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; padding:30px 15px; background:#e5e5e5; border-radius:12px; margin-top:20px; }
     .etichetta { width:100mm; min-height:50mm; border:1px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; display:flex; flex-direction:column; }
     .etichetta.grande { min-height:100mm; }
+    .etichetta.extra-grande { min-height:150mm; }
     
     .header-logo { border-bottom:1px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; height:50px; padding:0 10px; }
     .logo-principale { height:42px; width:auto; object-fit:contain; }
@@ -41,15 +42,27 @@
     .valore { font-size:25px; font-weight:bold; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     
     /* Stili specifici per Conf. 10×5 */
-    .etichetta.conf-piccola .header-logo { height:40px; padding-bottom:4px; margin-bottom:4px; }
-    .etichetta.conf-piccola .logo-principale { height:36px; }
-    .etichetta.conf-piccola .icon-commessa { height:32px; }
-    .etichetta.conf-piccola .campo-data { font-size:13px; padding:3px 6px; margin-bottom:3px; }
-    .etichetta.conf-piccola .odp { font-size:20px; }
-    .etichetta.conf-piccola .progressivo { font-size:14px; margin:4px 0; }
-    .etichetta.conf-piccola .campo { padding:4px 6px; margin-bottom:4px; }
-    .etichetta.conf-piccola .label { font-size:7px; }
-    .etichetta.conf-piccola .valore { font-size:15px; margin-top:2px; }
+    .etichetta.conf-piccola .header-logo { height:32px; padding-bottom:3px; margin-bottom:3px; }
+    .etichetta.conf-piccola .logo-principale { height:28px; }
+    .etichetta.conf-piccola .icon-commessa { height:26px; }
+    .etichetta.conf-piccola .campo-data { font-size:11px; padding:2px 4px; margin-bottom:2px; }
+    .etichetta.conf-piccola .odp { font-size:16px; }
+    .etichetta.conf-piccola .progressivo { font-size:12px; margin:3px 0; }
+    .etichetta.conf-piccola .campo { padding:3px 5px; margin-bottom:3px; }
+    .etichetta.conf-piccola .label { font-size:6px; }
+    .etichetta.conf-piccola .valore { font-size:12px; margin-top:1px; }
+    
+    /* Stili specifici per Conf. 10×15 */
+    .etichetta.conf-extra .header-logo { height:60px; padding-bottom:8px; margin-bottom:8px; }
+    .etichetta.conf-extra .logo-principale { height:50px; }
+    .etichetta.conf-extra .icon-commessa { height:46px; }
+    .etichetta.conf-extra .campo-data { font-size:32px; padding:6px 10px; margin-bottom:8px; }
+    .etichetta.conf-extra .odp { font-size:36px; }
+    .etichetta.conf-extra .progressivo { font-size:30px; margin:12px 0; }
+    .etichetta.conf-extra .campo { padding:10px 12px; margin-bottom:12px; }
+    .etichetta.conf-extra .label { font-size:14px; }
+    .etichetta.conf-extra .valore { font-size:32px; margin-top:6px; }
+    
     .riga-id { display:flex; justify-content:space-between; width:100%; }
     .colli-inline { font-weight:bold; margin-left:10px; white-space:nowrap; }
     .label-odp { font-size:14px; font-weight:bold; }
@@ -104,6 +117,7 @@
                 <label><input type="radio" name="size" value="conf-10x10" checked onchange="cambiaFormato()"> Conf. 10×10</label>
                 <label><input type="radio" name="size" value="odp-10x5" onchange="cambiaFormato()"> ODP 10×5</label>
                 <label><input type="radio" name="size" value="conf-10x5" onchange="cambiaFormato()"> Conf. 10×5</label>
+                <label><input type="radio" name="size" value="conf-10x15" onchange="cambiaFormato()"> Conf. 10×15</label>
             </div>
             <div class="field"><label>Data:</label><input type="date" id="data" onchange="genera()"></div>
             <div class="field" id="commessaField">
@@ -133,6 +147,10 @@
             <div class="field">
                 <label id="labelIndirizzo">Indirizzo:</label>
                 <input type="text" id="indirizzo" placeholder="si compila automaticamente" oninput="genera()">
+            </div>
+            <div class="field" id="odpConfField" style="display:none;">
+                <label>ODP:</label>
+                <input type="text" id="odpConf" placeholder="es. 123456789" oninput="genera()">
             </div>
             <div class="field">
                 <label>Colli per pallet (es. 5,3,7):</label>
@@ -340,12 +358,14 @@ async function elimina(commessa, row) {
 function cambiaFormato() {
     const tipo = document.querySelector('input[name="size"]:checked').value;
     const isODP = tipo === "odp-10x5";
-    const isConf = tipo === "conf-10x10" || tipo === "conf-10x5";
+    const isConf = tipo === "conf-10x10" || tipo === "conf-10x5" || tipo === "conf-10x15";
+    const isConf10x5o15 = tipo === "conf-10x5" || tipo === "conf-10x15";
     
     document.getElementById("commessaField").style.display = isConf ? "block" : "none";
     document.getElementById("odpField").style.display = isODP ? "block" : "none";
     document.getElementById("destinoField").style.display = isConf ? "block" : "none";
     document.getElementById("locationField").style.display = isODP ? "block" : "none";
+    document.getElementById("odpConfField").style.display = isConf10x5o15 ? "block" : "none";
     
     document.getElementById("labelIndirizzo").textContent = isODP ? "ID Scheda:" : "Indirizzo:";
     document.getElementById("indirizzo").readOnly = isConf;
@@ -377,6 +397,7 @@ function genera() {
         ? (document.getElementById("location").value || "—") 
         : (document.getElementById("destino").value || "—");
     const idscheda = document.getElementById("indirizzo").value.trim() || "—";
+    const odpConf = document.getElementById("odpConf").value.trim() || "—";
     const inputColli = document.getElementById("palletColli").value.trim();
     const numeri = inputColli ? inputColli.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0) : [1];
     const icona = iconeCommessa[document.getElementById("commessa").value] || "";
@@ -423,6 +444,26 @@ function genera() {
                 <div class="progressivo">${prog}</div>
                 <div class="campo"><div class="label">DESTINO</div><div class="valore">${location}</div></div>
                 <div class="campo"><div class="label">INDIRIZZO</div><div class="valore">${idscheda}</div></div>
+                <div class="campo"><div class="label">ODP</div><div class="valore">${odpConf}</div></div>
+            `;
+            anteprima.appendChild(et);
+        });
+    } else if (tipo === "conf-10x15") {
+        numeri.forEach((colli, i) => {
+            const prog = `Pallet: ${i+1}/${numeri.length} → ${colli} colli`;
+            const et = document.createElement("div");
+            et.className = "etichetta extra-grande conf-extra";
+            et.innerHTML = `
+                <div class="header-logo">
+                    <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale">
+                    ${icona ? `<img src="${icona}" class="icon-commessa">` : ''}
+                </div>
+                <div class="campo-data">${data}</div>
+                <div class="odp">${testoPrincipale}</div>
+                <div class="progressivo">${prog}</div>
+                <div class="campo"><div class="label">DESTINO</div><div class="valore">${location}</div></div>
+                <div class="campo"><div class="label">INDIRIZZO</div><div class="valore">${idscheda}</div></div>
+                <div class="campo"><div class="label">ODP</div><div class="valore">${odpConf}</div></div>
             `;
             anteprima.appendChild(et);
         });
@@ -447,54 +488,53 @@ function genera() {
     }
     aggiornaPageSize();
 }
-
 function aggiornaPageSize() {
-    const tipo = document.querySelector('input[name="size"]:checked').value;
-    const height = (tipo === "conf-10x10") ? "100mm" : "50mm";
-    const numEtichette = document.querySelectorAll('.etichetta').length;
-    
-    let style = document.getElementById("print-dynamic");
-    if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
-    
-    const pageBreakLast = (tipo !== "conf-10x10" && numEtichette === 1) ? 'avoid' : 'auto';
-    
-    style.innerHTML = `@media print { 
-        @page { size: 100mm ${height}; margin: 0; padding: 0; } 
-        * { margin: 0 !important; padding: 0 !important; }
-        body { margin: 0 !important; padding: 0 !important; visibility: hidden; }
-        #anteprima { visibility: visible; position: absolute; left: 0; top: 0; margin: 0 !important; padding: 0 !important; }
-        #anteprima * { visibility: visible; }
-        .etichetta { 
-            height: ${height} !important; 
-            width: 100mm !important;
-            margin: 0 !important;
-            padding: 5mm !important;
-            box-sizing: border-box !important;
-            page-break-after: always;
-            page-break-inside: avoid;
-            border: none !important;
-            box-shadow: none !important;
-            display: block !important;
-            background: white !important;
-        }
-        .etichetta:last-child { 
-            page-break-after: ${pageBreakLast} !important;
-        }
-    }`;
-}
+const tipo = document.querySelector('input[name="size"]:checked').value;
+let height = "100mm";
+if (tipo === "conf-10x5" || tipo === "odp-10x5") height = "50mm";
+if (tipo === "conf-10x15") height = "150mm";
+   const numEtichette = document.querySelectorAll('.etichetta').length;
 
+let style = document.getElementById("print-dynamic");
+if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
+
+const pageBreakLast = (tipo !== "conf-10x10" && numEtichette === 1) ? 'avoid' : 'auto';
+
+style.innerHTML = `@media print { 
+    @page { size: 100mm ${height}; margin: 0; padding: 0; } 
+    * { margin: 0 !important; padding: 0 !important; }
+    body { margin: 0 !important; padding: 0 !important; visibility: hidden; }
+    #anteprima { visibility: visible; position: absolute; left: 0; top: 0; margin: 0 !important; padding: 0 !important; }
+    #anteprima * { visibility: visible; }
+    .etichetta { 
+        height: ${height} !important; 
+        width: 100mm !important;
+        margin: 0 !important;
+        padding: 5mm !important;
+        box-sizing: border-box !important;
+        page-break-after: always;
+        page-break-inside: avoid;
+        border: none !important;
+        box-shadow: none !important;
+        display: block !important;
+        background: white !important;
+    }
+    .etichetta:last-child { 
+        page-break-after: ${pageBreakLast} !important;
+    }
+}`;}
 function resetCampi() {
-    document.getElementById("data").valueAsDate = new Date();
-    document.getElementById("commessa").value = "";
-    document.getElementById("odp").value = "";
-    document.getElementById("location").value = "";
-    document.getElementById("destino").value = "";
-    document.getElementById("indirizzo").value = "";
-    document.getElementById("palletColli").value = "";
-    document.getElementById("anteprima").innerHTML = "";
-    genera();
+document.getElementById("data").valueAsDate = new Date();
+document.getElementById("commessa").value = "";
+document.getElementById("odp").value = "";
+document.getElementById("location").value = "";
+document.getElementById("destino").value = "";
+document.getElementById("indirizzo").value = "";
+document.getElementById("odpConf").value = "";
+document.getElementById("palletColli").value = "";
+document.getElementById("anteprima").innerHTML = "";
+genera();
 }
-
 cambiaFormato();
 </script>
 </body>
