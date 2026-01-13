@@ -26,6 +26,7 @@
     .btn:disabled { background:#aaa; cursor:not-allowed; }
     #anteprima { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; padding:30px 15px; background:#e5e5e5; border-radius:12px; margin-top:20px; }
     .etichetta { width:100mm; min-height:50mm; border:1px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; display:flex; flex-direction:column; }
+    .etichetta.conf-piccola { padding-top: 1mm !important; }
     .etichetta.conf-piccola { padding:2mm 5mm 5mm 5mm; }
     .etichetta.grande { min-height:100mm; }
     .etichetta.extra-grande { min-height:150mm; }
@@ -495,11 +496,10 @@ let height = "100mm";
 if (tipo === "conf-10x5" || tipo === "odp-10x5") height = "50mm";
 if (tipo === "conf-10x15") height = "150mm";
    const numEtichette = document.querySelectorAll('.etichetta').length;
+   const pageBreakLast = 'avoid';
 
 let style = document.getElementById("print-dynamic");
 if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
-
-const pageBreak = (numEtichette === 1) ? 'avoid' : 'always';
 
 style.innerHTML = `@media print { 
     @page { size: 100mm ${height}; margin: 0; padding: 0; } 
@@ -513,8 +513,8 @@ style.innerHTML = `@media print {
         margin: 0 !important;
         padding: 5mm !important;
         box-sizing: border-box !important;
-        page-break-after: ${pageBreak};
-        page-break-inside: avoid;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
         border: none !important;
         box-shadow: none !important;
         display: block !important;
