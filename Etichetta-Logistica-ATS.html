@@ -509,28 +509,26 @@ function aggiornaPageSize() {
     }
 
     style.innerHTML = `@media print { 
-        @page { size: 100mm ${height}; margin: 0; } 
-        body { margin: 0; padding: 0; }
-        .container, .card { display: none; }
-        #anteprima { 
-            display: block;
-            margin: 0;
-            padding: 0;
-        }
+        @page { size: 100mm ${height}; margin: 0; padding: 0; } 
+        * { margin: 0 !important; padding: 0 !important; }
+        body { margin: 0 !important; padding: 0 !important; visibility: hidden; }
+        #anteprima { visibility: visible; position: absolute; left: 0; top: 0; margin: 0 !important; padding: 0 !important; display: block !important; }
+        #anteprima * { visibility: visible; }
         .etichetta { 
-            width: 100mm;
-            height: ${height};
-            margin: 0;
-            padding: 3mm;
-            page-break-after: auto;
+            height: ${height} !important; 
+            width: 100mm !important;
+            margin: 0 !important;
+            padding: 5mm !important;
+            box-sizing: border-box !important;
+            page-break-after: ${numEtichette > 1 ? 'always' : 'avoid'};
             page-break-inside: avoid;
-            border: none;
-            box-shadow: none;
-            display: block;
-            background: white;
+            border: none !important;
+            box-shadow: none !important;
+            display: block !important;
+            background: white !important;
         }
         .etichetta:last-child { 
-            page-break-after: avoid;
+            page-break-after: avoid !important;
         }
     }`;
 }
