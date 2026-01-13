@@ -499,7 +499,7 @@ if (tipo === "conf-10x15") height = "150mm";
 let style = document.getElementById("print-dynamic");
 if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
 
-const pageBreakLast = 'avoid';
+const pageBreak = (numEtichette === 1) ? 'avoid' : 'always';
 
 style.innerHTML = `@media print { 
     @page { size: 100mm ${height}; margin: 0; padding: 0; } 
@@ -513,17 +513,14 @@ style.innerHTML = `@media print {
         margin: 0 !important;
         padding: 5mm !important;
         box-sizing: border-box !important;
-        page-break-after: always;
+        page-break-after: ${pageBreak};
         page-break-inside: avoid;
         border: none !important;
         box-shadow: none !important;
         display: block !important;
         background: white !important;
     }
-    .etichetta:last-child { 
-        page-break-after: ${pageBreakLast} !important;
-    }
-}`;}
+}`;
 function resetCampi() {
 document.getElementById("data").valueAsDate = new Date();
 document.getElementById("commessa").value = "";
