@@ -518,7 +518,7 @@ function aggiornaPageSize() {
             height: ${height} !important; 
             width: 100mm !important;
             margin: 0 !important;
-            padding: 5mm !important;
+            padding: ${tipo === "conf-10x5" || tipo === "odp-10x5" ? "3mm" : "5mm"} !important;
             box-sizing: border-box !important;
             page-break-after: ${numEtichette > 1 ? 'always' : 'avoid'};
             page-break-inside: avoid;
