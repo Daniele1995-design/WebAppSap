@@ -126,7 +126,7 @@ if (inputUbicRigaPrincipale) {
                 quantita = parentText.replace(/.*Quantità:\s*/i, '').trim();
             }
             if (label.includes('seriale') || label.includes('lotto')) {
-                // ←←← QUI LA REGEX MAGICA CHE PRENDE TUTTO ←←←
+                //QUI LA REGEX CHE PRENDE TUTTO 
                 const m = parentText.match(/(?:Seriale|Lotto)[\s:]+([A-Za-z0-9\/_-]+)/i);
                 if (m) seriale = m[1].trim();
             }
@@ -463,21 +463,21 @@ async function downloadCSV() {
         return;
     }
 
-    // 🔹 Prende i valori dal select e dal campo input
+    //  Prende i valori dal select e dal campo input
     const commessa = document.querySelector('#commessaTestata')?.value || 'SenzaCommessa';
     const riferimento = document.querySelector('#Riferimento')?.value?.trim() || 'SenzaRif';
     const fileName = `${commessa} DDT Nr. ${riferimento}.csv`;
 
     const csv = toCSV(rows);
 
-    // 🔹 Salva il file in locale
+    //  Salva il file in locale
     GM_download({
         url: "data:text/csv;charset=utf-8," + encodeURIComponent(csv),
         name: fileName,
         saveAs: true
     });
 
-    // 🔹 Codifica CSV per invio a Google Apps Script
+    //  Codifica CSV per invio a Google Apps Script
     const base64Content = btoa(unescape(encodeURIComponent(csv)));
     const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzEEBRPLitb7K5ZNlr3mm5hyVj0KHryrPb9_3-Y7Zuy7wT9sNY_jTA/exec";
 
@@ -486,7 +486,7 @@ async function downloadCSV() {
         content: base64Content
     };
 
-    // 🔹 Invia a Google Drive con GM_xmlhttpRequest (ignora CORS)
+    //  Invia a Google Drive con GM_xmlhttpRequest (ignora CORS)
     GM_xmlhttpRequest({
         method: "POST",
         url: scriptUrl,
