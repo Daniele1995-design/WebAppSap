@@ -506,15 +506,24 @@ if (!style) { style = document.createElement("style"); style.id = "print-dynamic
 
 style.innerHTML = `@media print { 
     @page { size: 100mm ${height}; margin: 0; padding: 0; } 
-    * { margin: 0 !important; padding: 0 !important; }
-    body { margin: 0 !important; padding: 0 !important; visibility: hidden; }
-    #anteprima { visibility: visible; position: absolute; left: 0; top: 0; margin: 0 !important; padding: 0 !important; display: block !important; }
+    * { margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
+    body { margin: 0 !important; padding: 0 !important; visibility: hidden; overflow: hidden !important; }
+    #anteprima { 
+        visibility: visible; 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        display: block !important;
+        overflow: hidden !important;
+    }
     #anteprima * { visibility: visible; }
     .etichetta { 
         height: ${height} !important; 
         width: 100mm !important;
         margin: 0 !important;
-        padding: ${tipo === "conf-10x5" || tipo === "odp-10x5" ? "2mm 5mm 5mm 5mm" : "5mm"} !important;
+        padding: ${tipo === "conf-10x5" || tipo === "odp-10x5" ? "1mm 4mm 1mm 4mm" : "5mm"} !important;
         box-sizing: border-box !important;
         page-break-after: ${numEtichette > 1 ? 'always' : 'avoid'};
         page-break-inside: avoid;
@@ -522,10 +531,19 @@ style.innerHTML = `@media print {
         box-shadow: none !important;
         display: block !important;
         background: white !important;
+        overflow: hidden !important;
+        max-height: ${height} !important;
     }
     .etichetta:last-child { 
         page-break-after: avoid !important;
     }
+    ${tipo === "conf-10x5" || tipo === "odp-10x5" ? `
+        .header-logo { margin-bottom: 1px !important; padding-bottom: 1px !important; }
+        .campo-data { margin-bottom: 1px !important; }
+        .campo { margin-bottom: 2px !important; padding: 2px 4px !important; }
+        .progressivo { margin: 2px 0 !important; }
+        .dati-10x5 { margin-top: 1px !important; line-height: 1.2 !important; }
+    ` : ''}
 }`;
 }
 function resetCampi() {
