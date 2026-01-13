@@ -15,7 +15,7 @@
     .radio-group label { display:flex; align-items:center; gap:8px; cursor:pointer; }
     .field { margin-bottom:18px; position:relative; }
     .field label { display:block; font-size:15px; font-weight:600; margin-bottom:6px; color:#333; }
-    .field input, .field select { width:100%; padding:14px 16px; border:1px solid #d2d2d7; border-radius:12px; font-size:17px; background:#fff; }
+    .field input, .field select { width:100%; padding:14px 16px; border: 0.5px solid #d2d2d7; border-radius:12px; font-size:17px; background:#fff; }
     .field input:focus, .field select:focus { outline:none; border-color:#007aff; box-shadow:0 0 0 3px rgba(0,122,255,0.2); }
     .btn { width:100%; padding:16px; background:#007aff; color:white; border:none; border-radius:12px; font-size:18px; font-weight:600; cursor:pointer; margin-top:10px; display:flex; align-items:center; justify-content:center; gap:10px; }
     .btn:hover { background:#0066cc; }
@@ -25,21 +25,19 @@
     .btn.admin:hover { background:#32b94a; }
     .btn:disabled { background:#aaa; cursor:not-allowed; }
     #anteprima { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; padding:30px 15px; background:#e5e5e5; border-radius:12px; margin-top:20px; }
-    .etichetta { width:100mm; min-height:50mm; border:1px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; display:flex; flex-direction:column; }
-    .etichetta.conf-piccola { padding-top: 1mm !important; }
-    .etichetta.conf-piccola { padding:2mm 5mm 5mm 5mm; }
+    .etichetta { width:100mm; min-height:50mm; border: 0.5px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; display:flex; flex-direction:column; }
     .etichetta.grande { min-height:100mm; }
     .etichetta.extra-grande { min-height:150mm; }
     
     .header-logo { border-bottom:0.5px solid black; padding-bottom:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; height:50px; padding:0 10px; }
     .logo-principale { height:42px; width:auto; object-fit:contain; }
     .icon-commessa { height:38px; width:auto; object-fit:contain; }
-    .campo-data { border:0.5px solid black; padding:4px 8px; text-align:center; font-size:25px; font-weight:bold; margin-bottom:4px; }
+    .campo-data { border: 0.5px solid black; padding:4px 8px; text-align:center; font-size:25px; font-weight:bold; margin-bottom:4px; }
     .riga-odp { display:flex; align-items:center; justify-content:space-between; padding:0 8px; }
     .odp { font-size:28px; font-weight:bold; text-align:center; flex:1; }
     .dati-10x5 { font-size:13.5px; font-weight:bold; line-height:1.4; margin-left:8px; margin-top:2px; }
     .progressivo { text-align:center; font-size:24px; font-weight:bold; margin:8px 0; }
-    .campo { border:0.5px solid black; padding:6px 8px; margin-bottom:8px; flex-shrink:0; }
+    .campo { border: 0.5px solid black; padding:6px 8px; margin-bottom:8px; flex-shrink:0; }
     .label { font-size:11px; font-weight:bold; }
     .valore { font-size:25px; font-weight:bold; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     
@@ -55,9 +53,9 @@
     .etichetta.conf-piccola .valore { font-size:12px; margin-top:1px; }
     
     /* Stili specifici per Conf. 10×15 */
-.etichetta.conf-extra .header-logo { height:50px; padding-bottom:6px; margin-bottom:6px; }
-.etichetta.conf-extra .logo-principale { height:42px; }
-.etichetta.conf-extra .icon-commessa { height:38px; }
+    .etichetta.conf-extra .header-logo { height:60px; padding-bottom:8px; margin-bottom:8px; }
+    .etichetta.conf-extra .logo-principale { height:50px; }
+    .etichetta.conf-extra .icon-commessa { height:46px; }
     .etichetta.conf-extra .campo-data { font-size:32px; padding:6px 10px; margin-bottom:8px; }
     .etichetta.conf-extra .odp { font-size:36px; }
     .etichetta.conf-extra .progressivo { font-size:30px; margin:12px 0; }
@@ -71,7 +69,7 @@
     #listaDestinazioni {
         position:absolute;
         background:white;
-        border:0.5px solid #aaa;
+        border: 0.5px solid #aaa;
         width:100%;
         max-height:200px;
         overflow-y:auto;
@@ -170,7 +168,7 @@
     <div class="modal-content" style="width:320px;">
         <div class="modal-header">Accesso Admin</div>
         <div class="modal-body" style="text-align:center; padding:40px 20px;">
-            <input type="password" id="inputPassword" placeholder="Password" style="width:100%; padding:14px; font-size:18px; text-align:center; border-radius:12px; border:1px solid #aaa; margin-bottom:20px;">
+            <input type="password" id="inputPassword" placeholder="Password" style="width:100%; padding:14px; font-size:18px; text-align:center; border-radius:12px; border: 0.5px solid #aaa; margin-bottom:20px;">
             <button class="btn" onclick="verificaPassword()">Accedi</button>
             <button class="btn reset" style="margin-top:10px;" onclick="document.getElementById('modalPassword').classList.remove('show')">Annulla</button>
         </div>
@@ -496,10 +494,11 @@ let height = "100mm";
 if (tipo === "conf-10x5" || tipo === "odp-10x5") height = "50mm";
 if (tipo === "conf-10x15") height = "150mm";
    const numEtichette = document.querySelectorAll('.etichetta').length;
-   const pageBreakLast = 'avoid';
 
 let style = document.getElementById("print-dynamic");
 if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
+
+const pageBreakLast = (tipo !== "conf-10x10" && numEtichette === 1) ? 'avoid' : 'auto';
 
 style.innerHTML = `@media print { 
     @page { size: 100mm ${height}; margin: 0; padding: 0; } 
@@ -513,17 +512,17 @@ style.innerHTML = `@media print {
         margin: 0 !important;
         padding: 5mm !important;
         box-sizing: border-box !important;
-        page-break-after: avoid !important;
-        page-break-inside: avoid !important;
+        page-break-after: always;
+        page-break-inside: avoid;
         border: none !important;
         box-shadow: none !important;
         display: block !important;
         background: white !important;
     }
-    .header-logo { border-bottom: 0.5px solid black !important; }
-    .campo-data { border: 0.5px solid black !important; }
-    .campo { border: 0.5px solid black !important; }
-}`;
+    .etichetta:last-child { 
+        page-break-after: ${pageBreakLast} !important;
+    }
+}`;}
 function resetCampi() {
 document.getElementById("data").valueAsDate = new Date();
 document.getElementById("commessa").value = "";
