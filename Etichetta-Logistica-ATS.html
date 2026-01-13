@@ -119,16 +119,14 @@
         overflow: hidden;
     }
 
-    body * {
-        display: none !important;
-    }
+    body > * {
+    display: none !important;
+}
 
-    #anteprima {
-        display: block !important;
-        margin: 0;
-        padding: 0;
-        background: white !important;
-    }
+#anteprima,
+#anteprima * {
+    display: block !important;
+}
 
     #anteprima .etichetta {
         display: block !important;
