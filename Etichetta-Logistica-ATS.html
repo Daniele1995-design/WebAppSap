@@ -495,56 +495,44 @@ function genera() {
     aggiornaPageSize();
 }
 function aggiornaPageSize() {
-const tipo = document.querySelector('input[name="size"]:checked').value;
-let height = "100mm";
-if (tipo === "conf-10x5" || tipo === "odp-10x5") height = "50mm";
-if (tipo === "conf-10x15") height = "150mm";
-   const numEtichette = document.querySelectorAll('.etichetta').length;
+    const tipo = document.querySelector('input[name="size"]:checked').value;
+    let height = "100mm";
+    if (tipo === "conf-10x5" || tipo === "odp-10x5") height = "50mm";
+    if (tipo === "conf-10x15") height = "150mm";
+    const numEtichette = document.querySelectorAll('.etichetta').length;
 
-let style = document.getElementById("print-dynamic");
-if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
+    let style = document.getElementById("print-dynamic");
+    if (!style) { 
+        style = document.createElement("style"); 
+        style.id = "print-dynamic"; 
+        document.head.appendChild(style); 
+    }
 
-style.innerHTML = `@media print { 
-    @page { size: 100mm ${height}; margin: 0; padding: 0; } 
-    * { margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
-    body { margin: 0 !important; padding: 0 !important; visibility: hidden; overflow: hidden !important; }
-    #anteprima { 
-        visibility: visible; 
-        position: absolute; 
-        left: 0; 
-        top: 0; 
-        margin: 0 !important; 
-        padding: 0 !important; 
-        display: block !important;
-        overflow: hidden !important;
-    }
-    #anteprima * { visibility: visible; }
-    .etichetta { 
-        height: ${height} !important; 
-        width: 100mm !important;
-        margin: 0 !important;
-        padding: ${tipo === "conf-10x5" || tipo === "odp-10x5" ? "1mm 4mm 1mm 4mm" : "5mm"} !important;
-        box-sizing: border-box !important;
-        page-break-after: ${numEtichette > 1 ? 'always' : 'avoid'};
-        page-break-inside: avoid;
-        border: none !important;
-        box-shadow: none !important;
-        display: block !important;
-        background: white !important;
-        overflow: hidden !important;
-        max-height: ${height} !important;
-    }
-    .etichetta:last-child { 
-        page-break-after: avoid !important;
-    }
-    ${tipo === "conf-10x5" || tipo === "odp-10x5" ? `
-        .header-logo { margin-bottom: 1px !important; padding-bottom: 1px !important; }
-        .campo-data { margin-bottom: 1px !important; }
-        .campo { margin-bottom: 2px !important; padding: 2px 4px !important; }
-        .progressivo { margin: 2px 0 !important; }
-        .dati-10x5 { margin-top: 1px !important; line-height: 1.2 !important; }
-    ` : ''}
-}`;
+    style.innerHTML = `@media print { 
+        @page { size: 100mm ${height}; margin: 0; } 
+        body { margin: 0; padding: 0; }
+        .container, .card { display: none; }
+        #anteprima { 
+            display: block;
+            margin: 0;
+            padding: 0;
+        }
+        .etichetta { 
+            width: 100mm;
+            height: ${height};
+            margin: 0;
+            padding: 3mm;
+            page-break-after: auto;
+            page-break-inside: avoid;
+            border: none;
+            box-shadow: none;
+            display: block;
+            background: white;
+        }
+        .etichetta:last-child { 
+            page-break-after: avoid;
+        }
+    }`;
 }
 function resetCampi() {
 document.getElementById("data").valueAsDate = new Date();
