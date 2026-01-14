@@ -24,12 +24,7 @@
     .btn.admin { background:#34c759; margin-top:20px; }
     .btn.admin:hover { background:#32b94a; }
     .btn:disabled { background:#aaa; cursor:not-allowed; }
-    #anteprima {
-    display:block;
-    padding:0;
-    margin:20px auto 0;
-    background:#e5e5e5;
-}
+    #anteprima { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; padding:30px 15px; background:#e5e5e5; border-radius:12px; margin-top:20px; }
     .etichetta { width:100mm; min-height:50mm; border: 0.5px solid #ddd; box-shadow:0 6px 20px rgba(0,0,0,0.25); background:white; padding:5mm; display:flex; flex-direction:column; }
     .etichetta.grande { min-height:100mm; }
     .etichetta.extra-grande { min-height:150mm; }
@@ -56,17 +51,11 @@
     .etichetta.conf-piccola .campo { padding:3px 5px; margin-bottom:3px; }
     .etichetta.conf-piccola .label { font-size:6px; }
     .etichetta.conf-piccola .valore { font-size:12px; margin-top:1px; }
-   /* Riduce padding superiore per 10x5 in stampa */
-@media print {
-    .etichetta:not(.grande):not(.extra-grande) {
-        padding-top: 2mm !important;
-    }
-}
     
     /* Stili specifici per Conf. 10×15 */
-.etichetta.conf-extra .header-logo { height:50px; padding-bottom:6px; margin-bottom:6px; }
-.etichetta.conf-extra .logo-principale { height:42px; }
-.etichetta.conf-extra .icon-commessa { height:38px; }
+    .etichetta.conf-extra .header-logo { height:60px; padding-bottom:8px; margin-bottom:8px; }
+    .etichetta.conf-extra .logo-principale { height:50px; }
+    .etichetta.conf-extra .icon-commessa { height:46px; }
     .etichetta.conf-extra .campo-data { font-size:32px; padding:6px 10px; margin-bottom:8px; }
     .etichetta.conf-extra .odp { font-size:36px; }
     .etichetta.conf-extra .progressivo { font-size:30px; margin:12px 0; }
@@ -115,50 +104,6 @@
     }
     .etichetta.grande .campo-data {
         margin-top: 2mm !important;
-    }
-}
-   @media print {
-
-    html, body {
-        width: 100mm;
-        height: auto;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-    }
-
-    body * {
-        display: none !important;
-    }
-
-    #anteprima {
-        display: block !important;
-        width: 100mm;
-        margin: 0;
-        padding: 0;
-        background: white !important;
-    }
-
-    #anteprima .etichetta {
-        display: block !important;
-    }
-
-    .etichetta {
-        width: 100mm !important;
-        margin: 0 !important;
-        padding: 2mm !important;
-        box-sizing: border-box !important;
-
-        page-break-after: always;
-        page-break-inside: avoid;
-
-        border: none !important;
-        box-shadow: none !important;
-        background: white !important;
-    }
-
-    .etichetta:last-of-type {
-        page-break-after: auto !important;
     }
 }
 </style>
@@ -544,37 +489,39 @@ function genera() {
     aggiornaPageSize();
 }
 function aggiornaPageSize() {
-    const tipo = document.querySelector('input[name="size"]:checked').value;
+const tipo = document.querySelector('input[name="size"]:checked').value;
+let height = "100mm";
+if (tipo === "conf-10x5" || tipo === "odp-10x5") height = "50mm";
+if (tipo === "conf-10x15") height = "150mm";
+   const numEtichette = document.querySelectorAll('.etichetta').length;
 
-    let height = "100mm";
-    if (tipo === "conf-10x5" || tipo === "odp-10x5") height = "50mm";
-    if (tipo === "conf-10x15") height = "150mm";
+let style = document.getElementById("print-dynamic");
+if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
 
-    let style = document.getElementById("print-dynamic");
-    if (!style) {
-        style = document.createElement("style");
-        style.id = "print-dynamic";
-        document.head.appendChild(style);
+style.innerHTML = `@media print { 
+    @page { size: 100mm ${height}; margin: 0; padding: 0; } 
+    * { margin: 0 !important; padding: 0 !important; }
+    body { margin: 0 !important; padding: 0 !important; visibility: hidden; }
+    #anteprima { visibility: visible; position: absolute; left: 0; top: 0; margin: 0 !important; padding: 0 !important; display: block !important; }
+    #anteprima * { visibility: visible; }
+    .etichetta { 
+        height: ${height} !important; 
+        width: 100mm !important;
+        margin: 0 !important;
+        padding: 5mm !important;
+        box-sizing: border-box !important;
+        page-break-after: ${numEtichette > 1 ? 'always' : 'avoid'};
+        page-break-inside: avoid;
+        border: none !important;
+        box-shadow: none !important;
+        display: block !important;
+        background: white !important;
     }
-
-    style.innerHTML = `
-    @media print {
-        @page {
-            size: 100mm ${height};
-            margin: 0;
-        }
-
-        html, body {
-            width: 100mm;
-        }
-
-        .etichetta {
-            height: ${height} !important;
-        }
+    .etichetta:last-child { 
+        page-break-after: avoid !important;
     }
-    `;
+}`;
 }
-
 function resetCampi() {
 document.getElementById("data").valueAsDate = new Date();
 document.getElementById("commessa").value = "";
