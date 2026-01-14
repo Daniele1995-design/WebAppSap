@@ -41,6 +41,7 @@
             console.log(`✅ BOM caricata: ${Object.keys(bomData).length} padri trovati`);
             aggiungiPulsantiBOM();
             addExportUI();
+            aggiungiPulsanteGeneraLotto();
         },
         error: function() {
             alert("Errore caricamento BOM - verifica connessione/proxy");
@@ -93,7 +94,95 @@
             }
         }
         return '';
+    }// ===================== GENERA LOTTO =====================
+function generaLotto() {
+    // Trova la select della commessa
+    const commessaSelect = document.querySelector('#commessaTestata');
+    if (!commessaSelect) {
+        alert('Commessa non trovata!');
+        return;
     }
+
+    // Prendi il valore selezionato (es: "FLM", "NTD", ecc.)
+    const commessaValue = commessaSelect.value;
+
+    // Prendi le ultime 3 cifre
+    const ultime3 = commessaValue.slice(-3);
+
+    // Genera timestamp nel formato aaaammgg-hhmmss
+    const now = new Date();
+    const anno = now.getFullYear();
+    const mese = String(now.getMonth() + 1).padStart(2, '0');
+    const giorno = String(now.getDate()).padStart(2, '0');
+    const ore = String(now.getHours()).padStart(2, '0');
+    const minuti = String(now.getMinutes()).padStart(2, '0');
+    const secondi = String(now.getSeconds()).padStart(2, '0');
+
+    const timestamp = `${anno}${mese}${giorno}-${ore}${minuti}${secondi}`;
+
+    // Crea il codice lotto finale
+    const codiceLotto = `${ultime3}-${timestamp}`;
+
+    // Trova l'input di ricerca e inserisci il valore
+    const shootInput = document.querySelector('#shootInput');
+    if (shootInput) {
+        shootInput.value = codiceLotto;
+        shootInput.focus();
+
+        // Trigger evento input per aggiornare l'interfaccia
+        const event = new Event('input', { bubbles: true });
+        shootInput.dispatchEvent(event);
+    } else {
+        alert('Campo di ricerca non trovato!');
+    }
+}
+
+function aggiungiPulsanteGeneraLotto() {
+    // Evita duplicati
+    if (document.getElementById('btn-genera-lotto')) return;
+
+    // Trova un container in alto (cerca navbar o page-content)
+    let targetContainer = document.querySelector('.navbar-inner') ||
+                          document.querySelector('.page-content') ||
+                          document.querySelector('header');
+
+    if (!targetContainer) return;
+
+    // Crea il pulsante
+    const btnLotto = document.createElement('button');
+    btnLotto.id = 'btn-genera-lotto';
+    btnLotto.innerHTML = 'Genera Lotto';
+    btnLotto.title = 'Genera codice lotto automatico';
+    btnLotto.style.cssText = `
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 10000;
+    width: 100px;
+    height: 15px;
+    padding: 0;
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+`;
+    btnLotto.onclick = generaLotto;
+
+    // Aggiungi hover effect
+    btnLotto.onmouseenter = () => btnLotto.style.background = '#45a049';
+    btnLotto.onmouseleave = () => btnLotto.style.background = '#4caf50';
+
+    document.body.appendChild(btnLotto);
+}
+
     function getPosizione(li) {
         const divs = li.querySelectorAll('div');
         for (let div of divs) {
@@ -586,5 +675,9 @@
         el.dataset.bomChecked = 'true';
     }, 1000);
 
-    new MutationObserver(aggiungiPulsantiBOM).observe(document.body, { childList: true, subtree: true });
+    new MutationObserver(() => {
+    aggiungiPulsantiBOM();
+    aggiungiPulsanteGeneraLotto();
+}).observe(document.body, { childList: true, subtree: true });
 })();
+
