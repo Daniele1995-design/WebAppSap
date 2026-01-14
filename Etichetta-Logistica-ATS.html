@@ -510,7 +510,9 @@ style.innerHTML = `@media print {
         margin: 0 !important;
         padding: 5mm !important;
         box-sizing: border-box !important;
-        page-break-after: ${numEtichette > 1 ? 'always' : 'avoid'};
+        .etichetta:last-child { 
+    page-break-after: avoid !important;
+}
         page-break-inside: avoid;
         border: none !important;
         box-shadow: none !important;
