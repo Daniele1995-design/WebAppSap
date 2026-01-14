@@ -58,7 +58,7 @@
   .po-col { flex:1; }
   .po-label { font-size:9pt; font-weight:bold; }
   .po-value { font-size:18pt; font-weight:bold; line-height:1; display:block; }
-  .label-tpn { position:absolute; right:3mm; top:62mm; font-size:7pt; font-weight:bold; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.3px; }
+  .label-tpn { position:absolute; right:3mm; top:65mm; font-size:7pt; font-weight:bold; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.3px; }
   .part-section { margin:1mm 0 3mm; position:relative; }
   .part-label { font-size:9pt; font-weight:bold; line-height:1.1; }
   .part-value { font-size:16pt; font-weight:bold; line-height:1; display:block; }
@@ -197,8 +197,8 @@ fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSC8jBRzMHrA7IMzvnjbvQ0sh
 });
 
 // ---------- EVENTI FORM MANUALE ----------
-document.getElementById('m_CodiceBP').addEventListener('blur', e=>{
-  const bp = e.target.value.trim();
+function verificaCodiceBP(){
+  const bp = document.getElementById('m_CodiceBP').value.trim();
   if(!bp) return;
   const matches = bpDatabase.filter(r=>r.CodiceBP===bp);
   if(matches.length===0) return alert('Codice BP non trovato.');
@@ -228,6 +228,14 @@ document.getElementById('m_CodiceBP').addEventListener('blur', e=>{
       document.getElementById('m_PartNumber').value = matches[index].PartNumber;
       document.body.removeChild(document.getElementById('bp-popup'));
     }
+  }
+}
+
+document.getElementById('m_CodiceBP').addEventListener('blur', verificaCodiceBP);
+document.getElementById('m_CodiceBP').addEventListener('keypress', e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    verificaCodiceBP();
   }
 });
 
@@ -295,5 +303,6 @@ document.getElementById('excelFile').addEventListener('change', e=>{
 </script>
 </body>
 </html>
+
 
 
