@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GRN - Controllo BOM + CSV + Etichette Collo Singole (Definitivo Perfetto)
 // @namespace    http://tampermonkey.net/
-// @version      4.6
+// @version      4.7
 // @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati
 // @author       Daniele
 // @match        http://172.18.20.20/GRN/*
