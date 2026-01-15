@@ -126,7 +126,7 @@ if (inputUbicRigaPrincipale) {
                 quantita = parentText.replace(/.*Quantità:\s*/i, '').trim();
             }
             if (label.includes('seriale') || label.includes('lotto')) {
-                //QUI LA REGEX CHE PRENDE TUTTO 
+                // ←←← QUI LA REGEX  CHE PRENDE TUTTO ←←←
                 const m = parentText.match(/(?:Seriale|Lotto)[\s:]+([A-Za-z0-9\/_-]+)/i);
                 if (m) seriale = m[1].trim();
             }
@@ -135,19 +135,26 @@ if (inputUbicRigaPrincipale) {
             }
         });
 
-        // 2) Fallback se non ha trovato niente con <strong>
-        if (!seriale) {
-            const txt = (sr.innerText || sr.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, ''); // pulisce zero-width
-            const m = txt.match(/(?:Seriale|Lotto)[\s:]+([A-Za-z0-9\/_-]+)/i);
-            if (m) seriale = m[1].trim();
-        }
+// 2) Fallback se non ha trovato niente con <strong>
+if (!seriale) {
+    const txt = (sr.innerText || sr.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, ''); // pulisce zero-width
+    const m = txt.match(/(?:Seriale|Lotto)[\s:]+([A-Za-z0-9\/_-]+)/i);
+    if (m) seriale = m[1].trim();
+}
 
-        // 3) Ultimissimo fallback (numeroni lunghi come prima)
-        if (!seriale) {
-            const txt = (sr.innerText || '').trim();
-            const m = txt.match(/([0-9]{6,})/);
-            if (m) seriale = m[1];
-        }
+// 3) Fallback migliorato per seriali alfanumerici complessi
+if (!seriale) {
+    const txt = (sr.innerText || '').trim();
+    // Prima prova a catturare pattern alfanumerici complessi tipo (3S)GE2903 10151317600020A
+    const complexMatch = txt.match(/\(?\w+\)?\s*[A-Z0-9]+\s+[A-Z0-9]+/i);
+    if (complexMatch) {
+        seriale = complexMatch[0].replace(/\s+/g, ' ').trim();
+    } else {
+        // Solo come ultimo resort, cerca numeri lunghi
+        const numMatch = txt.match(/([0-9]{10,})/);
+        if (numMatch) seriale = numMatch[1];
+    }
+}
 
         if (seriale) {
     // Prendi ubicazione dalla sottoriga, se vuota usa quella principale
@@ -463,21 +470,21 @@ async function downloadCSV() {
         return;
     }
 
-    //  Prende i valori dal select e dal campo input
+    // 🔹 Prende i valori dal select e dal campo input
     const commessa = document.querySelector('#commessaTestata')?.value || 'SenzaCommessa';
     const riferimento = document.querySelector('#Riferimento')?.value?.trim() || 'SenzaRif';
     const fileName = `${commessa} DDT Nr. ${riferimento}.csv`;
 
     const csv = toCSV(rows);
 
-    //  Salva il file in locale
+    // 🔹 Salva il file in locale
     GM_download({
         url: "data:text/csv;charset=utf-8," + encodeURIComponent(csv),
         name: fileName,
         saveAs: true
     });
 
-    //  Codifica CSV per invio a Google Apps Script
+    // 🔹 Codifica CSV per invio a Google Apps Script
     const base64Content = btoa(unescape(encodeURIComponent(csv)));
     const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzEEBRPLitb7K5ZNlr3mm5hyVj0KHryrPb9_3-Y7Zuy7wT9sNY_jTA/exec";
 
@@ -486,7 +493,7 @@ async function downloadCSV() {
         content: base64Content
     };
 
-    //  Invia a Google Drive con GM_xmlhttpRequest (ignora CORS)
+    // 🔹 Invia a Google Drive con GM_xmlhttpRequest (ignora CORS)
     GM_xmlhttpRequest({
         method: "POST",
         url: scriptUrl,
