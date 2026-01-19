@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      14.1
+// @version      14.2
 // @description  Esporta seriali + PN in CSV e aggiunge funzionalità di stampa etichette 10x10 e 10x5
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
@@ -117,7 +117,7 @@ if (inputUbicRigaPrincipale) {
     serialRows.forEach(sr => {
         let quantita = '', seriale = '', stato = '';
 
-        // 1) Cerca tra i <strong>
+// 1) Cerca tra i <strong>
         Array.from(sr.querySelectorAll('strong')).forEach(str => {
             const label = (str.textContent || '').toLowerCase();
             const parentText = (str.parentElement.innerText || '').replace(/\s+/g, ' ').trim();
@@ -126,8 +126,8 @@ if (inputUbicRigaPrincipale) {
                 quantita = parentText.replace(/.*Quantità:\s*/i, '').trim();
             }
             if (label.includes('seriale') || label.includes('lotto')) {
-                // ←←← QUI LA REGEX  CHE PRENDE TUTTO ←←←
-                const m = parentText.match(/(?:Seriale|Lotto)[\s:]+([A-Za-z0-9\/_-]+)/i);
+                // Regex migliorata per catturare tutto dopo "Seriale:" o "Lotto:" fino a "Stato" o fine riga
+                const m = parentText.match(/(?:Seriale|Lotto)[\s:]+(.+?)(?=\s*Stato|$)/i);
                 if (m) seriale = m[1].trim();
             }
             if (label.includes('stato logico')) {
@@ -137,23 +137,10 @@ if (inputUbicRigaPrincipale) {
 
 // 2) Fallback se non ha trovato niente con <strong>
 if (!seriale) {
-    const txt = (sr.innerText || sr.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, ''); // pulisce zero-width
-    const m = txt.match(/(?:Seriale|Lotto)[\s:]+([A-Za-z0-9\/_-]+)/i);
+    const txt = (sr.innerText || sr.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, '');
+    // Cattura tutto dopo "Seriale:" o "Lotto:" fino a "Stato" o fine riga
+    const m = txt.match(/(?:Seriale|Lotto)[\s:]+(.+?)(?=\s*Stato|$)/i);
     if (m) seriale = m[1].trim();
-}
-
-// 3) Fallback migliorato per seriali alfanumerici complessi
-if (!seriale) {
-    const txt = (sr.innerText || '').trim();
-    // Prima prova a catturare pattern alfanumerici complessi tipo (3S)GE2903 10151317600020A
-    const complexMatch = txt.match(/\(?\w+\)?\s*[A-Z0-9]+\s+[A-Z0-9]+/i);
-    if (complexMatch) {
-        seriale = complexMatch[0].replace(/\s+/g, ' ').trim();
-    } else {
-        // Solo come ultimo resort, cerca numeri lunghi
-        const numMatch = txt.match(/([0-9]{10,})/);
-        if (numMatch) seriale = numMatch[1];
-    }
 }
 
         if (seriale) {
