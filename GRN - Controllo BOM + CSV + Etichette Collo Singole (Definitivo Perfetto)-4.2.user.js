@@ -4,8 +4,8 @@
 // @version      4.7
 // @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati
 // @author       Daniele
-// @match        http://172.18.20.20/GRN/*
-// @match        http://172.18.20.20:8095/GRN/*
+// @match        http://172.18.20.20/*
+// @match        http://172.18.20.20:8095/*
 // @require      https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js
 // @grant        GM_download
 // ==/UserScript==
@@ -94,7 +94,9 @@
             }
         }
         return '';
-    }// ===================== GENERA LOTTO =====================
+    }
+
+// ===================== GENERA LOTTO =====================
 function generaLotto() {
     // Trova la select della commessa
     const commessaSelect = document.querySelector('#commessaTestata');
@@ -103,8 +105,14 @@ function generaLotto() {
         return;
     }
 
-    // Prendi il valore selezionato (es: "FLM", "NTD", ecc.)
+    // Prendi il valore selezionato
     const commessaValue = commessaSelect.value;
+
+    // CONTROLLA SE È VUOTA
+    if (!commessaValue || commessaValue.trim() === '') {
+        alert('⚠️ ATTENZIONE: Seleziona prima una Commessa!');
+        return;
+    }
 
     // Prendi le ultime 3 cifre
     const ultime3 = commessaValue.slice(-3);
@@ -136,53 +144,97 @@ function generaLotto() {
         alert('Campo di ricerca non trovato!');
     }
 }
-
 function aggiungiPulsanteGeneraLotto() {
-    // Evita duplicati
     if (document.getElementById('btn-genera-lotto')) return;
 
-    // Trova un container in alto (cerca navbar o page-content)
-    let targetContainer = document.querySelector('.navbar-inner') ||
-                          document.querySelector('.page-content') ||
-                          document.querySelector('header');
+    // FRECCIA SINISTRA ◄ (Home)
+    const btnHome = document.createElement('button');
+    btnHome.id = 'btn-freccia-home';
+    btnHome.innerHTML = '◄';
+    btnHome.title = 'Torna alla Home';
+    btnHome.style.cssText = `
+        position: fixed; top: 10px; left: 10px; z-index: 10000;
+        width: 40px; height: 40px; padding: 0;
+        background: white; color: #333; border: 2px solid #ddd;
+        border-radius: 3px; font-size: 20px; font-weight: bold;
+        cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        display: flex; align-items: center; justify-content: center;
+    `;
+    btnHome.onclick = () => {
+        window.location.href = 'http://172.18.20.20/';
+    };
+    btnHome.onmouseenter = () => btnHome.style.background = '#f0f0f0';
+    btnHome.onmouseleave = () => btnHome.style.background = 'white';
 
-    if (!targetContainer) return;
+    // FRECCIA DESTRA ► (Torna indietro)
+    const btnTorna = document.createElement('button');
+    btnTorna.id = 'btn-freccia-torna';
+    btnTorna.innerHTML = '►';
+    btnTorna.title = 'Nessun link memorizzato';
+    btnTorna.style.cssText = `
+        position: fixed; top: 10px; left: 60px; z-index: 10000;
+        width: 40px; height: 40px; padding: 0;
+        background: white; color: #333; border: 2px solid #ddd;
+        border-radius: 3px; font-size: 20px; font-weight: bold;
+        cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0.5;
+    `;
 
-    // Crea il pulsante
-    const btnLotto = document.createElement('button');
-    btnLotto.id = 'btn-genera-lotto';
-    btnLotto.innerHTML = 'Genera Lotto';
-    btnLotto.title = 'Genera codice lotto automatico';
-    btnLotto.style.cssText = `
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    z-index: 10000;
-    width: 100px;
-    height: 15px;
-    padding: 0;
-    background: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    font-size: 9px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-`;
-    btnLotto.onclick = generaLotto;
+    btnTorna.onclick = () => {
+        const linkSalvato = localStorage.getItem('linkMemorizzato');
+        if (linkSalvato) {
+            window.location.href = linkSalvato;
+        } else {
+            alert('Nessun link memorizzato!');
+        }
+    };
+    btnTorna.onmouseenter = () => {
+        btnTorna.style.background = '#f0f0f0';
+        const linkSalvato = localStorage.getItem('linkMemorizzato');
+        if (linkSalvato) btnTorna.style.opacity = '1';
+    };
+    btnTorna.onmouseleave = () => {
+        btnTorna.style.background = 'white';
+        const linkSalvato = localStorage.getItem('linkMemorizzato');
+        btnTorna.style.opacity = linkSalvato ? '1' : '0.5';
+    };
 
-    // Aggiungi hover effect
-    btnLotto.onmouseenter = () => btnLotto.style.background = '#45a049';
-    btnLotto.onmouseleave = () => btnLotto.style.background = '#4caf50';
+    document.body.appendChild(btnHome);
+    document.body.appendChild(btnTorna);
 
-    document.body.appendChild(btnLotto);
+    // SALVATAGGIO AUTOMATICO: ogni volta che cambia URL e NON sei in home, salva
+    let ultimoUrl = '';
+    setInterval(() => {
+        const urlCorrente = window.location.href;
+        if (urlCorrente !== ultimoUrl && urlCorrente !== 'http://172.18.20.20/') {
+            ultimoUrl = urlCorrente;
+            localStorage.setItem('linkMemorizzato', urlCorrente);
+        }
+    }, 500);
+
+    // PULSANTE GENERA LOTTO - SOLO se siamo in /GRN/
+    const urlCorrente = window.location.href;
+    if (urlCorrente.includes('/GRN/')) {
+        const btnLotto = document.createElement('button');
+        btnLotto.id = 'btn-genera-lotto';
+        btnLotto.innerHTML = '📦 Genera Lotto';
+        btnLotto.title = 'Genera codice lotto automatico';
+        btnLotto.style.cssText = `
+            position: fixed; top: 10px; left: 120px; z-index: 10000;
+            width: 140px; height: 40px; padding: 0;
+            background: #4caf50; color: #333; border: 2px solid #4caf50;
+            border-radius: 3px; font-size: 15px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center;
+        `;
+        btnLotto.onclick = generaLotto;
+        btnLotto.onmouseenter = () => btnLotto.style.background = '#f0f0f0';
+        btnLotto.onmouseleave = () => btnLotto.style.background = '#4caf50';
+
+        document.body.appendChild(btnLotto);
+    }
 }
-
     function getPosizione(li) {
         const divs = li.querySelectorAll('div');
         for (let div of divs) {
@@ -675,9 +727,11 @@ function aggiungiPulsanteGeneraLotto() {
         el.dataset.bomChecked = 'true';
     }, 1000);
 
-    new MutationObserver(() => {
+new MutationObserver(() => {
     aggiungiPulsantiBOM();
-    aggiungiPulsanteGeneraLotto();
+    // Aggiungi i pulsanti solo se non esistono già
+    if (!document.getElementById('btn-freccia-home')) {
+        aggiungiPulsanteGeneraLotto();
+    }
 }).observe(document.body, { childList: true, subtree: true });
 })();
-
