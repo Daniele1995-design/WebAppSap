@@ -27,8 +27,18 @@
     }
 
 function toCSV(rows) {
-    const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    return 'sep=;\n' + rows.map(r => r.map(escape).join(';')).join('\n');
+    const escape = v => {
+        const str = String(v ?? '');
+        // Forziamo come testo TUTTI i valori che contengono numeri, punti, trattini o sono lunghi
+        // In questo modo Excel non formatta mai nulla
+        return `"=""${str.replace(/"/g, '""')}"""`;
+    };
+
+    // Header senza formula
+    const header = rows[0].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';');
+    const dataRows = rows.slice(1).map(r => r.map(escape).join(';')).join('\n');
+
+    return 'sep=;\n' + header + '\n' + dataRows;
 }
 
     function findDivTextByLabel(root, label) {
@@ -64,7 +74,13 @@ function getDataFromLi(li) {
         }
     }
 
-    const descrizione = findDivTextByLabel(li, 'Descrizione:');
+    // ===== MODIFICA: Estrai descrizione fino a "Rif:" =====
+    let descrizione = findDivTextByLabel(li, 'Descrizione:');
+    if (descrizione.includes('Rif:')) {
+        descrizione = descrizione.split('Rif:')[0].trim();
+    }
+    // ===== FINE MODIFICA =====
+
     let riferimento = '';
     if (headerContainer) {
         const firstDiv = headerContainer.querySelector("div:first-child span b");
@@ -92,7 +108,6 @@ function getDataFromLi(li) {
         if (match) posizione = match[1].trim();
     }
 
-    // ===== NUOVO: Estrazione CDC =====
     let cdc = '';
     const divCDC = Array.from(li.querySelectorAll('div')).find(d => {
         const text = (d.innerText || '').replace(/\s+/g, ' ').trim();
@@ -102,14 +117,12 @@ function getDataFromLi(li) {
         const text = divCDC.innerText.replace(/\s+/g, ' ').trim();
         cdc = text.slice('CDC :'.length).trim();
     }
-    // ===== FINE NUOVO =====
-// ===== ESTRAZIONE UBICAZIONE DESTINAZIONE RIGA PRINCIPALE =====
-let ubicazioneDestinazionePrincipale = '';
-const inputUbicRigaPrincipale = li.querySelector('input[data-ubic-principale]');
-if (inputUbicRigaPrincipale) {
-    ubicazioneDestinazionePrincipale = inputUbicRigaPrincipale.value.trim();
-}
-// ===== FINE =====
+
+    let ubicazioneDestinazionePrincipale = '';
+    const inputUbicRigaPrincipale = li.querySelector('input[data-ubic-principale]');
+    if (inputUbicRigaPrincipale) {
+        ubicazioneDestinazionePrincipale = inputUbicRigaPrincipale.value.trim();
+    }
 
     const serialRows = li.querySelectorAll("div[id^='dropdown-'] ul > li");
     const serials = [];
@@ -117,7 +130,6 @@ if (inputUbicRigaPrincipale) {
     serialRows.forEach(sr => {
         let quantita = '', seriale = '', stato = '';
 
-// 1) Cerca tra i <strong>
         Array.from(sr.querySelectorAll('strong')).forEach(str => {
             const label = (str.textContent || '').toLowerCase();
             const parentText = (str.parentElement.innerText || '').replace(/\s+/g, ' ').trim();
@@ -126,42 +138,44 @@ if (inputUbicRigaPrincipale) {
                 quantita = parentText.replace(/.*Quantità:\s*/i, '').trim();
             }
             if (label.includes('seriale') || label.includes('lotto')) {
-                // Regex migliorata per catturare tutto dopo "Seriale:" o "Lotto:" fino a "Stato" o fine riga
                 const m = parentText.match(/(?:Seriale|Lotto)[\s:]+(.+?)(?=\s*Stato|$)/i);
                 if (m) seriale = m[1].trim();
             }
             if (label.includes('stato logico')) {
-                stato = parentText.replace(/.*Stato Logico:\s*/i, '').trim();
+                // ===== MODIFICA: Estrai stato fino a "Ubicazione:" =====
+                let statoTemp = parentText.replace(/.*Stato Logico:\s*/i, '').trim();
+                if (statoTemp.includes('Ubicazione:')) {
+                    statoTemp = statoTemp.split('Ubicazione:')[0].trim();
+                }
+                stato = statoTemp;
+                // ===== FINE MODIFICA =====
             }
         });
 
-// 2) Fallback se non ha trovato niente con <strong>
-if (!seriale) {
-    const txt = (sr.innerText || sr.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, '');
-    // Cattura tutto dopo "Seriale:" o "Lotto:" fino a "Stato" o fine riga
-    const m = txt.match(/(?:Seriale|Lotto)[\s:]+(.+?)(?=\s*Stato|$)/i);
-    if (m) seriale = m[1].trim();
-}
+        if (!seriale) {
+            const txt = (sr.innerText || sr.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, '');
+            const m = txt.match(/(?:Seriale|Lotto)[\s:]+(.+?)(?=\s*Stato|$)/i);
+            if (m) seriale = m[1].trim();
+        }
 
         if (seriale) {
-    // Prendi ubicazione dalla sottoriga, se vuota usa quella principale
-    let ubicazioneDest = '';
-    const inputUbicSerial = sr.querySelector('input[data-ubic-serial]');
-    if (inputUbicSerial) {
-        ubicazioneDest = inputUbicSerial.value.trim();
-    }
-    if (!ubicazioneDest) {
-        ubicazioneDest = ubicazioneDestinazionePrincipale;
-    }
+            let ubicazioneDest = '';
+            const inputUbicSerial = sr.querySelector('input[data-ubic-serial]');
+            if (inputUbicSerial) {
+                ubicazioneDest = inputUbicSerial.value.trim();
+            }
+            if (!ubicazioneDest) {
+                ubicazioneDest = ubicazioneDestinazionePrincipale;
+            }
 
-    serials.push({ quantita, seriale, stato, ubicazioneDestinazione: ubicazioneDest });
-}
+            serials.push({ quantita, seriale, stato, ubicazioneDestinazione: ubicazioneDest });
+        }
     });
 
     return {
         pn, articolo, codiceBP, descrizione, riferimento, riferimentoOrdine,
         riferimentoPulito: riferimento ? riferimento.trim().substring(0, 4) : '',
-        posizione, serials , cdc
+        posizione, serials, cdc
     };
 }
     function aggiungiCampiUbicazione() {
@@ -414,39 +428,39 @@ statoLogicoDiv.appendChild(wrapper);
     });
 }
 
-    function estraiRighe() {
-        const out = [];
-        out.push([
-            'Part Number', 'Articolo', 'Codice BP', 'Descrizione',
-            'Riferimento Riga', 'Riferimento Ordine', 'Quantità', 'Seriale', 'Stato Logico', 'UbicazioneDestinazione' , 'UbicazionePrelievo'
-        ]);
+function estraiRighe() {
+    const out = [];
+    out.push([
+        'Part Number', 'Articolo', 'Codice BP', 'Descrizione',
+        'Riferimento Riga', 'Riferimento Ordine', 'Quantità', 'Seriale', 'Stato Logico', 'UbicazioneDestinazione', 'UbicazionePrelievo'
+    ]);
 
-        const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
-        let totalSeriali = 0;
+    const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
+    let totalSeriali = 0;
 
-        righe.forEach(li => {
-            const data = getDataFromLi(li);
+    righe.forEach(li => {
+        const data = getDataFromLi(li);
 
-            data.serials.forEach(seriale => {
-                out.push([
-                    data.pn ? `="${data.pn}"`  : '',
-                    data.articolo ? `="${data.articolo}"`  : '',
-                    data.codiceBP ? `="${data.codiceBP}"`  : '',
-                    data.descrizione,
-                    data.riferimentoPulito,
-                    data.riferimentoOrdine,
-                    seriale.quantita ? `="${seriale.quantita}"`  : '',
-                    `="${seriale.seriale}"` ,
-                    seriale.stato || '',
-                    seriale.ubicazioneDestinazione || '', // Ubicazione Destinazione
-                    '' // Colonna Ubicazione prelievo
-                ]);
-                totalSeriali++;
-            });
+        data.serials.forEach(seriale => {
+            out.push([
+                data.pn || '',
+                data.articolo || '',
+                data.codiceBP || '',
+                data.descrizione,
+                data.riferimentoPulito,
+                data.riferimentoOrdine,
+                seriale.quantita || '',
+                seriale.seriale || '',
+                seriale.stato || '',
+                seriale.ubicazioneDestinazione || '',
+                ''
+            ]);
+            totalSeriali++;
         });
+    });
 
-        return { rows: out, total: totalSeriali };
-    }
+    return { rows: out, total: totalSeriali };
+}
 
 async function downloadCSV() {
     await waitForSerials();
