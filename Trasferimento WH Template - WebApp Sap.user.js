@@ -1,9 +1,10 @@
 // ==UserScript==
-// @name         Trasferimento WH Template - WebApp Sap CSV
+// @name         Trasferimento WH Template - WebApp Sap Excel
 // @namespace    http://tampermonkey.net/
-// @version      2.3
-// @description  Inserisce seriali e ubicazioni da CSV + pulsante nel menu utente sopra Trasferisci
+// @version      3.0
+// @description  Inserisce seriali e ubicazioni da Excel + pulsante nel menu utente sopra Trasferisci
 // @match        http://172.18.20.20:8095/Transfer/Whs/?v=20250522
+// @require https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
 // @grant        GM_download
 // ==/UserScript==
 
@@ -45,32 +46,53 @@
         setTimeout(() => wm.scanG(valore), 50);   // Piccolo delay per stabilità
     }
 
-    function startProcess() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.csv';
-        input.onchange = e => {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = evt => {
-                const text = evt.target.result;
-                const lines = text.split(/\r?\n/);
-                dati = [];
-                lines.forEach((line, idx) => {
-                    if (idx === 0) return;           // salta header
-                    if (!line.trim()) return;        // salta righe vuote
-                    const parts = line.split(';');
-                    if (parts[7] && parts[9]) {
-                        dati.push([parts[7].trim(), parts[9].trim()]);
-                    }
-                });
-                console.log('Dati caricati:', dati);
-                insertSeriale(0);
-            };
-            reader.readAsText(file);
+function startProcess() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls';
+
+    input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = evt => {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+
+            // prima sheet
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+
+            // array di array (righe / colonne)
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            dati = [];
+
+            rows.forEach((row, idx) => {
+                if (idx === 0) return;        // salta header
+                if (!row || row.length === 0) return;
+
+                // STESSE COLONNE DEL CSV
+                const seriale = row[7];
+                const ubicazione = row[9];
+
+                if (seriale && ubicazione) {
+                    dati.push([
+                        String(seriale).trim(),
+                        String(ubicazione).trim()
+                    ]);
+                }
+            });
+
+            console.log('Dati caricati da Excel:', dati);
+            insertSeriale(0);
         };
-        input.click();
-    }
+
+        reader.readAsArrayBuffer(file);
+    };
+
+    input.click();
+}
 
     async function insertSeriale(index) {
         if (index >= dati.length) {
