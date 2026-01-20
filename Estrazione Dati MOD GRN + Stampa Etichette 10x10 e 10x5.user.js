@@ -6,8 +6,9 @@
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
 // @grant        GM_xmlhttpRequest
-// @grant        GM_download
 // @connect      script.google.com
+// @connect      script.googleusercontent.com
+// @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // ==/UserScript==
 /* global grn */
 
@@ -462,6 +463,44 @@ function estraiRighe() {
     return { rows: out, total: totalSeriali };
 }
 
+    function downloadExcel(rows, fileName) {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Forza tutte le celle come TESTO (tranne header)
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!ws[addr]) continue;
+            ws[addr].t = 's';
+            ws[addr].v = String(ws[addr].v);
+        }
+    }
+
+    // Larghezza colonne automatica
+    ws['!cols'] = rows[0].map((_, c) => {
+        const maxLen = Math.max(...rows.map(r => String(r[c] ?? '').length));
+        return { wch: Math.min(maxLen + 2, 40) };
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Seriali');
+
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob(
+        [wbout],
+        { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+    );
+
+    // Download PULITO (no warning)
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 async function downloadCSV() {
     await waitForSerials();
     const { rows, total } = estraiRighe();
@@ -478,12 +517,18 @@ async function downloadCSV() {
 
     const csv = toCSV(rows);
 
+    // 🔹 Download EXCEL in locale
+downloadExcel(
+    rows,
+    `${commessa} DDT Nr. ${riferimento}.xlsx`
+);
+
     // 🔹 Salva il file in locale
-    GM_download({
-        url: "data:text/csv;charset=utf-8," + encodeURIComponent(csv),
-        name: fileName,
-        saveAs: true
-    });
+   // GM_download({
+     //   url: "data:text/csv;charset=utf-8," + encodeURIComponent(csv),
+       // name: fileName,
+        //saveAs: true
+    //});
 
     // 🔹 Codifica CSV per invio a Google Apps Script
     const base64Content = btoa(unescape(encodeURIComponent(csv)));
