@@ -1,11 +1,13 @@
 // ==UserScript==
-// @name         WH Template Articolo → Seriale → Ubicazione → Quantità (v2.4 FIX 18.12.25)
+// @name         WH Template Articolo → Seriale → Ubicazione → Quantità Excel
 // @namespace    http://tampermonkey.net/
-// @version      3.0
+// @version      3.1
 // @description  Forza apertura keypad cliccando su #lastQty se necessario (focus su qty)
 // @match        http://172.18.20.20:8095/Transfer/Whs/*
 // @grant        GM_download
+// @require https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
 // ==/UserScript==
+/* global XLSX */
 
 (function() {
     'use strict';
@@ -147,27 +149,40 @@
     function startProcess() {
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = ".csv";
+        input.accept = ".xlsx,.xls";
         input.onchange = e => {
-            const reader = new FileReader();
-            reader.onload = evt => {
-                const lines = evt.target.result.split(/\r?\n/);
-                dati = lines.slice(1)
-                    .filter(ln => ln.trim())
-                    .map(ln => {
-                        const p = ln.split(";");
-                        return {
-                            articolo: p[1]?.trim(),
-                            quantita: p[6]?.trim(),
-                            seriale: p[7]?.trim(),
-                            ubicazione: p[9]?.trim(),
-                            ubicazionePrelievo: p[10]?.trim() || null
-                        };
-                    });
-                console.log("Righe caricate:", dati.length);
-                insertData(0);
-            };
-            reader.readAsText(e.target.files[0]);
+           const reader = new FileReader();
+reader.onload = evt => {
+    const data = new Uint8Array(evt.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+
+    // prende il primo foglio (o puoi mettere il nome)
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    // array di array
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+    dati = [];
+
+    rows.forEach((row, idx) => {
+        if (idx === 0) return; // salta header
+        if (!row || row.length < 11) return; // righe incomplete
+
+        dati.push({
+            articolo: String(row[1] || "").trim(),
+            quantita: String(row[6] || "").trim(),
+            seriale: String(row[7] || "").trim(),
+            ubicazione: String(row[9] || "").trim(),
+            ubicazionePrelievo: String(row[10] || "").trim() || null
+        });
+    });
+
+    console.log("Righe caricate da Excel:", dati.length);
+    insertData(0);
+};
+
+reader.readAsArrayBuffer(e.target.files[0]);
         };
         input.click();
     }
