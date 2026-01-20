@@ -2,7 +2,7 @@
 // @name         Pulizia Seriali Automatica - Pick WebApp
 // @namespace    http://tampermonkey.net/
 // @author       Daniele Izzo
-// @version      2.1
+// @version      3.0
 // @description  Pulisce automaticamente i seriali con toggle nel menu e popup seriale originale
 // @match        http://172.18.20.20/Pick/*
 // @require      https://cdn.jsdelivr.net/gh/Daniele1995-design/WebAppSap@main/papaparse.min.js
@@ -13,7 +13,7 @@
 (function() {
     'use strict';
 
-    console.log(" Script Pulizia Seriali avviato");
+    console.log("✅ Script Pulizia Seriali avviato");
 
     // ============================
     // CONFIGURAZIONE
@@ -21,7 +21,6 @@
     const CSV_URL = "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/Anagrafica%20completa%20solo%20Partnumber%20e%20Produttore.csv";
     let anagrafica = {}; // { PN: { produttore } }
     let puliziaSerialiAttiva = localStorage.getItem('puliziaSerialiAttiva') === 'true' || false;
-    //let puliziaSerialiAttiva = false; //SEMPRE DISATTIVATA ALL'AVVIO
     let serialeOriginale = "";
 
     // ============================
@@ -78,10 +77,10 @@
                     let produttore = (row[1] || "").replace(/["\u200B\r\n]/g,'').trim();
                     if(pn) anagrafica[pn] = { produttore };
                 });
-                console.log(`Anagrafica caricata: ${Object.keys(anagrafica).length} PN`);
+                console.log(`✅ Anagrafica caricata: ${Object.keys(anagrafica).length} PN`);
             },
             error: function(err) {
-                console.error(" Errore caricamento CSV:", err);
+                console.error("❌ Errore caricamento CSV:", err);
             }
         });
     }
@@ -267,11 +266,75 @@
         msg.style.transition = 'opacity 0.5s';
         msg.style.fontWeight = 'bold';
         msg.style.fontSize = '13px';
-        msg.style.pointerEvents = 'none'; // NON BLOCCA I CLICK
+        msg.style.pointerEvents = 'none';
         document.body.appendChild(msg);
 
         requestAnimationFrame(() => msg.style.opacity = 1);
         setTimeout(() => msg.style.opacity = 0, 2500);
+    }
+
+    // ============================
+    // PULSANTE COMPATTO PER MOSTRARE POPUP
+    // ============================
+    function showCompactButton(seriale, pulito = "") {
+        if (!seriale) {
+            const existing = document.querySelector('#compactSerialButton');
+            if (existing) existing.remove();
+            return;
+        }
+
+        let button = document.querySelector('#compactSerialButton');
+
+        if (!button) {
+            button = document.createElement('button');
+            button.id = 'compactSerialButton';
+            button.innerHTML = '🧹';
+            button.title = 'Mostra dettagli pulizia seriale';
+            button.style.position = 'fixed';
+            button.style.top = '10px';
+            button.style.left = '115px';
+            button.style.zIndex = '10001';
+            button.style.width = '40px';
+            button.style.height = '40px';
+            button.style.background = '#007bff';
+            button.style.color = 'white';
+            button.style.border = '2px solid #0056b3';
+            button.style.borderRadius = '50%';
+            button.style.fontSize = '18px';
+            button.style.cursor = 'pointer';
+            button.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+            button.style.transition = 'all 0.2s';
+            button.style.display = 'flex';
+            button.style.alignItems = 'center';
+            button.style.justifyContent = 'center';
+
+            button.onmouseover = function() {
+                this.style.background = '#0056b3';
+                this.style.transform = 'scale(1.1)';
+            };
+            button.onmouseout = function() {
+                this.style.background = '#007bff';
+                this.style.transform = 'scale(1)';
+            };
+
+            document.body.appendChild(button);
+        }
+
+        // Salva i dati nel pulsante
+        button.dataset.seriale = seriale;
+        button.dataset.pulito = pulito || seriale;
+
+        // Click per mostrare/nascondere il popup
+        button.onclick = function() {
+            const popup = document.querySelector('#serialeOriginalePopup');
+            if (popup) {
+                // Se il popup esiste, lo chiudiamo
+                popup.remove();
+            } else {
+                // Altrimenti lo mostriamo
+                showSerialeOriginalePopup(this.dataset.seriale, this.dataset.pulito);
+            }
+        };
     }
 
     // ============================
@@ -291,8 +354,8 @@
             popup.id = 'serialeOriginalePopup';
             popup.style.position = 'fixed';
             popup.style.zIndex = '10000';
-            popup.style.height = '35px';
-            popup.style.padding = '0 12px';
+            popup.style.minHeight = '35px';
+            popup.style.padding = '8px 12px';
             popup.style.background = 'white';
             popup.style.color = '#333';
             popup.style.border = '2px solid #ddd';
@@ -301,7 +364,8 @@
             popup.style.fontSize = '14px';
             popup.style.fontWeight = 'normal';
             popup.style.pointerEvents = 'auto';
-            popup.style.whiteSpace = 'nowrap';
+            popup.style.whiteSpace = 'normal';
+            popup.style.minWidth = '250px';
             popup.style.display = 'flex';
             popup.style.alignItems = 'center';
             popup.style.gap = '15px';
@@ -309,27 +373,21 @@
             document.body.appendChild(popup);
         }
 
-        // Cerca il pulsante freccia per posizionamento
-        const btnFreccia = document.querySelector('#btn-freccia-torna');
-        if (btnFreccia) {
-            // Posiziona accanto al pulsante freccia (a destra)
-            popup.style.top = '10px';
-            popup.style.left = '110px'; // 60px (left freccia) + 40px (width) + 10px (gap)
-        } else {
-            // Fallback: in alto a destra
-            popup.style.top = '10px';
-            popup.style.right = '10px';
-            popup.style.left = 'auto';
-        }
+        // Posiziona accanto al pulsante compatto
+        popup.style.top = '55px';
+        popup.style.left = '10px';
+        popup.style.right = 'auto';
 
         popup.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 4px;">
-                <span style="font-weight: 600; font-size: 13px;">Seriale Originale:</span>
-                <span style="font-size: 14px;">${seriale}</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px;">
-                <span style="font-weight: 600; font-size: 13px;">Pulizia:</span>
-                <span style="color: #007bff; font-weight: bold; font-size: 14px;">${pulito || seriale}</span>
+            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-weight: 600; font-size: 13px;">Seriale Originale:</span>
+                    <span style="font-size: 13px; word-break: break-all; min-width: 420px;">${seriale}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-weight: 600; font-size: 13px;">Pulizia:</span>
+                    <span style="color: #007bff; font-weight: bold; font-size: 14px; word-break: break-all; min-width: 420px;">${pulito || seriale}</span>
+                </div>
             </div>
             <button id="closeSerialPopup" style="
                 background: #f0f0f0;
@@ -340,7 +398,7 @@
                 padding: 2px 6px;
                 line-height: 1;
                 border-radius: 2px;
-                margin-left: 8px;
+                align-self: flex-start;
                 transition: background 0.2s;
             " onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">✖</button>
         `;
@@ -348,9 +406,9 @@
         const closeBtn = popup.querySelector('#closeSerialPopup');
         closeBtn.addEventListener('click', () => {
             popup.remove();
-            serialeOriginale = "";
         });
     }
+
     // ============================
     // TOGGLE BUTTON NEL MENU SWIPE
     // ============================
@@ -364,7 +422,7 @@
 
         // Evita duplicati
         if (document.querySelector('#menuTogglePulizia')) {
-            console.log("Toggle già presente nel menu");
+            console.log("✅ Toggle già presente nel menu");
             return;
         }
 
@@ -414,10 +472,10 @@
 
             const msg = puliziaSerialiAttiva ? "🟢 Pulizia seriali ATTIVATA" : "🔴 Pulizia seriali DISATTIVATA";
             showPopup(msg, puliziaSerialiAttiva ? '#28a745' : '#dc3545');
-            console.log(" Stato pulizia:", puliziaSerialiAttiva);
+            console.log("🔄 Stato pulizia:", puliziaSerialiAttiva);
         });
 
-        console.log(" Toggle aggiunto al menu swipe");
+        console.log("✅ Toggle aggiunto al menu swipe");
     }
 
     // ============================
@@ -430,7 +488,7 @@
             return;
         }
 
-        console.log(" Campo #shootInput trovato - intercettazione attiva");
+        console.log("✅ Campo #shootInput trovato - intercettazione attiva");
 
         // Intercetta PRIMA del submit del form
         shootInput.addEventListener('keydown', function(e) {
@@ -447,10 +505,9 @@
                 const cleanValue = SERESTRATTO || rawValue;
 
                 if (cleanValue !== rawValue) {
-                    console.log(` INTERCETTATO: "${rawValue}" → "${cleanValue}" | PN: "${PNESTRATTO}"`);
+                    console.log(`🧹 INTERCETTATO: "${rawValue}" → "${cleanValue}" | PN: "${PNESTRATTO}"`);
                     shootInput.value = cleanValue;
-                    showSerialeOriginalePopup(rawValue, cleanValue);
-                    // RIMOSSO: showPopup - Non mostrare più il popup temporaneo
+                    showCompactButton(rawValue, cleanValue);
                 }
 
                 // Ora invia il form con il valore pulito
@@ -464,10 +521,11 @@
             }
         }, true); // useCapture = true per intercettare PRIMA
 
-        // Reset popup quando campo vuoto
+        // Reset pulsante quando campo vuoto
         shootInput.addEventListener('input', function() {
             if (!shootInput.value.trim()) {
                 serialeOriginale = "";
+                showCompactButton("");
                 showSerialeOriginalePopup("");
             }
         });
@@ -480,7 +538,7 @@
         const observer = new MutationObserver(() => {
             const dialogInput = document.querySelector('.dialog-input');
             if (dialogInput && !dialogInput.dataset.cleanerAttached) {
-                console.log(" Dialog input trovato");
+                console.log("✅ Dialog input trovato");
                 dialogInput.dataset.cleanerAttached = 'true';
 
                 dialogInput.addEventListener('keydown', function(e) {
@@ -494,8 +552,8 @@
 
                         if (cleanValue !== rawValue) {
                             dialogInput.value = cleanValue;
-                            showSerialeOriginalePopup(rawValue, cleanValue);
-                            console.log(` Dialog pulito: "${rawValue}" → "${cleanValue}"`);
+                            showCompactButton(rawValue, cleanValue);
+                            console.log(`🧹 Dialog pulito: "${rawValue}" → "${cleanValue}"`);
                         }
                     }
                 }, true);
@@ -510,50 +568,50 @@
     // ============================
     // INIZIALIZZAZIONE
     // ============================
-function init() {
-    console.log(" Inizializzazione script...");
-    loadCSVData();
+    function init() {
+        console.log("🚀 Inizializzazione script...");
+        loadCSVData();
 
-    // Retry logic per assicurarsi che tutto si carichi
-    let attempts = 0;
-    const maxAttempts = 10;
+        // Retry logic per assicurarsi che tutto si carichi
+        let attempts = 0;
+        const maxAttempts = 10;
 
-    function tryInit() {
-        attempts++;
-        console.log(` Tentativo ${attempts}/${maxAttempts}`);
+        function tryInit() {
+            attempts++;
+            console.log(`🔄 Tentativo ${attempts}/${maxAttempts}`);
 
-        addToggleToMenu();
-        interceptInput();
-        monitorDialogInput();
+            addToggleToMenu();
+            interceptInput();
+            monitorDialogInput();
 
-        // Verifica se almeno uno è riuscito
-        const toggleExists = document.querySelector('#menuTogglePulizia');
-        const inputExists = document.querySelector('#shootInput');
+            // Verifica se almeno uno è riuscito
+            const toggleExists = document.querySelector('#menuTogglePulizia');
+            const inputExists = document.querySelector('#shootInput');
 
-        if (!toggleExists && !inputExists && attempts < maxAttempts) {
-            console.warn(`⚠️ Elementi non trovati, retry in 500ms...`);
-            setTimeout(tryInit, 500);
-        } else {
-            console.log(" Script inizializzato - Stato:", puliziaSerialiAttiva ? "ON" : "OFF");
+            if (!toggleExists && !inputExists && attempts < maxAttempts) {
+                console.warn(`⚠️ Elementi non trovati, retry in 500ms...`);
+                setTimeout(tryInit, 500);
+            } else {
+                console.log("✅ Script inizializzato - Stato:", puliziaSerialiAttiva ? "ON" : "OFF");
+            }
         }
+
+        // Primo tentativo dopo un breve delay
+        setTimeout(tryInit, 800);
     }
 
-    // Primo tentativo dopo un breve delay
-    setTimeout(tryInit, 800);
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
-
-// Backup: se dopo 5 secondi non è ancora inizializzato, forza un nuovo tentativo
-setTimeout(() => {
-    if (!document.querySelector('#menuTogglePulizia')) {
-        console.warn("⚠️ Forcing re-initialization...");
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
         init();
     }
-}, 5000);
+
+    // Backup: se dopo 5 secondi non è ancora inizializzato, forza un nuovo tentativo
+    setTimeout(() => {
+        if (!document.querySelector('#menuTogglePulizia')) {
+            console.warn("⚠️ Forcing re-initialization...");
+            init();
+        }
+    }, 5000);
 
 })();
