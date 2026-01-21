@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GRN - Controllo BOM + CSV + Etichette Collo Singole (Definitivo Perfetto)
 // @namespace    http://tampermonkey.net/
-// @version      4.7
+// @version      5.0
 // @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati
 // @author       Daniele
 // @match        http://172.18.20.20/*
@@ -145,65 +145,30 @@ function generaLotto() {
     }
 }
 function aggiungiPulsanteGeneraLotto() {
-    if (document.getElementById('btn-genera-lotto')) return;
-
     // FRECCIA SINISTRA ◄ (Home)
-    const btnHome = document.createElement('button');
-    btnHome.id = 'btn-freccia-home';
-    btnHome.innerHTML = '◄';
-    btnHome.title = 'Torna alla Home';
-    btnHome.style.cssText = `
-        position: fixed; top: 10px; left: 10px; z-index: 10000;
-        width: 40px; height: 40px; padding: 0;
-        background: white; color: #333; border: 2px solid #ddd;
-        border-radius: 3px; font-size: 20px; font-weight: bold;
-        cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        display: flex; align-items: center; justify-content: center;
-    `;
-    btnHome.onclick = () => {
-        window.location.href = 'http://172.18.20.20/';
-    };
-    btnHome.onmouseenter = () => btnHome.style.background = '#f0f0f0';
-    btnHome.onmouseleave = () => btnHome.style.background = 'white';
+    if (!document.getElementById('btn-freccia-home')) {
+        const btnHome = document.createElement('button');
+        btnHome.id = 'btn-freccia-home';
+        btnHome.innerHTML = '🏠';
+        btnHome.title = 'Torna alla Home';
+        btnHome.style.cssText = `
+            position: fixed; top: 10px; left: 10px; z-index: 10000;
+            width: 40px; height: 40px; padding: 0;
+            background: white; color: #333; border: 2px solid #ddd;
+            border-radius: 3px; font-size: 20px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center;
+        `;
+        btnHome.onclick = () => {
+            window.location.href = 'http://172.18.20.20/';
+        };
+        btnHome.onmouseenter = () => btnHome.style.background = '#f0f0f0';
+        btnHome.onmouseleave = () => btnHome.style.background = 'white';
 
-    // FRECCIA DESTRA ► (Torna indietro)
-    const btnTorna = document.createElement('button');
-    btnTorna.id = 'btn-freccia-torna';
-    btnTorna.innerHTML = '►';
-    btnTorna.title = 'Nessun link memorizzato';
-    btnTorna.style.cssText = `
-        position: fixed; top: 10px; left: 60px; z-index: 10000;
-        width: 40px; height: 40px; padding: 0;
-        background: white; color: #333; border: 2px solid #ddd;
-        border-radius: 3px; font-size: 20px; font-weight: bold;
-        cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        display: flex; align-items: center; justify-content: center;
-        opacity: 0.5;
-    `;
+        document.body.appendChild(btnHome);
+    }
 
-    btnTorna.onclick = () => {
-        const linkSalvato = localStorage.getItem('linkMemorizzato');
-        if (linkSalvato) {
-            window.location.href = linkSalvato;
-        } else {
-            alert('Nessun link memorizzato!');
-        }
-    };
-    btnTorna.onmouseenter = () => {
-        btnTorna.style.background = '#f0f0f0';
-        const linkSalvato = localStorage.getItem('linkMemorizzato');
-        if (linkSalvato) btnTorna.style.opacity = '1';
-    };
-    btnTorna.onmouseleave = () => {
-        btnTorna.style.background = 'white';
-        const linkSalvato = localStorage.getItem('linkMemorizzato');
-        btnTorna.style.opacity = linkSalvato ? '1' : '0.5';
-    };
-
-    document.body.appendChild(btnHome);
-    document.body.appendChild(btnTorna);
-
-    // SALVATAGGIO AUTOMATICO: ogni volta che cambia URL e NON sei in home, salva
+    // SALVATAGGIO AUTOMATICO
     let ultimoUrl = '';
     setInterval(() => {
         const urlCorrente = window.location.href;
@@ -212,21 +177,55 @@ function aggiungiPulsanteGeneraLotto() {
             localStorage.setItem('linkMemorizzato', urlCorrente);
         }
     }, 500);
+}
 
-    // PULSANTE GENERA LOTTO - SOLO se siamo in /GRN/
+// ✅ FUNZIONE per gestire il pulsante
+function gestisciPulsanteLotto() {
     const urlCorrente = window.location.href;
-    if (urlCorrente.includes('/GRN/')) {
+
+    if (!urlCorrente.includes('/GRN/')) {
+        const btnLottoEsistente = document.getElementById('btn-genera-lotto');
+        if (btnLottoEsistente) btnLottoEsistente.remove();
+        return;
+    }
+
+    const menuFunzioni = document.getElementById('menu-funzioni');
+    const wizard = document.getElementById('wizard');
+    const grnArticoli = document.getElementById('grn-articoli');
+
+    const menuFunzioniVisibile = menuFunzioni && window.getComputedStyle(menuFunzioni).display !== 'none';
+    const wizardVisibile = wizard && window.getComputedStyle(wizard).display !== 'none';
+    const grnArticoliVisibile = grnArticoli && window.getComputedStyle(grnArticoli).display !== 'none';
+
+    const btnLottoEsistente = document.getElementById('btn-genera-lotto');
+
+    // ✅ Mostra il pulsante se:
+    // - grn-articoli è VISIBILE (pagina dove serve il pulsante)
+    // - OPPURE se menu-funzioni e wizard sono entrambi nascosti
+    if ((grnArticoliVisibile || (!menuFunzioniVisibile && !wizardVisibile)) && !btnLottoEsistente) {
         const btnLotto = document.createElement('button');
         btnLotto.id = 'btn-genera-lotto';
         btnLotto.innerHTML = '📦 Genera Lotto';
         btnLotto.title = 'Genera codice lotto automatico';
-        btnLotto.style.cssText = `
-            position: fixed; top: 10px; left: 120px; z-index: 10000;
-            width: 140px; height: 40px; padding: 0;
-            background: #4caf50; color: #333; border: 2px solid #4caf50;
-            border-radius: 3px; font-size: 15px; font-weight: bold;
-            cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            display: flex; align-items: center; justify-content: center;
+          btnLotto.style.cssText = `
+            position: fixed !important;
+            top: 10px !important;
+            left: 60px !important;
+            z-index: 10000 !important;
+            width: 140px !important;
+            height: 40px !important;
+            padding: 0 !important;
+            background: #4caf50 !important;
+            color: #333 !important;
+            border: 2px solid #4caf50 !important;
+            border-radius: 3px !important;
+            font-size: 15px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         `;
         btnLotto.onclick = generaLotto;
         btnLotto.onmouseenter = () => btnLotto.style.background = '#f0f0f0';
@@ -234,7 +233,41 @@ function aggiungiPulsanteGeneraLotto() {
 
         document.body.appendChild(btnLotto);
     }
+    // ❌ Nascondi il pulsante se menu o wizard sono visibili E grn-articoli è nascosto
+    else if ((menuFunzioniVisibile || wizardVisibile) && !grnArticoliVisibile && btnLottoEsistente) {
+        btnLottoEsistente.remove();
+    }
 }
+
+// ✅ AVVIO
+aggiungiPulsanteGeneraLotto();
+gestisciPulsanteLotto();
+
+// ✅ INTERVALLO molto frequente
+setInterval(gestisciPulsanteLotto, 100);
+
+// ✅ MUTATION OBSERVER aggressivo
+new MutationObserver(() => {
+    gestisciPulsanteLotto();
+}).observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style', 'class', 'display']
+});
+
+// ✅ Intercetta TUTTI i click sulla pagina
+document.addEventListener('click', () => {
+    setTimeout(gestisciPulsanteLotto, 50);
+    setTimeout(gestisciPulsanteLotto, 200);
+    setTimeout(gestisciPulsanteLotto, 500);
+});
+
+// ✅ Timeout multipli all'avvio
+setTimeout(gestisciPulsanteLotto, 500);
+setTimeout(gestisciPulsanteLotto, 1000);
+setTimeout(gestisciPulsanteLotto, 2000);
+setTimeout(gestisciPulsanteLotto, 3000);
     function getPosizione(li) {
         const divs = li.querySelectorAll('div');
         for (let div of divs) {
