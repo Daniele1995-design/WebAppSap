@@ -113,6 +113,26 @@
     align-items: stretch;
     padding-top: 1mm !important;
 }
+   /* Stili specifici per Conf. 10×10 */
+.etichetta.grande .campo {
+    padding: 6px 8px;
+    margin-bottom: 6px;
+}
+
+.etichetta.grande .label {
+    font-size: 11px;
+}
+
+.etichetta.grande .valore {
+    font-size: 22px;
+    margin-top: 3px;
+    white-space: normal;
+    line-height: 1.1;
+}
+   .etichetta.grande .progressivo {
+    font-size: 22px;
+    margin: 6px 0;
+}
 </style>
 </head>
 <body>
@@ -489,6 +509,7 @@ function genera() {
                 <div class="progressivo">${prog}</div>
                 <div class="campo"><div class="label">DESTINO</div><div class="valore">${location}</div></div>
                 <div class="campo"><div class="label">INDIRIZZO</div><div class="valore">${idscheda}</div></div>
+                <div class="campo"><div class="label">ODP</div><div class="valore">${odpConf}</div></div>
             `;
             anteprima.appendChild(et);
         });
