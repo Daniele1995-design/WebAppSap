@@ -62,57 +62,7 @@
 .etichetta.conf-extra .campo { padding:10px 12px; margin-bottom:12px; }
 .etichetta.conf-extra .label { font-size:14px; }
 .etichetta.conf-extra .valore { font-size:28px; margin-top:6px; white-space: normal; word-wrap: break-word; line-height: 1.2; }
-
-   /* Stili specifici per Conf. 10×10 */
-.etichetta.conf-10x10 {
-    min-height: 100mm;
-}
-
-.etichetta.conf-10x10 .header-logo {
-    height: 45px;
-    padding-bottom: 5px;
-    margin-bottom: 5px;
-}
-
-.etichetta.conf-10x10 .logo-principale {
-    height: 38px;
-}
-
-.etichetta.conf-10x10 .icon-commessa {
-    height: 34px;
-}
-
-.etichetta.conf-10x10 .campo-data {
-    font-size: 26px;
-    padding: 5px 8px;
-    margin-bottom: 6px;
-}
-
-.etichetta.conf-10x10 .odp {
-    font-size: 32px;
-}
-
-.etichetta.conf-10x10 .progressivo {
-    font-size: 24px;
-    margin: 10px 0;
-}
-
-.etichetta.conf-10x10 .campo {
-    padding: 8px 10px;
-    margin-bottom: 10px;
-}
-
-.etichetta.conf-10x10 .label {
-    font-size: 12px;
-}
-
-.etichetta.conf-10x10 .valore {
-    font-size: 24px;
-    margin-top: 4px;
-    white-space: normal;
-    line-height: 1.2;
-}
-
+    
     .riga-id { display:flex; justify-content:space-between; width:100%; }
     .colli-inline { font-weight:bold; margin-left:10px; white-space:nowrap; }
     .label-odp { font-size:14px; font-weight:bold; }
@@ -524,35 +474,7 @@ function genera() {
             `;
             anteprima.appendChild(et);
         });
-    }else if (tipo === "conf-10x10") {
-    numeri.forEach((colli, i) => {
-        const prog = `Pallet: ${i+1}/${numeri.length} → ${colli} colli`;
-        const et = document.createElement("div");
-        et.className = "etichetta conf-10x10";
-        et.innerHTML = `
-            <div class="header-logo">
-                <img src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" class="logo-principale">
-                ${icona ? `<img src="${icona}" class="icon-commessa">` : ''}
-            </div>
-            <div class="campo-data">${data}</div>
-            <div class="odp">${testoPrincipale}</div>
-            <div class="progressivo">${prog}</div>
-            <div class="campo">
-                <div class="label">DESTINO</div>
-                <div class="valore">${location}</div>
-            </div>
-            <div class="campo">
-                <div class="label">INDIRIZZO</div>
-                <div class="valore">${idscheda}</div>
-            </div>
-            <div class="campo">
-                <div class="label">ODP</div>
-                <div class="valore">${odpConf}</div>
-            </div>
-        `;
-        anteprima.appendChild(et);
-    }); 
-    else {
+    } else {
         numeri.forEach((colli, i) => {
             const prog = `Pallet: ${i+1}/${numeri.length} → ${colli} colli`;
             const et = document.createElement("div");
@@ -570,7 +492,6 @@ function genera() {
             `;
             anteprima.appendChild(et);
         });
-    }
     }
     aggiornaPageSize();
 }
