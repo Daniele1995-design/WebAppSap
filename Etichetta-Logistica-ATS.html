@@ -517,40 +517,72 @@ function genera() {
     aggiornaPageSize();
 }
 function aggiornaPageSize() {
-const tipo = document.querySelector('input[name="size"]:checked').value;
-let height = "100mm";
-if (tipo === "conf-10x5" || tipo === "odp-10x5") height = "50mm";
-if (tipo === "conf-10x15") height = "150mm";
-   const numEtichette = document.querySelectorAll('.etichetta').length;
+    const tipo = document.querySelector('input[name="size"]:checked').value;
 
-let style = document.getElementById("print-dynamic");
-if (!style) { style = document.createElement("style"); style.id = "print-dynamic"; document.head.appendChild(style); }
+    let height = "100mm";
+    if (tipo === "conf-10x5" || tipo === "odp-10x5") height = "50mm";
+    if (tipo === "conf-10x15") height = "150mm";
 
-style.innerHTML = `@media print { 
-    @page { size: 100mm ${height}; margin: 0; padding: 0; } 
-    * { margin: 0 !important; padding: 0 !important; }
-    body { margin: 0 !important; padding: 0 !important; visibility: hidden; }
-    #anteprima { visibility: visible; position: absolute; left: 0; top: 0; margin: 0 !important; padding: 0 !important; display: block !important; }
-    #anteprima * { visibility: visible; }
-    .etichetta { 
-        height: ${height} !important; 
-        width: 100mm !important;
+    let style = document.getElementById("print-dynamic");
+    if (!style) {
+        style = document.createElement("style");
+        style.id = "print-dynamic";
+        document.head.appendChild(style);
+    }
+
+    style.innerHTML = `
+@media print {
+
+    @page {
+        size: 100mm ${height};
+        margin: 0;
+    }
+
+    html, body {
         margin: 0 !important;
-        padding: 5mm !important;
-        box-sizing: border-box !important;
-        .etichetta:last-child { 
-    page-break-after: avoid !important;
-}
-        page-break-inside: avoid;
+        padding: 0 !important;
+        width: 100mm;
+        height: ${height};
+        overflow: hidden;
+    }
+
+    body {
+        visibility: hidden;
+    }
+
+    #anteprima {
+        visibility: visible;
+        position: absolute;
+        top: 0;
+        left: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .etichetta {
+        position: absolute;
+        top: 0;
+        left: 0;
+
+        width: 100mm !important;
+        height: ${height} !important;
+
+        margin: 0 !important;
+        padding: 0 !important; /* ← IMPORTANTISSIMO */
+
+        box-sizing: border-box;
+        page-break-after: always;
+
         border: none !important;
         box-shadow: none !important;
-        display: block !important;
         background: white !important;
     }
-    .etichetta:last-child { 
-        page-break-after: avoid !important;
+
+    .etichetta:last-child {
+        page-break-after: avoid;
     }
-}`;
+}
+`;
 }
 
 function resetCampi() {
