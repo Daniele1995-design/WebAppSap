@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      14.7
+// @version      14.6
 // @description  Esporta seriali + PN in CSV e aggiunge funzionalità di stampa etichette 10x10 e 10x5
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
@@ -203,15 +203,15 @@ function aggiungiCampiUbicazione() {
                 function aggiornaTesto() {
                     const valore = localStorage.getItem('ubic-principale-' + idx);
                     if (valore && valore.trim()) {
-                        btnUbicazione.innerText = '📍 ' + valore;
+                        btnUbicazione.innerText = '✏️ ' + valore;
                         btnUbicazione.style.background = '#007bff';
                         btnUbicazione.style.color = '#ffffff';
                         btnUbicazione.style.fontWeight = '700';
                     } else {
-                        btnUbicazione.innerText = '📍Bin';
+                        btnUbicazione.innerText = '✏️Ubicazione Riga';
                         btnUbicazione.style.background = '#f8f9fa';
                         btnUbicazione.style.color = '#000000';
-                        btnUbicazione.style.fontWeight = '500';
+                        btnUbicazione.style.fontWeight = '700';
                     }
                 }
 
@@ -220,6 +220,8 @@ function aggiungiCampiUbicazione() {
                     margin-left: 8px;
                     border: 2px solid #007bff;
                     border-radius: 4px;
+                    position: relative;
+                    top: -4px;
                     font-size: 15px;
                     cursor: pointer;
                     transition: all 0.3s;
@@ -1611,6 +1613,11 @@ function addPrintButtonsToRows() {
         // Salta la riga se contiene il checkbox con id "odaSelected"
         if (li.querySelector('input#odaSelected')) {
             console.log('Trovato checkbox odaSelected, salto la riga');
+            return; // Salta questa iterazione
+        }
+        // Salta la riga se contiene il checkbox con id "odaSelectAll"
+        if (li.querySelector('input#odaSelectAll')) {
+            console.log('Trovato checkbox odaSelectAll, salto la riga');
             return; // Salta questa iterazione
         }
 
