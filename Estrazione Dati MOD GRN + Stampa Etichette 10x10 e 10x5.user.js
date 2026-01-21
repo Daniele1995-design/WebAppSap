@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      14.5
+// @version      14.2
 // @description  Esporta seriali + PN in CSV e aggiunge funzionalità di stampa etichette 10x10 e 10x5
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
@@ -179,146 +179,106 @@ function getDataFromLi(li) {
         posizione, serials, cdc
     };
 }
-    function aggiungiCampiUbicazione() {
+function aggiungiCampiUbicazione() {
     const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
 
     righe.forEach((li, idx) => {
         // Salta la riga di ricerca
         if (li.querySelector('#shootInput')) return;
 
-        // ===== INPUT RIGA PRINCIPALE =====
-        if (!li.querySelector('input[data-ubic-principale]')) {
+        // ===== PULSANTE UBICAZIONE PRINCIPALE =====
+        if (!li.querySelector('button[data-ubic-btn-principale]')) {
             // Cerca il contenitore principale con display flex (quello in alto)
             const headerContainer = li.querySelector("div[style*='display: flex']");
             if (headerContainer) {
-                const inputPrincipale = document.createElement('input');
-                inputPrincipale.setAttribute('data-ubic-principale', 'true');
-                inputPrincipale.type = 'text';
-                inputPrincipale.placeholder = 'Ubicazione Destinazione Righe';
+                const btnUbicazione = document.createElement('button');
+                btnUbicazione.setAttribute('data-ubic-btn-principale', 'true');
+                btnUbicazione.type = 'button';
 
                 // Recupera valore salvato in localStorage
                 const savedValue = localStorage.getItem('ubic-principale-' + idx);
-                if (savedValue) {
-                    inputPrincipale.value = savedValue;
-                }
 
-                // Variabili per gestire la propagazione
-                let valoreIniziale = inputPrincipale.value;
-                let propagatoConInvio = false;
-
-                inputPrincipale.style.cssText = `
-                    width: 200px;
-                    height: 26px;
-                    padding: 4px 8px;
-                    margin-left: auto;
-                    margin-right: 40px;
-                    border: 2px solid #007bff;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-weight: 500;
-                    background: #f8f9fa;
-                    transition: all 0.3s;
-                    outline: none;
-                    box-sizing: border-box;
-                `;
-
-                // Funzione per aggiornare lo stile in base al contenuto
-                function aggiornaStile() {
-                    if (inputPrincipale.value.trim()) {
-                        inputPrincipale.style.background = '#007bff';
-                        inputPrincipale.style.color = '#ffffff';
-                        inputPrincipale.style.fontWeight = '700';
+                // Aggiorna il testo del pulsante in base al valore salvato
+                function aggiornaTesto() {
+                    const valore = localStorage.getItem('ubic-principale-' + idx);
+                    if (valore && valore.trim()) {
+                        btnUbicazione.innerText = '📍 ' + valore;
+                        btnUbicazione.style.background = '#007bff';
+                        btnUbicazione.style.color = '#ffffff';
+                        btnUbicazione.style.fontWeight = '700';
                     } else {
-                        inputPrincipale.style.background = '#f8f9fa';
-                        inputPrincipale.style.color = '#000000';
-                        inputPrincipale.style.fontWeight = '500';
+                        btnUbicazione.innerText = '📍 Ubicazione';
+                        btnUbicazione.style.background = '#f8f9fa';
+                        btnUbicazione.style.color = '#000000';
+                        btnUbicazione.style.fontWeight = '500';
                     }
                 }
 
-                // Effetto focus - salva il valore iniziale
-                inputPrincipale.addEventListener('focus', function() {
-                    valoreIniziale = this.value.trim();
-                    propagatoConInvio = false;
-                    this.style.borderColor = '#0056b3';
-                    this.style.boxShadow = '0 0 5px rgba(0,123,255,0.5)';
-                });
+               btnUbicazione.style.cssText = `
+    padding: 2px 4px;
+    margin-left: auto;
+    margin-right: 40px;
+    border: 2px solid #007bff;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    outline: none;
+    white-space: nowrap;
+    min-width: fit-content;
+    max-width: 100px;
+`;
 
-                // Funzione per propagare con conferma
-                function propagaConConferma() {
-                    const valore = inputPrincipale.value.trim();
-                    if (!valore) return false;
+                aggiornaTesto();
 
-                    if (confirm(`Vuoi propagare l'ubicazione "${valore}" a tutte le sottorighe?`)) {
-                        const dropdown = li.querySelector("div[id^='dropdown-']");
-                        if (dropdown) {
-                            dropdown.style.display = 'block';
-                            const serialRows = dropdown.querySelectorAll("ul > li");
-                            serialRows.forEach((sr, srIdx) => {
-                                const inputSerial = sr.querySelector('input[data-ubic-serial]');
-                                if (inputSerial) {
-                                    inputSerial.value = valore;
-                                    // Aggiorna lo stile del campo seriale
-                                    inputSerial.style.background = '#007bff';
-                                    inputSerial.style.color = '#ffffff';
-                                    inputSerial.style.fontWeight = '700';
-                                    // Salva in localStorage
-                                    localStorage.setItem('ubic-serial-' + idx + '-' + srIdx, valore);
-                                }
-                            });
+                // Evento click per aprire il popup
+                btnUbicazione.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const valoreAttuale = localStorage.getItem('ubic-principale-' + idx) || '';
+                    const nuovoValore = prompt('Inserisci Ubicazione Destinazione:', valoreAttuale);
+
+                    if (nuovoValore !== null) { // null se l'utente ha premuto Annulla
+                        const valore = nuovoValore.trim();
+
+                        // Salva in localStorage
+                        localStorage.setItem('ubic-principale-' + idx, valore);
+
+                        // Aggiorna il testo del pulsante
+                        aggiornaTesto();
+
+                        // Propaga se l'utente conferma
+                        if (valore && confirm(`Vuoi propagare l'ubicazione "${valore}" a tutte le sottorighe?`)) {
+                            const dropdown = li.querySelector("div[id^='dropdown-']");
+                            if (dropdown) {
+                                dropdown.style.display = 'block';
+                                const serialRows = dropdown.querySelectorAll("ul > li");
+                                serialRows.forEach((sr, srIdx) => {
+                                    const inputSerial = sr.querySelector('input[data-ubic-serial]');
+                                    if (inputSerial) {
+                                        inputSerial.value = valore;
+                                        // Aggiorna lo stile del campo seriale
+                                        inputSerial.style.background = '#007bff';
+                                        inputSerial.style.color = '#ffffff';
+                                        inputSerial.style.fontWeight = '700';
+                                        // Salva in localStorage
+                                        localStorage.setItem('ubic-serial-' + idx + '-' + srIdx, valore);
+                                    }
+                                });
+                            }
                         }
-                        return true;
-                    }
-                    return false;
-                }
-
-                // Effetto blur - controlla se il valore è cambiato
-                inputPrincipale.addEventListener('blur', function() {
-                    this.style.borderColor = '#007bff';
-                    this.style.boxShadow = 'none';
-
-                    const valoreAttuale = this.value.trim();
-
-                    // Propaga SOLO se il valore è cambiato E non è già stato propagato con INVIO
-                    if (valoreAttuale && valoreAttuale !== valoreIniziale && !propagatoConInvio) {
-                        propagaConConferma();
-                    }
-
-                    aggiornaStile();
-                    // Salva in localStorage
-                    localStorage.setItem('ubic-principale-' + idx, valoreAttuale);
-
-                    // Reset del flag
-                    propagatoConInvio = false;
-                });
-
-                // Quando premi INVIO, propaga con conferma
-                inputPrincipale.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const valoreAttuale = this.value.trim();
-
-                        // Propaga solo se il valore è cambiato
-                        if (valoreAttuale && valoreAttuale !== valoreIniziale) {
-                            propagatoConInvio = true; // Imposta il flag
-                            propagaConConferma();
-                        }
-
-                        aggiornaStile();
-                        this.blur(); // Esce dal campo dopo INVIO
                     }
                 });
-
-                // Aggiorna stile al caricamento se ha già un valore
-                aggiornaStile();
 
                 // Inserisci dentro il contenitore flex in alto a destra
                 headerContainer.style.display = 'flex';
                 headerContainer.style.alignItems = 'center';
-                headerContainer.appendChild(inputPrincipale);
+                headerContainer.appendChild(btnUbicazione);
             }
         }
 
-        // ===== INPUT SOTTORIGHE SERIALI =====
+        // ===== INPUT SOTTORIGHE SERIALI (resta invariato) =====
         const dropdown = li.querySelector("div[id^='dropdown-']");
         if (dropdown) {
             dropdown.style.display = 'block';
@@ -342,11 +302,12 @@ function getDataFromLi(li) {
                     if (savedValue) {
                         inputSerial.value = savedValue;
                     }
+
                     const labelUbic = document.createElement('span');
-                     labelUbic.textContent = 'Ubicazione:';
-                     labelUbic.style.fontWeight = '700';
-                     labelUbic.style.marginRight = '6px';
-                     labelUbic.style.color = '#1f2937';
+                    labelUbic.textContent = 'Ubicazione:';
+                    labelUbic.style.fontWeight = '700';
+                    labelUbic.style.marginRight = '6px';
+                    labelUbic.style.color = '#1f2937';
 
                     inputSerial.style.cssText = `
                         width: 180px;
@@ -397,15 +358,15 @@ function getDataFromLi(li) {
                         if (e.key === 'Enter') {
                             e.preventDefault();
                             aggiornaStileSerial();
-                            this.blur(); // Esce dal campo dopo INVIO
+                            this.blur();
                         }
                     });
 
                     // Prendi il valore principale SOLO se non ha un valore salvato
                     if (!savedValue) {
-                        const inputPrincipale = li.querySelector('input[data-ubic-principale]');
-                        if (inputPrincipale && inputPrincipale.value.trim()) {
-                            inputSerial.value = inputPrincipale.value.trim();
+                        const valorePrincipale = localStorage.getItem('ubic-principale-' + idx);
+                        if (valorePrincipale && valorePrincipale.trim()) {
+                            inputSerial.value = valorePrincipale.trim();
                         }
                     }
 
@@ -414,21 +375,16 @@ function getDataFromLi(li) {
 
                     // Inserisci DENTRO il div Stato Logico, alla fine
                     const wrapper = document.createElement('div');
-wrapper.style.display = 'flex';
-wrapper.style.alignItems = 'center';
-
-wrapper.appendChild(labelUbic);
-wrapper.appendChild(inputSerial);
-
-statoLogicoDiv.appendChild(wrapper);
-
+                    wrapper.style.display = 'flex';
+                    wrapper.style.alignItems = 'center';
+                    wrapper.appendChild(labelUbic);
+                    wrapper.appendChild(inputSerial);
+                    statoLogicoDiv.appendChild(wrapper);
                 }
-
             });
         }
     });
 }
-
 function estraiRighe() {
     const out = [];
     out.push([
