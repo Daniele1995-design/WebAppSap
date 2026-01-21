@@ -207,7 +207,7 @@ function aggiungiCampiUbicazione() {
                         btnUbicazione.style.color = '#ffffff';
                         btnUbicazione.style.fontWeight = '700';
                     } else {
-                        btnUbicazione.innerText = '📍 Ubicazione';
+                        btnUbicazione.innerText = '📍Bin';
                         btnUbicazione.style.background = '#f8f9fa';
                         btnUbicazione.style.color = '#000000';
                         btnUbicazione.style.fontWeight = '500';
@@ -215,18 +215,18 @@ function aggiungiCampiUbicazione() {
                 }
 
                btnUbicazione.style.cssText = `
-    padding: 2px 4px;
+    padding: 1px 3px;
     margin-left: auto;
-    margin-right: 40px;
+    margin-right: 35px;
     border: 2px solid #007bff;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 15px;
     cursor: pointer;
     transition: all 0.3s;
     outline: none;
     white-space: nowrap;
     min-width: fit-content;
-    max-width: 100px;
+    max-width: 20px;
 `;
 
                 aggiornaTesto();
