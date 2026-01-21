@@ -663,8 +663,11 @@ function aggiungiPulsanteGeneraLotto() {
         });
     }
 
-    // ===================== UI EXPORT =====================
+ // ===================== UI EXPORT =====================
     function addExportUI() {
+        //  NON mostrare i pulsanti se siamo su /Pick/
+        if (window.location.href.includes('/Pick/')) return;
+
         let wrapper = document.getElementById('export-print-wrapper');
         if (!wrapper) {
             const modal = document.querySelector('.sheet-modal-inner .sheet-modal-swipe-step');
