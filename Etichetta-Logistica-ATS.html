@@ -386,7 +386,7 @@ function cambiaFormato() {
     const tipo = document.querySelector('input[name="size"]:checked').value;
     const isODP = tipo === "odp-10x5";
     const isConf = tipo === "conf-10x10" || tipo === "conf-10x5" || tipo === "conf-10x15";
-    const isConf10x5o15 = tipo === "conf-10x5" || tipo === "conf-10x15";
+    const isConf10x5o15 = tipo === "conf-10x5" || tipo === "conf-10x10" || tipo === "conf-10x15";
     
     document.getElementById("commessaField").style.display = isConf ? "block" : "none";
     document.getElementById("odpField").style.display = isODP ? "block" : "none";
