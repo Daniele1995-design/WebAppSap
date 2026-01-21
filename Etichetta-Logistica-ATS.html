@@ -99,12 +99,21 @@
     .etichetta.grande {
         padding-top: 8mm !important;
     }
-    .etichetta.grande .campo {
-        margin-top: 5mm !important;
-    }
-    .etichetta.grande .campo-data {
-        margin-top: 2mm !important;
-    }
+/* Compattazione campi DESTINO / INDIRIZZO / ODP – Conf. 10×10 */
+.etichetta.grande .campo {
+    padding: 4px 6px !important;      /* ↓ altezza interna */
+    margin-bottom: 4px !important;    /* ↓ spazio tra campi */
+}
+
+.etichetta.grande .label {
+    font-size: 10px !important;       /* ↓ intestazione */
+}
+
+.etichetta.grande .valore {
+    font-size: 20px !important;       /* ↓ testo principale */
+    margin-top: 2px !important;       /* ↓ spazio label→valore */
+    line-height: 1.05;                /* ↓ compatta verticalmente */
+}
 }
    /* Allinea il contenuto in alto per etichette 10x5 */
 .etichetta.conf-piccola,
