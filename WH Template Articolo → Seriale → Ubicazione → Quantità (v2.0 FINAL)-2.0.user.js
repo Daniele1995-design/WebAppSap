@@ -156,18 +156,26 @@ reader.onload = evt => {
     const data = new Uint8Array(evt.target.result);
     const workbook = XLSX.read(data, { type: 'array' });
 
-    // prende il primo foglio (o puoi mettere il nome)
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-
-    // array di array
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+    console.log("=== DEBUG CARICAMENTO EXCEL ===");
+    console.log("Totale righe nel file:", rows.length);
+    console.log("Prima riga (header):", rows[0]);
+    console.log("Seconda riga (dati):", rows[1]);
+    console.log("Lunghezza seconda riga:", rows[1]?.length);
 
     dati = [];
 
     rows.forEach((row, idx) => {
+        console.log(`Riga ${idx}:`, row, "Lunghezza:", row?.length);
+
         if (idx === 0) return; // salta header
-        if (!row || row.length < 11) return; // righe incomplete
+        if (!row || row.length < 10) {
+            console.log(`❌ Riga ${idx} scartata - lunghezza: ${row?.length}`);
+            return;
+        }
 
         dati.push({
             articolo: String(row[1] || "").trim(),
@@ -176,12 +184,14 @@ reader.onload = evt => {
             ubicazione: String(row[9] || "").trim(),
             ubicazionePrelievo: String(row[10] || "").trim() || null
         });
+
+        console.log(`✅ Riga ${idx} caricata`);
     });
 
-    console.log("Righe caricate da Excel:", dati.length);
+    console.log("Righe caricate totali:", dati.length);
+    console.log("Dati finali:", dati);
     insertData(0);
 };
-
 reader.readAsArrayBuffer(e.target.files[0]);
         };
         input.click();
