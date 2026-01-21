@@ -436,6 +436,46 @@ function estraiRighe() {
         'Riferimento Riga', 'Riferimento Ordine', 'Quantità', 'Seriale', 'Stato Logico', 'UbicazioneDestinazione', 'UbicazionePrelievo'
     ]);
 
+    // Prova diversi metodi per trovare whsDefault
+    let ubicazionePrelievo = '';
+
+    console.log('🔍 Cerco whsDefault...');
+
+    // Metodo 1: per ID
+    let whsDefaultSpan = document.getElementById('whsDefault');
+    console.log('Metodo 1 (getElementById):', whsDefaultSpan);
+
+    if (!whsDefaultSpan) {
+        // Metodo 2: querySelector
+        whsDefaultSpan = document.querySelector('#whsDefault');
+        console.log('Metodo 2 (querySelector):', whsDefaultSpan);
+    }
+
+    if (!whsDefaultSpan) {
+        // Metodo 3: cerca per testo "Magazzino"
+        const allDivs = document.querySelectorAll('div');
+        for (const div of allDivs) {
+            if (div.innerHTML.includes('Magazzino')) {
+                console.log('Trovato div con Magazzino:', div.innerHTML);
+                const span = div.querySelector('span');
+                if (span) {
+                    whsDefaultSpan = span;
+                    console.log('Trovato span dentro div Magazzino:', span);
+                    break;
+                }
+            }
+        }
+    }
+
+    if (whsDefaultSpan) {
+        ubicazionePrelievo = whsDefaultSpan.textContent.trim();
+        console.log(' Ubicazione Prelievo trovata:', ubicazionePrelievo);
+        console.log(' Valore textContent:', whsDefaultSpan.textContent);
+        console.log(' Valore innerText:', whsDefaultSpan.innerText);
+    } else {
+        console.warn('⚠️ Span whsDefault NON trovato con nessun metodo');
+    }
+
     const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
     let totalSeriali = 0;
 
@@ -454,15 +494,19 @@ function estraiRighe() {
                 seriale.seriale || '',
                 seriale.stato || '',
                 seriale.ubicazioneDestinazione || '',
-                ''
+                ubicazionePrelievo
             ]);
             totalSeriali++;
         });
     });
 
+    console.log(' Totale seriali esportati:', totalSeriali);
+    console.log(' Ubicazione Prelievo finale:', ubicazionePrelievo);
+    console.log(' Prima riga dati:', out[1]); // Log della prima riga di dati (non header)
+    console.log(' Ultima colonna prima riga:', out[1] ? out[1][10] : 'N/A'); // Colonna UbicazionePrelievo
+
     return { rows: out, total: totalSeriali };
 }
-
     function downloadExcel(rows, fileName) {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(rows);
