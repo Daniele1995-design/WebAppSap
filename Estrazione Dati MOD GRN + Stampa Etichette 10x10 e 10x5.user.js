@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      14.6
+// @version      14.7
 // @description  Esporta seriali + PN in CSV e aggiunge funzionalità di stampa etichette 10x10 e 10x5
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
@@ -186,11 +186,12 @@ function aggiungiCampiUbicazione() {
         // Salta la riga di ricerca
         if (li.querySelector('#shootInput')) return;
 
-        // ===== PULSANTE UBICAZIONE PRINCIPALE =====
+        // ===== PULSANTE UBICAZIONE PRINCIPALE - AFFIANCO AL PULSANTE STAMPA =====
         if (!li.querySelector('button[data-ubic-btn-principale]')) {
-            // Cerca il contenitore principale con display flex (quello in alto)
-            const headerContainer = li.querySelector("div[style*='display: flex']");
-            if (headerContainer) {
+            // Cerca il wrapper del pulsante stampa
+            const stampaWrapper = li.querySelector('.stampa-wrapper');
+
+            if (stampaWrapper) {
                 const btnUbicazione = document.createElement('button');
                 btnUbicazione.setAttribute('data-ubic-btn-principale', 'true');
                 btnUbicazione.type = 'button';
@@ -214,32 +215,35 @@ function aggiungiCampiUbicazione() {
                     }
                 }
 
-               btnUbicazione.style.cssText = `
-    padding: 1px 3px;
-    margin-left: auto;
-    margin-right: 35px;
-    border: 2px solid #007bff;
-    border-radius: 6px;
-    font-size: 15px;
-    cursor: pointer;
-    transition: all 0.3s;
-    outline: none;
-    white-space: nowrap;
-    min-width: fit-content;
-    max-width: 20px;
-`;
+                btnUbicazione.style.cssText = `
+                    padding: 6px 3px;
+                    margin-left: 8px;
+                    border: 2px solid #007bff;
+                    border-radius: 4px;
+                    font-size: 15px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    outline: none;
+                    white-space: nowrap;
+                    min-width: fit-content;
+                    max-width: 100px;
+                `;
 
                 aggiornaTesto();
 
-                // Evento click per aprire il popup
+               // Evento click per aprire il popup
                 btnUbicazione.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
 
-                    const valoreAttuale = localStorage.getItem('ubic-principale-' + idx) || '';
-                    const nuovoValore = prompt('Inserisci Ubicazione Destinazione:', valoreAttuale);
+                    // Prendi il riferimento riga
+                    const data = getDataFromLi(li);
+                    const rifRiga = data.riferimentoPulito || data.riferimento || '';
 
-                    if (nuovoValore !== null) { // null se l'utente ha premuto Annulla
+                    const valoreAttuale = localStorage.getItem('ubic-principale-' + idx) || '';
+                    const nuovoValore = prompt(`Inserisci Ubicazione Destinazione ${rifRiga}:`, valoreAttuale);
+
+                    if (nuovoValore !== null) {
                         const valore = nuovoValore.trim();
 
                         // Salva in localStorage
@@ -258,11 +262,9 @@ function aggiungiCampiUbicazione() {
                                     const inputSerial = sr.querySelector('input[data-ubic-serial]');
                                     if (inputSerial) {
                                         inputSerial.value = valore;
-                                        // Aggiorna lo stile del campo seriale
                                         inputSerial.style.background = '#007bff';
                                         inputSerial.style.color = '#ffffff';
                                         inputSerial.style.fontWeight = '700';
-                                        // Salva in localStorage
                                         localStorage.setItem('ubic-serial-' + idx + '-' + srIdx, valore);
                                     }
                                 });
@@ -271,10 +273,8 @@ function aggiungiCampiUbicazione() {
                     }
                 });
 
-                // Inserisci dentro il contenitore flex in alto a destra
-                headerContainer.style.display = 'flex';
-                headerContainer.style.alignItems = 'center';
-                headerContainer.appendChild(btnUbicazione);
+                // Inserisci il pulsante DOPO il wrapper della stampa
+                stampaWrapper.parentElement.insertBefore(btnUbicazione, stampaWrapper.nextSibling);
             }
         }
 
@@ -285,7 +285,6 @@ function aggiungiCampiUbicazione() {
             const serialRows = dropdown.querySelectorAll("ul > li");
 
             serialRows.forEach((sr, serialIdx) => {
-                // Cerca il div con "Stato Logico:"
                 const statoLogicoDiv = Array.from(sr.querySelectorAll('div')).find(d => {
                     const strongTag = d.querySelector('strong');
                     return strongTag && /Stato Logico:/i.test(strongTag.textContent);
@@ -297,7 +296,6 @@ function aggiungiCampiUbicazione() {
                     inputSerial.type = 'text';
                     inputSerial.placeholder = 'Ubicazione Destinazione Riga';
 
-                    // Recupera valore salvato in localStorage
                     const savedValue = localStorage.getItem('ubic-serial-' + idx + '-' + serialIdx);
                     if (savedValue) {
                         inputSerial.value = savedValue;
@@ -326,7 +324,6 @@ function aggiungiCampiUbicazione() {
                         box-sizing: border-box;
                     `;
 
-                    // Funzione per aggiornare lo stile in base al contenuto
                     function aggiornaStileSerial() {
                         if (inputSerial.value.trim()) {
                             inputSerial.style.background = '#007bff';
@@ -339,7 +336,6 @@ function aggiungiCampiUbicazione() {
                         }
                     }
 
-                    // Effetto focus
                     inputSerial.addEventListener('focus', function() {
                         this.style.borderColor = '#117a8b';
                         this.style.boxShadow = '0 0 4px rgba(23,162,184,0.5)';
@@ -349,11 +345,9 @@ function aggiungiCampiUbicazione() {
                         this.style.borderColor = '#17a2b8';
                         this.style.boxShadow = 'none';
                         aggiornaStileSerial();
-                        // Salva in localStorage
                         localStorage.setItem('ubic-serial-' + idx + '-' + serialIdx, this.value.trim());
                     });
 
-                    // Quando premi INVIO, esci dal campo
                     inputSerial.addEventListener('keypress', function(e) {
                         if (e.key === 'Enter') {
                             e.preventDefault();
@@ -362,7 +356,6 @@ function aggiungiCampiUbicazione() {
                         }
                     });
 
-                    // Prendi il valore principale SOLO se non ha un valore salvato
                     if (!savedValue) {
                         const valorePrincipale = localStorage.getItem('ubic-principale-' + idx);
                         if (valorePrincipale && valorePrincipale.trim()) {
@@ -370,10 +363,8 @@ function aggiungiCampiUbicazione() {
                         }
                     }
 
-                    // Aggiorna stile al caricamento se ha già un valore
                     aggiornaStileSerial();
 
-                    // Inserisci DENTRO il div Stato Logico, alla fine
                     const wrapper = document.createElement('div');
                     wrapper.style.display = 'flex';
                     wrapper.style.alignItems = 'center';
