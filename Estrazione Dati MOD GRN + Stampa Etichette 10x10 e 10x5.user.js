@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      14.6
+// @version      14.7
 // @description  Esporta seriali + PN in CSV e aggiunge funzionalità di stampa etichette 10x10 e 10x5
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
@@ -119,11 +119,11 @@ function getDataFromLi(li) {
         cdc = text.slice('CDC :'.length).trim();
     }
 
-    let ubicazioneDestinazionePrincipale = '';
-    const inputUbicRigaPrincipale = li.querySelector('input[data-ubic-principale]');
-    if (inputUbicRigaPrincipale) {
-        ubicazioneDestinazionePrincipale = inputUbicRigaPrincipale.value.trim();
-    }
+    //let ubicazioneDestinazionePrincipale = '';
+    //const inputUbicRigaPrincipale = li.querySelector('input[data-ubic-principale]');
+    //if (inputUbicRigaPrincipale) {
+      //  ubicazioneDestinazionePrincipale = inputUbicRigaPrincipale.value.trim();
+    //}
 
     const serialRows = li.querySelectorAll("div[id^='dropdown-'] ul > li");
     const serials = [];
@@ -160,16 +160,17 @@ function getDataFromLi(li) {
         }
 
         if (seriale) {
-            let ubicazioneDest = '';
-            const inputUbicSerial = sr.querySelector('input[data-ubic-serial]');
-            if (inputUbicSerial) {
-                ubicazioneDest = inputUbicSerial.value.trim();
-            }
-            if (!ubicazioneDest) {
-                ubicazioneDest = ubicazioneDestinazionePrincipale;
-            }
+            //let ubicazioneDest = '';
+           // const inputUbicSerial = sr.querySelector('input[data-ubic-serial]');
+           // if (inputUbicSerial) {
+           //     ubicazioneDest = inputUbicSerial.value.trim();
+           // }
+           // if (!ubicazioneDest) {
+           //     ubicazioneDest = ubicazioneDestinazionePrincipale;
+          //  }
 
-            serials.push({ quantita, seriale, stato, ubicazioneDestinazione: ubicazioneDest });
+           // serials.push({ quantita, seriale, stato, ubicazioneDestinazione: ubicazioneDest });
+            serials.push({ quantita, seriale, stato, ubicazioneDestinazione: '' });
         }
     });
 
@@ -179,205 +180,205 @@ function getDataFromLi(li) {
         posizione, serials, cdc
     };
 }
-function aggiungiCampiUbicazione() {
-    const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
+//function aggiungiCampiUbicazione() {
+  //  const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
 
-    righe.forEach((li, idx) => {
+  //  righe.forEach((li, idx) => {
         // Salta la riga di ricerca
-        if (li.querySelector('#shootInput')) return;
+     //   if (li.querySelector('#shootInput')) return;
 
         // ===== PULSANTE UBICAZIONE PRINCIPALE - AFFIANCO AL PULSANTE STAMPA =====
-        if (!li.querySelector('button[data-ubic-btn-principale]')) {
+      //  if (!li.querySelector('button[data-ubic-btn-principale]')) {
             // Cerca il wrapper del pulsante stampa
-            const stampaWrapper = li.querySelector('.stampa-wrapper');
+        //    const stampaWrapper = li.querySelector('.stampa-wrapper');
 
-            if (stampaWrapper) {
-                const btnUbicazione = document.createElement('button');
-                btnUbicazione.setAttribute('data-ubic-btn-principale', 'true');
-                btnUbicazione.type = 'button';
+          //  if (stampaWrapper) {
+          //      const btnUbicazione = document.createElement('button');
+           //     btnUbicazione.setAttribute('data-ubic-btn-principale', 'true');
+           //     btnUbicazione.type = 'button';
 
                 // Recupera valore salvato in localStorage
-                const savedValue = localStorage.getItem('ubic-principale-' + idx);
+            //    const savedValue = localStorage.getItem('ubic-principale-' + idx);
 
                 // Aggiorna il testo del pulsante in base al valore salvato
-                function aggiornaTesto() {
-                    const valore = localStorage.getItem('ubic-principale-' + idx);
-                    if (valore && valore.trim()) {
-                        btnUbicazione.innerText = '✏️ ' + valore;
-                        btnUbicazione.style.background = '#007bff';
-                        btnUbicazione.style.color = '#ffffff';
-                        btnUbicazione.style.fontWeight = '700';
-                    } else {
-                        btnUbicazione.innerText = '✏️Ubicazione Riga';
-                        btnUbicazione.style.background = '#f8f9fa';
-                        btnUbicazione.style.color = '#000000';
-                        btnUbicazione.style.fontWeight = '700';
-                    }
-                }
+             //  function aggiornaTesto() {
+               //     const valore = localStorage.getItem('ubic-principale-' + idx);
+                //    if (valore && valore.trim()) {
+                //        btnUbicazione.innerText = '✏️ ' + valore;
+                //        btnUbicazione.style.background = '#007bff';
+                 //       btnUbicazione.style.color = '#ffffff';
+                  //      btnUbicazione.style.fontWeight = '700';
+                  //  } else {
+                 //       btnUbicazione.innerText = '✏️Ubicazione Riga';
+                 //       btnUbicazione.style.background = '#f8f9fa';
+                   //     btnUbicazione.style.color = '#000000';
+                  //      btnUbicazione.style.fontWeight = '700';
+                 //   }
+             //  }
+//
+             //   btnUbicazione.style.cssText = `
+              //      padding: 6px 3px;
+              //      margin-left: 8px;
+              //      border: 2px solid #007bff;
+              //      border-radius: 4px;
+              //      position: relative;
+               //     top: -4px;
+               //     font-size: 15px;
+               //     cursor: pointer;
+                //    transition: all 0.3s;
+                //    outline: none;
+                //    white-space: nowrap;
+                //    min-width: fit-content;
+                //    max-width: 100px;
+              //  `;
 
-                btnUbicazione.style.cssText = `
-                    padding: 6px 3px;
-                    margin-left: 8px;
-                    border: 2px solid #007bff;
-                    border-radius: 4px;
-                    position: relative;
-                    top: -4px;
-                    font-size: 15px;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                    outline: none;
-                    white-space: nowrap;
-                    min-width: fit-content;
-                    max-width: 100px;
-                `;
+             //   aggiornaTesto();
 
-                aggiornaTesto();
-
-               // Evento click per aprire il popup
-                btnUbicazione.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
+             //  // Evento click per aprire il popup
+             //   btnUbicazione.addEventListener('click', function(e) {
+                 //   e.preventDefault();
+                 //   e.stopPropagation();
 
                     // Prendi il riferimento riga
-                    const data = getDataFromLi(li);
-                    const rifRiga = data.riferimentoPulito || data.riferimento || '';
+                //   const data = getDataFromLi(li);
+                 //   const rifRiga = data.riferimentoPulito || data.riferimento || '';
+//
+                  //  const valoreAttuale = localStorage.getItem('ubic-principale-' + idx) || '';
+                 //   const nuovoValore = prompt(`Inserisci Ubicazione Destinazione ${rifRiga}:`, valoreAttuale);
 
-                    const valoreAttuale = localStorage.getItem('ubic-principale-' + idx) || '';
-                    const nuovoValore = prompt(`Inserisci Ubicazione Destinazione ${rifRiga}:`, valoreAttuale);
-
-                    if (nuovoValore !== null) {
-                        const valore = nuovoValore.trim();
+                //    if (nuovoValore !== null) {
+                  //      const valore = nuovoValore.trim();
 
                         // Salva in localStorage
-                        localStorage.setItem('ubic-principale-' + idx, valore);
+                    //    localStorage.setItem('ubic-principale-' + idx, valore);
 
                         // Aggiorna il testo del pulsante
-                        aggiornaTesto();
+                  //     aggiornaTesto();
 
                         // Propaga se l'utente conferma
-                        if (valore && confirm(`Vuoi propagare l'ubicazione "${valore}" a tutte le sottorighe?`)) {
-                            const dropdown = li.querySelector("div[id^='dropdown-']");
-                            if (dropdown) {
-                                dropdown.style.display = 'block';
-                                const serialRows = dropdown.querySelectorAll("ul > li");
-                                serialRows.forEach((sr, srIdx) => {
-                                    const inputSerial = sr.querySelector('input[data-ubic-serial]');
-                                    if (inputSerial) {
-                                        inputSerial.value = valore;
-                                        inputSerial.style.background = '#007bff';
-                                        inputSerial.style.color = '#ffffff';
-                                        inputSerial.style.fontWeight = '700';
-                                        localStorage.setItem('ubic-serial-' + idx + '-' + srIdx, valore);
-                                    }
-                                });
-                            }
-                        }
-                    }
-                });
+                     //   if (valore && confirm(`Vuoi propagare l'ubicazione "${valore}" a tutte le sottorighe?`)) {
+                      //      const dropdown = li.querySelector("div[id^='dropdown-']");
+                      //      if (dropdown) {
+                       //        dropdown.style.display = 'block';
+                         //       const serialRows = dropdown.querySelectorAll("ul > li");
+                         //       serialRows.forEach((sr, srIdx) => {
+                          //          const inputSerial = sr.querySelector('input[data-ubic-serial]');
+                          //          if (inputSerial) {
+                           //             inputSerial.value = valore;
+                            //            inputSerial.style.background = '#007bff';
+                            //            inputSerial.style.color = '#ffffff';
+                           //             inputSerial.style.fontWeight = '700';
+                             //           localStorage.setItem('ubic-serial-' + idx + '-' + srIdx, valore);
+                             //       }
+                              //  });
+                            //}
+                    //    }
+                    //}
+               // });
 
                 // Inserisci il pulsante DOPO il wrapper della stampa
-                stampaWrapper.parentElement.insertBefore(btnUbicazione, stampaWrapper.nextSibling);
-            }
-        }
+             //   stampaWrapper.parentElement.insertBefore(btnUbicazione, stampaWrapper.nextSibling);
+         //  }
+     //   }
 
         // ===== INPUT SOTTORIGHE SERIALI (resta invariato) =====
-        const dropdown = li.querySelector("div[id^='dropdown-']");
-        if (dropdown) {
-            dropdown.style.display = 'block';
-            const serialRows = dropdown.querySelectorAll("ul > li");
+   //     const dropdown = li.querySelector("div[id^='dropdown-']");
+      //  if (dropdown) {
+      //      dropdown.style.display = 'block';
+        //    const serialRows = dropdown.querySelectorAll("ul > li");
+//
+        //    serialRows.forEach((sr, serialIdx) => {
+          //      const statoLogicoDiv = Array.from(sr.querySelectorAll('div')).find(d => {
+           //         const strongTag = d.querySelector('strong');
+           //         return strongTag && /Stato Logico:/i.test(strongTag.textContent);
+           //     });
 
-            serialRows.forEach((sr, serialIdx) => {
-                const statoLogicoDiv = Array.from(sr.querySelectorAll('div')).find(d => {
-                    const strongTag = d.querySelector('strong');
-                    return strongTag && /Stato Logico:/i.test(strongTag.textContent);
-                });
+            //    if (statoLogicoDiv && !sr.querySelector('input[data-ubic-serial]')) {
+              //      const inputSerial = document.createElement('input');
+                //    inputSerial.setAttribute('data-ubic-serial', 'true');
+                  //  inputSerial.type = 'text';
+                   // inputSerial.placeholder = 'Ubicazione Destinazione Riga';
 
-                if (statoLogicoDiv && !sr.querySelector('input[data-ubic-serial]')) {
-                    const inputSerial = document.createElement('input');
-                    inputSerial.setAttribute('data-ubic-serial', 'true');
-                    inputSerial.type = 'text';
-                    inputSerial.placeholder = 'Ubicazione Destinazione Riga';
+                //    const savedValue = localStorage.getItem('ubic-serial-' + idx + '-' + serialIdx);
+                 //   if (savedValue) {
+                 //       inputSerial.value = savedValue;
+                 //   }
 
-                    const savedValue = localStorage.getItem('ubic-serial-' + idx + '-' + serialIdx);
-                    if (savedValue) {
-                        inputSerial.value = savedValue;
-                    }
+                  //  const labelUbic = document.createElement('span');
+                  //  labelUbic.textContent = 'Ubicazione:';
+                 //   labelUbic.style.fontWeight = '700';
+                 //   labelUbic.style.marginRight = '6px';
+                 //   labelUbic.style.color = '#1f2937';
+//
+                //   inputSerial.style.cssText = `
+                  //      width: 180px;
+                  //      height: 26px;
+                   //     padding: 4px 8px;
+                   //     margin-left: 15px;
+                    //    border: 1.5px solid #17a2b8;
+                   //     border-radius: 5px;
+                    //    font-size: 13px;
+                    //    font-weight: 500;
+                    //    background: #f8f9fa;
+                    //    transition: all 0.2s;
+                     //   outline: none;
+                   //    display: inline-block;
+                    //    vertical-align: middle;
+                    //    box-sizing: border-box;
+                   // `;
 
-                    const labelUbic = document.createElement('span');
-                    labelUbic.textContent = 'Ubicazione:';
-                    labelUbic.style.fontWeight = '700';
-                    labelUbic.style.marginRight = '6px';
-                    labelUbic.style.color = '#1f2937';
+                  //  function aggiornaStileSerial() {
+                   //     if (inputSerial.value.trim()) {
+                   //         inputSerial.style.background = '#007bff';
+                    //        inputSerial.style.color = '#ffffff';
+                    //        inputSerial.style.fontWeight = '700';
+                    //    } else {
+                     //       inputSerial.style.background = '#f8f9fa';
+                     //       inputSerial.style.color = '#000000';
+                     //       inputSerial.style.fontWeight = '500';
+                      //  }
+                   // }
 
-                    inputSerial.style.cssText = `
-                        width: 180px;
-                        height: 26px;
-                        padding: 4px 8px;
-                        margin-left: 15px;
-                        border: 1.5px solid #17a2b8;
-                        border-radius: 5px;
-                        font-size: 13px;
-                        font-weight: 500;
-                        background: #f8f9fa;
-                        transition: all 0.2s;
-                        outline: none;
-                        display: inline-block;
-                        vertical-align: middle;
-                        box-sizing: border-box;
-                    `;
+                  //  inputSerial.addEventListener('focus', function() {
+                 //       this.style.borderColor = '#117a8b';
+                  //      this.style.boxShadow = '0 0 4px rgba(23,162,184,0.5)';
+                  //  });
+//
+                  //  inputSerial.addEventListener('blur', function() {
+                  //      this.style.borderColor = '#17a2b8';
+                  //      this.style.boxShadow = 'none';
+                   //    aggiornaStileSerial();
+                    //    localStorage.setItem('ubic-serial-' + idx + '-' + serialIdx, this.value.trim());
+                    //});
 
-                    function aggiornaStileSerial() {
-                        if (inputSerial.value.trim()) {
-                            inputSerial.style.background = '#007bff';
-                            inputSerial.style.color = '#ffffff';
-                            inputSerial.style.fontWeight = '700';
-                        } else {
-                            inputSerial.style.background = '#f8f9fa';
-                            inputSerial.style.color = '#000000';
-                            inputSerial.style.fontWeight = '500';
-                        }
-                    }
+                   // inputSerial.addEventListener('keypress', function(e) {
+                     //   if (e.key === 'Enter') {
+                     //       e.preventDefault();
+                      //      aggiornaStileSerial();
+                      //      this.blur();
+                     //   }
+                  //  });
 
-                    inputSerial.addEventListener('focus', function() {
-                        this.style.borderColor = '#117a8b';
-                        this.style.boxShadow = '0 0 4px rgba(23,162,184,0.5)';
-                    });
+                  //  if (!savedValue) {
+                  //      const valorePrincipale = localStorage.getItem('ubic-principale-' + idx);
+                   //     if (valorePrincipale && valorePrincipale.trim()) {
+                  //          inputSerial.value = valorePrincipale.trim();
+                   //    }
+                  //  }
 
-                    inputSerial.addEventListener('blur', function() {
-                        this.style.borderColor = '#17a2b8';
-                        this.style.boxShadow = 'none';
-                        aggiornaStileSerial();
-                        localStorage.setItem('ubic-serial-' + idx + '-' + serialIdx, this.value.trim());
-                    });
+                  //  aggiornaStileSerial();
 
-                    inputSerial.addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            aggiornaStileSerial();
-                            this.blur();
-                        }
-                    });
-
-                    if (!savedValue) {
-                        const valorePrincipale = localStorage.getItem('ubic-principale-' + idx);
-                        if (valorePrincipale && valorePrincipale.trim()) {
-                            inputSerial.value = valorePrincipale.trim();
-                        }
-                    }
-
-                    aggiornaStileSerial();
-
-                    const wrapper = document.createElement('div');
-                    wrapper.style.display = 'flex';
-                    wrapper.style.alignItems = 'center';
-                    wrapper.appendChild(labelUbic);
-                    wrapper.appendChild(inputSerial);
-                    statoLogicoDiv.appendChild(wrapper);
-                }
-            });
-        }
-    });
-}
+                  //  const wrapper = document.createElement('div');
+                  //  wrapper.style.display = 'flex';
+                 //  wrapper.style.alignItems = 'center';
+                 //   wrapper.appendChild(labelUbic);
+                //    wrapper.appendChild(inputSerial);
+              //     statoLogicoDiv.appendChild(wrapper);
+               // }
+           // });
+       // }
+   // });
+//}
 function estraiRighe() {
     const out = [];
     out.push([
@@ -1820,14 +1821,14 @@ document.addEventListener('click', () => {
         addExportAndPrintUI();
         setInterval(() => {
             addPrintButtonsToRows();
-            aggiungiCampiUbicazione();
+           // aggiungiCampiUbicazione();
         }, 1500);
     });
 } else {
     addExportAndPrintUI();
     setInterval(() => {
         addPrintButtonsToRows();
-        aggiungiCampiUbicazione();
+        //aggiungiCampiUbicazione();
     }, 1500);
 }
 // Salviamo la funzione originale
