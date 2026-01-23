@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      14.7
+// @version      14.8
 // @description  Esporta seriali + PN in CSV e aggiunge funzionalità di stampa etichette 10x10 e 10x5
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
@@ -517,12 +517,12 @@ downloadExcel(
     `${commessa} DDT Nr. ${riferimento}.xlsx`
 );
 
-    // 🔹 Salva il file in locale
-   // GM_download({
-     //   url: "data:text/csv;charset=utf-8," + encodeURIComponent(csv),
-       // name: fileName,
-        //saveAs: true
-    //});
+    // Salva il file in locale
+    GM_download({
+        url: "data:text/csv;charset=utf-8," + encodeURIComponent(csv),
+        name: fileName,
+        saveAs: true
+    });
 
     // 🔹 Codifica CSV per invio a Google Apps Script
     const base64Content = btoa(unescape(encodeURIComponent(csv)));
