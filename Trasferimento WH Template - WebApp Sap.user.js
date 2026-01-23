@@ -1,12 +1,13 @@
 // ==UserScript==
-// @name         Trasferimento WH Template - WebApp Sap Excel
+// @name         Trasferimento WH Template Seriali (Excel + CSV)
 // @namespace    http://tampermonkey.net/
-// @version      3.0
-// @description  Inserisce seriali e ubicazioni da Excel + pulsante nel menu utente sopra Trasferisci
+// @version      4.0
+// @description  Inserisce seriali e ubicazioni da Excel o CSV - Rilevamento automatico
 // @match        http://172.18.20.20:8095/Transfer/Whs/?v=20250522
 // @require https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
 // @grant        GM_download
 // ==/UserScript==
+/* global XLSX */
 
 (function() {
     'use strict';
@@ -29,7 +30,6 @@
     // FIX: scan più stabile senza triggerare errori Framework7
     // ===================================================
     function forceScan(valore) {
-        // Cerchiamo prima l'input attivo, altrimenti quello generico
         let input = document.querySelector('input[type="text"]:focus, input[type="search"]:focus');
         if (!input) {
             input = document.querySelector('input[type="text"], input[type="search"]');
@@ -41,59 +41,167 @@
         }
 
         input.focus();
-        input.value = valore;                    // Imposta direttamente il valore
-        // NON dispatchiamo più manualmente l'evento 'input' → evita l'errore .apply()
-        setTimeout(() => wm.scanG(valore), 50);   // Piccolo delay per stabilità
+        input.value = valore;
+        setTimeout(() => wm.scanG(valore), 50);
     }
 
-function startProcess() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.xlsx,.xls';
+    // ===================================================
+    // PARSING EXCEL
+    // ===================================================
+    function parseExcel(arrayBuffer) {
+        console.log('📊 Rilevato file Excel - parsing in corso...');
 
-    input.onchange = e => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
 
-        reader.onload = evt => {
-            const data = new Uint8Array(evt.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(sheet, {
+            header: 1,
+            defval: "",
+            raw: false
+        });
 
-            // prima sheet
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
+        console.log('Totale righe Excel:', rows.length);
+        console.log('Header:', rows[0]);
 
-            // array di array (righe / colonne)
-            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        const parsed = [];
 
-            dati = [];
+        rows.forEach((row, idx) => {
+            if (idx === 0) return; // salta header
+            if (!row || row.length === 0) return;
 
-            rows.forEach((row, idx) => {
-                if (idx === 0) return;        // salta header
-                if (!row || row.length === 0) return;
+            const seriale = String(row[7] || "").trim();
+            const ubicazione = String(row[9] || "").trim();
 
-                // STESSE COLONNE DEL CSV
-                const seriale = row[7];
-                const ubicazione = row[9];
+            if (!seriale || !ubicazione) {
+                console.log(`❌ Riga Excel ${idx} scartata - seriale o ubicazione mancante`);
+                return;
+            }
 
-                if (seriale && ubicazione) {
-                    dati.push([
-                        String(seriale).trim(),
-                        String(ubicazione).trim()
-                    ]);
+            parsed.push([seriale, ubicazione]);
+            console.log(`✅ Riga Excel ${idx} caricata:`, { seriale, ubicazione });
+        });
+
+        return parsed;
+    }
+
+    // ===================================================
+    // PARSING CSV
+    // ===================================================
+    function parseCSV(text) {
+        console.log('📄 Rilevato file CSV - parsing in corso...');
+
+        const lines = text.split(/\r?\n/);
+        console.log('Totale righe CSV:', lines.length);
+
+        const parsed = [];
+
+        lines.forEach((line, idx) => {
+            if (idx === 0) return; // salta header
+            if (!line.trim()) return;
+
+            const parts = line.split(';');
+
+            const seriale = (parts[7] || "").trim();
+            const ubicazione = (parts[9] || "").trim();
+
+            if (!seriale || !ubicazione) {
+                console.log(`❌ Riga CSV ${idx + 1} scartata - seriale o ubicazione mancante`);
+                return;
+            }
+
+            parsed.push([seriale, ubicazione]);
+            console.log(`✅ Riga CSV ${idx + 1} caricata:`, { seriale, ubicazione });
+        });
+
+        return parsed;
+    }
+
+    // ===================================================
+    // FUNZIONE INTELLIGENTE DI CARICAMENTO
+    // ===================================================
+    function startProcess() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.xlsx,.xls,.csv'; // ← Accetta entrambi i formati
+
+        input.onchange = e => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const fileName = file.name.toLowerCase();
+            const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+            const isCSV = fileName.endsWith('.csv');
+
+            console.log('=== CARICAMENTO FILE ===');
+            console.log('Nome file:', file.name);
+            console.log('Tipo:', file.type);
+            console.log('Dimensione:', (file.size / 1024).toFixed(2), 'KB');
+
+            const reader = new FileReader();
+
+            reader.onload = evt => {
+                try {
+                    let parsed = [];
+
+                    if (isExcel) {
+                        // ✅ Parsing Excel
+                        const arrayBuffer = evt.target.result;
+                        parsed = parseExcel(arrayBuffer);
+                    }
+                    else if (isCSV) {
+                        // ✅ Parsing CSV
+                        const text = evt.target.result;
+                        parsed = parseCSV(text);
+                    }
+                    else {
+                        alert('⚠️ Formato file non riconosciuto!\n\nFormati supportati:\n- Excel (.xlsx, .xls)\n- CSV (.csv)');
+                        return;
+                    }
+
+                    console.log('=== RIEPILOGO CARICAMENTO ===');
+                    console.log('Righe caricate:', parsed.length);
+                    console.log('Primi 3 record:', parsed.slice(0, 3));
+
+                    console.table(parsed.map((d, i) => ({
+                        idx: i + 1,
+                        seriale: d[0]?.substring(0, 20) || '-',
+                        ubicazione: d[1]
+                    })));
+
+                    if (parsed.length === 0) {
+                        alert('⚠️ Nessun dato valido trovato nel file!\n\nVerifica che:\n- Il file abbia intestazioni nella prima riga\n- I dati partano dalla riga 2\n- Le colonne H (seriale) e J (ubicazione) non siano vuote');
+                        return;
+                    }
+
+                    dati = parsed;
+                    insertSeriale(0);
+
+                } catch (error) {
+                    console.error('❌ Errore durante il parsing:', error);
+                    alert('❌ Errore durante la lettura del file:\n\n' + error.message);
                 }
-            });
+            };
 
-            console.log('Dati caricati da Excel:', dati);
-            insertSeriale(0);
+            reader.onerror = () => {
+                console.error('❌ Errore lettura file');
+                alert('❌ Impossibile leggere il file!');
+            };
+
+            // ✅ Leggi il file nel formato appropriato
+            if (isExcel) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
         };
 
-        reader.readAsArrayBuffer(file);
-    };
+        input.click();
+    }
 
-    input.click();
-}
-
+    // ===================================================
+    // INSERIMENTO SERIALI
+    // ===================================================
     async function insertSeriale(index) {
         if (index >= dati.length) {
             console.log('Processo completato!');
@@ -130,7 +238,7 @@ function startProcess() {
             console.error('Errore scan seriale:', e);
         }
 
-        await new Promise(r => setTimeout(r, 800)); // aumentato per maggiore stabilità
+        await new Promise(r => setTimeout(r, 800));
 
         // Seleziona la riga
         const primaRigaCheckbox = document.querySelector(
@@ -150,7 +258,7 @@ function startProcess() {
             console.error('Errore scan ubicazione:', e);
         }
 
-        await new Promise(r => setTimeout(r, 800)); // aumentato
+        await new Promise(r => setTimeout(r, 800));
 
         // Deseleziona la riga per preparare la prossima
         if (primaRigaCheckbox && primaRigaCheckbox.checked) {
@@ -165,22 +273,25 @@ function startProcess() {
         insertSeriale(index + 1);
     }
 
+    // ===================================================
+    // DOWNLOAD REPORT
+    // ===================================================
     function downloadCSV() {
-    const header = 'Seriale;Ubicazione;Stato;TipoErrore';
+        const header = 'Seriale;Ubicazione;Stato;TipoErrore';
 
-    const rows = report.map(e => {
-        const serialeTesto = e.seriale ? "'" + e.seriale : '';
-        return `${serialeTesto};${e.ubicazione || ''};${e.stato || ''};${e.tipoErrore || ''}`;
-    });
+        const rows = report.map(e => {
+            const serialeTesto = e.seriale ? "'" + e.seriale : '';
+            return `${serialeTesto};${e.ubicazione || ''};${e.stato || ''};${e.tipoErrore || ''}`;
+        });
 
-    const csvContent = [header, ...rows].join('\n');
+        const csvContent = [header, ...rows].join('\n');
 
-    GM_download({
-        url: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent),
-        name: 'report_seriali.csv',
-        saveAs: true
-    });
-}
+        GM_download({
+            url: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent),
+            name: 'report_seriali.csv',
+            saveAs: true
+        });
+    }
 
     // ===================================================
     // PULSANTE MENU
@@ -201,7 +312,7 @@ function startProcess() {
                    id="btnCaricaSerialiMenu"
                    style="background:#27ae60; color:white;">
                     <i class="icon material-icons md-only">list_alt</i>
-                    <span>Carica Template Seriali</span>
+                    <span>Carica Template Seriali (Excel/CSV)</span>
                 </a>
             `;
 
@@ -214,7 +325,7 @@ function startProcess() {
                 });
 
             console.log('Pulsante "Carica Template Seriali" aggiunto nel menu');
-            observer.disconnect(); // una volta aggiunto, non serve più osservare
+            observer.disconnect();
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
