@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         WH Template Articolo → Seriale → Ubicazione → Quantità Excel
 // @namespace    http://tampermonkey.net/
-// @version      3.1
-// @description  Forza apertura keypad cliccando su #lastQty se necessario (focus su qty)
+// @version      3.2
+// @description  Forza apertura keypad cliccando su #lastQty se necessario (focus su qty) - VERSIONE STABILE
 // @match        http://172.18.20.20:8095/Transfer/Whs/*
 // @grant        GM_download
 // @require https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
@@ -135,9 +135,9 @@
             } else {
                 if (r.ubicazionePrelievo) {
                     await insertUbicazioneWithCheckbox(r.ubicazionePrelievo);
-                    await delay(400); // ✅ Torno a 400ms (timing originale)
+                    await delay(400);
                 }
-                await writeQuantity(r.quantita); // ✅ Ora forza l'apertura del keypad se necessario
+                await writeQuantity(r.quantita);
             }
             await insertUbicazioneWithCheckbox(r.ubicazione);
         }
@@ -151,48 +151,82 @@
         input.type = "file";
         input.accept = ".xlsx,.xls";
         input.onchange = e => {
-           const reader = new FileReader();
-reader.onload = evt => {
-    const data = new Uint8Array(evt.target.result);
-    const workbook = XLSX.read(data, { type: 'array' });
+            const reader = new FileReader();
+            reader.onload = evt => {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
 
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
 
-    console.log("=== DEBUG CARICAMENTO EXCEL ===");
-    console.log("Totale righe nel file:", rows.length);
-    console.log("Prima riga (header):", rows[0]);
-    console.log("Seconda riga (dati):", rows[1]);
-    console.log("Lunghezza seconda riga:", rows[1]?.length);
+                // ✅ USA defval per avere sempre tutte le celle + raw:false per convertire tutto a stringa
+                const rows = XLSX.utils.sheet_to_json(sheet, {
+                    header: 1,
+                    defval: "",  // ← CRITICO: crea celle vuote come stringa vuota
+                    raw: false   // ← converte tutto a stringa (anche numeri/date)
+                });
 
-    dati = [];
+                console.log("=== DEBUG CARICAMENTO EXCEL ===");
+                console.log("Totale righe nel file:", rows.length);
+                console.log("Prima riga (header):", rows[0]);
 
-    rows.forEach((row, idx) => {
-        console.log(`Riga ${idx}:`, row, "Lunghezza:", row?.length);
+                dati = [];
 
-        if (idx === 0) return; // salta header
-        if (!row || row.length < 10) {
-            console.log(`❌ Riga ${idx} scartata - lunghezza: ${row?.length}`);
-            return;
-        }
+                rows.forEach((row, idx) => {
+                    if (idx === 0) return; // salta header
 
-        dati.push({
-            articolo: String(row[1] || "").trim(),
-            quantita: String(row[6] || "").trim(),
-            seriale: String(row[7] || "").trim(),
-            ubicazione: String(row[9] || "").trim(),
-            ubicazionePrelievo: String(row[10] || "").trim() || null
-        });
+                    // ✅ Verifica solo che la riga esista e abbia almeno la colonna dell'articolo
+                    if (!row || !row[1]) {
+                        console.log(`❌ Riga ${idx} scartata - articolo mancante`);
+                        return;
+                    }
 
-        console.log(`✅ Riga ${idx} caricata`);
-    });
+                    // ✅ Accesso sicuro alle celle (defval garantisce che esistano)
+                    const articolo = String(row[1] || "").trim();
+                    const quantita = String(row[6] || "").trim();
+                    const seriale = String(row[7] || "").trim();
+                    const ubicazione = String(row[9] || "").trim();
+                    const ubicazionePrelievo = String(row[10] || "").trim();
 
-    console.log("Righe caricate totali:", dati.length);
-    console.log("Dati finali:", dati);
-    insertData(0);
-};
-reader.readAsArrayBuffer(e.target.files[0]);
+                    // ✅ Salta righe senza dati essenziali
+                    if (!articolo) {
+                        console.log(`❌ Riga ${idx} - articolo vuoto`);
+                        return;
+                    }
+
+                    dati.push({
+                        articolo,
+                        quantita,
+                        seriale,
+                        ubicazione,
+                        ubicazionePrelievo: ubicazionePrelievo || null
+                    });
+
+                    console.log(`✅ Riga ${idx} caricata:`, { articolo, quantita, seriale, ubicazione });
+                });
+
+                console.log("=== RIEPILOGO CARICAMENTO ===");
+                console.log("Righe caricate totali:", dati.length);
+                console.log("Primi 3 record:", dati.slice(0, 3));
+
+                // ✅ Debug completo in formato tabella
+                console.table(dati.map((d, i) => ({
+                    idx: i,
+                    articolo: d.articolo,
+                    qta: d.quantita,
+                    seriale: d.seriale?.substring(0, 15),
+                    ubicazione: d.ubicazione,
+                    ubicPrelievo: d.ubicazionePrelievo?.substring(0, 10) || '-'
+                })));
+
+                if (dati.length === 0) {
+                    alert("⚠️ Nessun dato valido trovato nell'Excel!\n\nVerifica che:\n- Il file abbia intestazioni nella prima riga\n- I dati partano dalla riga 2\n- La colonna B (articolo) non sia vuota");
+                    return;
+                }
+
+                insertData(0);
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
         };
         input.click();
     }
