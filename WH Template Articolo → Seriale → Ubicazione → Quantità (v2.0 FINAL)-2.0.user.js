@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WH Template Articolo → Seriale → Ubicazione → Quantità Excel
 // @namespace    http://tampermonkey.net/
-// @version      3.2
+// @version      4.0
 // @description  Forza apertura keypad cliccando su #lastQty se necessario (focus su qty) - VERSIONE STABILE
 // @match        http://172.18.20.20:8095/Transfer/Whs/*
 // @grant        GM_download
