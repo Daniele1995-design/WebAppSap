@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         WH Template Articolo → Seriale → Ubicazione → Quantità (Excel + CSV)
 // @namespace    http://tampermonkey.net/
-// @version      4.0
-// @description  Supporta sia Excel (.xlsx/.xls) che CSV - Rilevamento automatico
+// @version      5.0
+// @description  Supporta sia Excel (.xlsx/.xls) che CSV - Parsing ottimizzato
 // @match        http://172.18.20.20/Transfer/Whs/*
 // @grant        GM_download
 // @require https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
@@ -46,7 +46,6 @@
             if (keypad) break;
 
             if (i === 5 || i === 10) {
-                console.log(`[writeQuantity] Tentativo ${i}: clicco su #lastQty per aprire keypad`);
                 inputQty.click();
                 inputQty.focus();
             }
@@ -143,10 +142,8 @@
         insertData(i + 1);
     }
 
-    // ✅ PARSING EXCEL
+    // PARSING EXCEL
     function parseExcel(arrayBuffer) {
-        console.log("📊 Rilevato file Excel - parsing in corso...");
-
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
@@ -157,89 +154,39 @@
             raw: false
         });
 
-        console.log("Totale righe Excel:", rows.length);
-        console.log("Header:", rows[0]);
-
-        const parsed = [];
-
-        rows.forEach((row, idx) => {
-            if (idx === 0) return; // salta header
-
-            if (!row || !row[1]) {
-                console.log(`❌ Riga ${idx} scartata - articolo mancante`);
-                return;
-            }
-
-            const articolo = String(row[1] || "").trim();
-            const quantita = String(row[6] || "").trim();
-            const seriale = String(row[7] || "").trim();
-            const ubicazione = String(row[9] || "").trim();
-            const ubicazionePrelievo = String(row[10] || "").trim();
-
-            if (!articolo) {
-                console.log(`❌ Riga ${idx} - articolo vuoto`);
-                return;
-            }
-
-            parsed.push({
-                articolo,
-                quantita,
-                seriale,
-                ubicazione,
-                ubicazionePrelievo: ubicazionePrelievo || null
-            });
-
-            console.log(`✅ Riga ${idx} caricata:`, { articolo, quantita, seriale, ubicazione });
-        });
-
-        return parsed;
+        return rows.slice(1)
+            .filter(row => row && row[1])
+            .map(row => ({
+                articolo: String(row[1] || "").trim(),
+                quantita: String(row[6] || "").trim(),
+                seriale: String(row[7] || "").trim(),
+                ubicazione: String(row[9] || "").trim(),
+                ubicazionePrelievo: String(row[10] || "").trim() || null
+            }));
     }
 
-    // ✅ PARSING CSV
+    // PARSING CSV (identico al v2.4 che funzionava)
     function parseCSV(text) {
-        console.log("📄 Rilevato file CSV - parsing in corso...");
-
         const lines = text.split(/\r?\n/);
-        console.log("Totale righe CSV:", lines.length);
 
-        const parsed = [];
-
-        lines.forEach((line, idx) => {
-            if (idx === 0) return; // salta header
-            if (!line.trim()) return;
-
-            const p = line.split(";");
-
-            const articolo = (p[1] || "").trim();
-            const quantita = (p[6] || "").trim();
-            const seriale = (p[7] || "").trim();
-            const ubicazione = (p[9] || "").trim();
-            const ubicazionePrelievo = (p[10] || "").trim();
-
-            if (!articolo) {
-                console.log(`❌ Riga CSV ${idx + 1} - articolo vuoto`);
-                return;
-            }
-
-            parsed.push({
-                articolo,
-                quantita,
-                seriale,
-                ubicazione,
-                ubicazionePrelievo: ubicazionePrelievo || null
+        return lines.slice(1)
+            .filter(ln => ln.trim())
+            .map(ln => {
+                const p = ln.split(";");
+                return {
+                    articolo: (p[1] || "").trim(),
+                    quantita: (p[6] || "").trim(),
+                    seriale: (p[7] || "").trim(),
+                    ubicazione: (p[9] || "").trim(),
+                    ubicazionePrelievo: (p[10] || "").trim() || null
+                };
             });
-
-            console.log(`✅ Riga CSV ${idx + 1} caricata:`, { articolo, quantita, seriale, ubicazione });
-        });
-
-        return parsed;
     }
 
-    // ✅ FUNZIONE INTELLIGENTE DI CARICAMENTO
     function startProcess() {
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = ".xlsx,.xls,.csv"; // ← Accetta entrambi i formati
+        input.accept = ".xlsx,.xls,.csv";
 
         input.onchange = e => {
             const file = e.target.files[0];
@@ -249,11 +196,6 @@
             const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
             const isCSV = fileName.endsWith('.csv');
 
-            console.log("=== CARICAMENTO FILE ===");
-            console.log("Nome file:", file.name);
-            console.log("Tipo:", file.type);
-            console.log("Dimensione:", (file.size / 1024).toFixed(2), "KB");
-
             const reader = new FileReader();
 
             reader.onload = evt => {
@@ -261,38 +203,22 @@
                     let parsed = [];
 
                     if (isExcel) {
-                        // ✅ Parsing Excel
-                        const arrayBuffer = evt.target.result;
-                        parsed = parseExcel(arrayBuffer);
+                        parsed = parseExcel(evt.target.result);
                     }
                     else if (isCSV) {
-                        // ✅ Parsing CSV
-                        const text = evt.target.result;
-                        parsed = parseCSV(text);
+                        parsed = parseCSV(evt.target.result);
                     }
                     else {
                         alert("⚠️ Formato file non riconosciuto!\n\nFormati supportati:\n- Excel (.xlsx, .xls)\n- CSV (.csv)");
                         return;
                     }
 
-                    console.log("=== RIEPILOGO CARICAMENTO ===");
-                    console.log("Righe caricate:", parsed.length);
-                    console.log("Primi 3 record:", parsed.slice(0, 3));
-
-                    console.table(parsed.map((d, i) => ({
-                        idx: i + 1,
-                        articolo: d.articolo,
-                        qta: d.quantita,
-                        seriale: d.seriale?.substring(0, 15) || '-',
-                        ubicazione: d.ubicazione,
-                        ubicPrelievo: d.ubicazionePrelievo?.substring(0, 10) || '-'
-                    })));
-
                     if (parsed.length === 0) {
-                        alert("⚠️ Nessun dato valido trovato nel file!\n\nVerifica che:\n- Il file abbia intestazioni nella prima riga\n- I dati partano dalla riga 2\n- La colonna B (articolo) non sia vuota");
+                        alert("⚠️ Nessun dato valido trovato nel file!");
                         return;
                     }
 
+                    console.log(`✅ Caricate ${parsed.length} righe`);
                     dati = parsed;
                     insertData(0);
 
@@ -303,11 +229,9 @@
             };
 
             reader.onerror = () => {
-                console.error("❌ Errore lettura file");
                 alert("❌ Impossibile leggere il file!");
             };
 
-            // ✅ Leggi il file nel formato appropriato
             if (isExcel) {
                 reader.readAsArrayBuffer(file);
             } else {
