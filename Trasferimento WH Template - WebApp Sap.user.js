@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Trasferimento WH Template Seriali (Excel + CSV)
 // @namespace    http://tampermonkey.net/
-// @version      4.0
+// @version      4.1
 // @description  Inserisce seriali e ubicazioni da Excel o CSV - Rilevamento automatico
 // @match        http://172.18.20.20:8095/Transfer/Whs/?v=20250522
 // @require https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
@@ -312,7 +312,7 @@
                    id="btnCaricaSerialiMenu"
                    style="background:#27ae60; color:white;">
                     <i class="icon material-icons md-only">list_alt</i>
-                    <span>Carica Template Seriali (Excel/CSV)</span>
+                    <span>Carica Template solo Seriali (Excel/CSV)</span>
                 </a>
             `;
 
