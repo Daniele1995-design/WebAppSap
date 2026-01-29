@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WH Template Articolo → Seriale → Ubicazione → Quantità (Excel + CSV)
 // @namespace    http://tampermonkey.net/
-// @version      5.0
+// @version      5.1
 // @description  Supporta sia Excel (.xlsx/.xls) che CSV - Parsing ottimizzato
 // @match        http://172.18.20.20/Transfer/Whs/*
 // @grant        GM_download
@@ -273,7 +273,7 @@
             div.innerHTML = `
                 <a class="button button-large button-fill" id="btnCaricaLottiMenu" style="background:#e74c3c;color:white;">
                     <i class="icon material-icons md-only">inbox</i>
-                    <span style="margin-left:12px;font-weight:bold;">Carica Template (Excel/CSV)</span>
+                    <span style="margin-left:12px;font-weight:bold;">Carica Template Lotto/Seriale (Excel/CSV)</span>
                 </a>
             `;
 
