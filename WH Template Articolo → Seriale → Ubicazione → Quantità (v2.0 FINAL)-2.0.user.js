@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         WH Template Articolo → Seriale → Ubicazione → Quantità (Excel + CSV)
+// @name         WH Template Articolo → Seriale → Ubicazione → Quantità (Excel + CSV)v2
 // @namespace    http://tampermonkey.net/
-// @version      5.2
+// @version      5.5
 // @description  Supporta sia Excel (.xlsx/.xls) che CSV - Parsing ottimizzato
 // @match        http://172.18.20.20/Transfer/Whs/*
 // @grant        GM_download
@@ -244,44 +244,49 @@
 
     function downloadReport() {
 
-    const righeWebApp = document.querySelectorAll("label.item-checkbox.item-content");
+        const righeWebApp = document.querySelectorAll("label.item-checkbox.item-content");
 
-    // crea un set con tutti i seriali/lotti presenti nella pagina
-    const serialiPresenti = new Set();
+        // crea un set con tutti i seriali/lotti presenti nella pagina
+        const serialiPresenti = new Set();
 
-    righeWebApp.forEach(el => {
-        const lottoSpan = el.querySelector(".fa-chain")?.parentElement;
-        if (lottoSpan) {
-            const lotto = lottoSpan.textContent.trim();
-            if (lotto) serialiPresenti.add(lotto);
-        }
-    });
+        righeWebApp.forEach(el => {
+            const lottoSpan = el.querySelector(".fa-chain")?.parentElement;
+            if (lottoSpan) {
+                const lotto = lottoSpan.textContent.trim();
+                if (lotto) serialiPresenti.add(lotto);
+            }
+        });
 
-    // scorri il report e segnala errore se il seriale non è presente nella pagina
-    report.forEach(r => {
-        const lottoReport = r.seriale?.trim();
-        if (lottoReport && !serialiPresenti.has(lottoReport)) {
-            r.stato = "ERRORE";
-            r.errore = "Quantità 0 - lotto non trovato nella pagina";
-        }
-    });
+        // scorri il report e segnala errore se il seriale non è presente nella pagina
+        report.forEach(r => {
+            const lottoReport = r.seriale?.trim();
+            if (lottoReport && !serialiPresenti.has(lottoReport)) {
+                r.stato = "ERRORE";
+                r.errore = "Quantità 0 - lotto non trovato nella pagina";
+            }
+        });
 
-    // EXPORT NORMALE
-    const header = "Articolo;Seriale;Ubicazione;Quantità;Stato;Errore";
+        // EXPORT NORMALE
+        const header = "Articolo;Seriale;Ubicazione;Quantità;Stato;Errore";
 
-    const rows = report.map(r => {
-        const serialeTesto = r.seriale ? "'" + r.seriale : '';
-        return `${r.articolo || ''};${serialeTesto};${r.ubicazione || ''};${r.quantita || ''};${r.stato};${r.errore}`;
-    });
+        const rows = report.map(r => {
+            const serialeTesto = r.seriale ? "'" + r.seriale : '';
+            return `${r.articolo || ''};${serialeTesto};${r.ubicazione || ''};${r.quantita || ''};${r.stato};${r.errore}`;
+        });
 
-    const txt = [header, ...rows].join("\n");
+        const txt = [header, ...rows].join("\n");
 
-    GM_download({
-        url:"data:text/csv;charset=utf-8,"+encodeURIComponent(txt),
-        name:"report_lotti.csv",
-        saveAs:true
-    });
-}
+        GM_download({
+            url:"data:text/csv;charset=utf-8,"+encodeURIComponent(txt),
+            name:"report_lotti.csv",
+            saveAs:true
+        });
+
+        // APPLICA GLI STILI DOPO IL COMPLETAMENTO DEL TEMPLATE
+        setTimeout(() => {
+            applicaStiliLista();
+        }, 300);
+    }
 
 
     // PULSANTE NEL MENU
@@ -298,7 +303,7 @@
             div.innerHTML = `
                 <a class="button button-large button-fill" id="btnCaricaLottiMenu" style="background:#e74c3c;color:white;">
                     <i class="icon material-icons md-only">inbox</i>
-                    <span style="margin-left:12px;font-weight:bold;">Carica Template Lotto/Seriale (Excel/CSV)</span>
+                    <span style="margin-left:12px;font-weight:bold;">Carica Template (Excel/CSV)</span>
                 </a>
             `;
 
@@ -313,4 +318,81 @@
     };
 
     addMenuBtn();
+
+    function addScrollbar() {
+        const lista = document.querySelector('#listaImballi');
+        if (lista) {
+            lista.style.height = "80vh";
+            lista.style.overflowY = "auto";
+            lista.style.display = "block";
+            lista.style.border = "1px solid #ccc";
+            console.log("✅ Scrollbar applicata a #listaImballi");
+        } else {
+            console.warn("⚠️ #listaImballi non trovato!");
+        }
+    }
+
+    // FUNZIONE CHE APPLICA TUTTI GLI STILI ALLA LISTA
+    function applicaStiliLista() {
+        const sidebar = document.querySelector('.sheet-modal.userinfo-swipe-to-close');
+        if (sidebar) {
+            sidebar.style.height = "100%";
+            sidebar.style.maxHeight = "100vh";
+            sidebar.style.display = "flex";
+            sidebar.style.flexDirection = "column";
+            sidebar.style.overflow = "hidden";
+        }
+
+        const lista = document.getElementById("listaImballi");
+        if (lista) {
+            lista.style.flexGrow = "1";
+            lista.style.overflowY = "auto";
+            lista.style.marginRight = "55px";
+            lista.style.padding = "0 5px";
+            lista.style.fontSize = "0.95rem";
+            lista.style.lineHeight = "1.2";
+
+            lista.querySelectorAll("i.fa").forEach(icon => {
+                icon.style.fontSize = "1.3em";
+                icon.style.marginRight = "4px";
+            });
+
+            lista.querySelectorAll(".bqty").forEach(el => {
+                el.style.fontSize = "1.3rem";
+                el.style.fontWeight = "bold";
+            });
+
+            lista.querySelectorAll(".item-title > div").forEach(el => {
+                el.style.fontSize = "0.85rem";
+                el.style.fontWeight = "bold";
+                el.style.lineHeight = "1.1";
+                el.style.margin = "2px 0";
+            });
+
+            lista.querySelectorAll(".item-after").forEach(el => {
+                el.style.fontSize = "0.8rem";
+                el.style.lineHeight = "1.1";
+            });
+
+            lista.querySelectorAll(".item-content").forEach(el => {
+                el.style.paddingTop = "4px";
+                el.style.paddingBottom = "4px";
+                el.style.minHeight = "auto";
+            });
+
+            lista.querySelectorAll("li").forEach(el => {
+                el.style.paddingTop = "3px";
+                el.style.paddingBottom = "3px";
+            });
+        }
+    }
+
+    // APPLICA GLI STILI AL CARICAMENTO DELLA PAGINA
+    window.addEventListener("load", () => {
+        setTimeout(() => {
+            addScrollbar();
+            applicaStiliLista();
+        }, 500);
+    });
+
 })();
