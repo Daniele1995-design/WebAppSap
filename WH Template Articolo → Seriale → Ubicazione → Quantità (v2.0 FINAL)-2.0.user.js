@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WH Template Articolo → Seriale → Ubicazione → Quantità (Excel + CSV)
 // @namespace    http://tampermonkey.net/
-// @version      5.1
+// @version      5.2
 // @description  Supporta sia Excel (.xlsx/.xls) che CSV - Parsing ottimizzato
 // @match        http://172.18.20.20/Transfer/Whs/*
 // @grant        GM_download
@@ -243,21 +243,46 @@
     }
 
     function downloadReport() {
-        const header = "Articolo;Seriale;Ubicazione;Quantità;Stato;Errore";
 
-        const rows = report.map(r => {
-            const serialeTesto = r.seriale ? "'" + r.seriale : '';
-            return `${r.articolo || ''};${serialeTesto};${r.ubicazione || ''};${r.quantita || ''};${r.stato};${r.errore}`;
-        });
+    const righeWebApp = document.querySelectorAll("label.item-checkbox.item-content");
 
-        const txt = [header, ...rows].join("\n");
+    // crea un set con tutti i seriali/lotti presenti nella pagina
+    const serialiPresenti = new Set();
 
-        GM_download({
-            url: "data:text/csv;charset=utf-8," + encodeURIComponent(txt),
-            name: "report_lotti.csv",
-            saveAs: true
-        });
-    }
+    righeWebApp.forEach(el => {
+        const lottoSpan = el.querySelector(".fa-chain")?.parentElement;
+        if (lottoSpan) {
+            const lotto = lottoSpan.textContent.trim();
+            if (lotto) serialiPresenti.add(lotto);
+        }
+    });
+
+    // scorri il report e segnala errore se il seriale non è presente nella pagina
+    report.forEach(r => {
+        const lottoReport = r.seriale?.trim();
+        if (lottoReport && !serialiPresenti.has(lottoReport)) {
+            r.stato = "ERRORE";
+            r.errore = "Quantità 0 - lotto non trovato nella pagina";
+        }
+    });
+
+    // EXPORT NORMALE
+    const header = "Articolo;Seriale;Ubicazione;Quantità;Stato;Errore";
+
+    const rows = report.map(r => {
+        const serialeTesto = r.seriale ? "'" + r.seriale : '';
+        return `${r.articolo || ''};${serialeTesto};${r.ubicazione || ''};${r.quantita || ''};${r.stato};${r.errore}`;
+    });
+
+    const txt = [header, ...rows].join("\n");
+
+    GM_download({
+        url:"data:text/csv;charset=utf-8,"+encodeURIComponent(txt),
+        name:"report_lotti.csv",
+        saveAs:true
+    });
+}
+
 
     // PULSANTE NEL MENU
     const addMenuBtn = () => {
