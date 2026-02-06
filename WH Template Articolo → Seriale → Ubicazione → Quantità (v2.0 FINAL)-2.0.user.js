@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         WH Template Articolo → Seriale → Ubicazione → Quantità (Excel + CSV)v2
+// @name         WH Template Articolo → Seriale → Ubicazione → Quantità (Excel + CSV)
 // @namespace    http://tampermonkey.net/
 // @version      5.5
 // @description  Supporta sia Excel (.xlsx/.xls) che CSV - Parsing ottimizzato
