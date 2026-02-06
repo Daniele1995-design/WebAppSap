@@ -5,6 +5,7 @@
 // @description  Supporta sia Excel (.xlsx/.xls) che CSV - Parsing ottimizzato
 // @match        http://172.18.20.20/Transfer/Whs/*
 // @grant        GM_download
+// @grant        unsafeWindow
 // @require https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
 // ==/UserScript==
 /* global XLSX */
