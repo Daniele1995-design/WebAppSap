@@ -34,6 +34,50 @@
   #formManuale label { display:block; margin:8px 0; font-size:12pt; }
   #formManuale input, #formManuale textarea { width:100%; padding:6px; box-sizing:border-box; font-size:12pt; }
   #formManuale textarea { height:80px; }
+
+  /* --- Selettori formato + commessa affiancati --- */
+  .selettori-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .selettori-row label {
+    font-size: 12pt;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+  }
+  .selettori-row select {
+    font-size: 12pt;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #aaa;
+  }
+
+  /* --- Riga Serial Number con pulsante inline --- */
+  .sn-row-label {
+    font-size: 12pt;
+    margin: 8px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .btn-genera-sn {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 10pt;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-genera-sn:hover { background: #117a8b; }
+
   @media print { .no-print { display:none; } }
 
   /* ---------- Etichetta 10x10 originale ---------- */
@@ -87,7 +131,6 @@
   .et5-info { font-size:10pt; display:flex; justify-content:space-between; margin-top:1mm; }
   .et5-info div { line-height:1.5; }
   .et5-qr-sn { width:10mm; height:10mm; margin-left:2mm; vertical-align:middle;margin-top:4mm; }
-
 </style>
 </head>
 <body>
@@ -96,13 +139,27 @@
     <img class="header-logo" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" alt="ATS Logo">
     <h1 class="header-title">Sistema di Gestione Etichette ATS</h1>
   </div>
-  
-  <label>Seleziona formato:
-    <select id="formatoEtichetta">
-      <option value="10x10">10×10</option>
-      <option value="10x5">10×5</option>
-    </select>
-  </label><br><br>
+
+  <!-- ===== SELETTORI AFFIANCATI ===== -->
+  <div class="selettori-row">
+    <label>
+      Seleziona formato:
+      <select id="formatoEtichetta">
+        <option value="10x10">10×10</option>
+        <option value="10x5">10×5</option>
+      </select>
+    </label>
+    <label>
+      Seleziona commessa:
+      <select id="commessaSelect">
+        <option value="NTD">NTD</option>
+        <option value="FLM">FLM</option>
+        <option value="INWIT">INWIT</option>
+        <option value="ZAS">ZAS</option>
+        <option value="SME">SME</option>
+      </select>
+    </label>
+  </div>
 
   <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" style="margin-right:10px;">
   <button class="btn-stampa" onclick="apriFormManuale()">COMPILA MANUALMENTE</button>
@@ -115,7 +172,16 @@
     <label>Codice BP: <input type="text" id="m_CodiceBP" placeholder="Inserisci Codice BP"></label>
     <label>Part Number: <input type="text" id="m_PartNumber" placeholder="Inserisci Part Number"></label>
     <label>Articolo WMS: <input type="text" id="m_ArticoloWMS" readonly></label>
-    <label>Serial Number/Lotto: <textarea id="m_SerialNumber" placeholder="Inserisci un seriale per riga"></textarea></label>
+
+    <!-- ===== RIGA SERIAL NUMBER CON PULSANTE ===== -->
+    <div class="sn-row-label">
+      <span>Serial Number/Lotto:</span>
+      <button class="btn-genera-sn" onclick="generaSeriale()" title="Genera seriale automatico dalla commessa selezionata">
+         Genera seriale
+      </button>
+    </div>
+    <textarea id="m_SerialNumber" placeholder="Inserisci un seriale per riga, oppure usa  Genera seriale"></textarea>
+
     <label>PO: <input type="text" id="m_PO"></label>
     <label>Posizione: <input type="text" id="m_Posizione"></label>
     <label>Ubicazione: <input type="text" id="m_Ubicazione"></label>
@@ -137,6 +203,32 @@ function chiudiFormManuale() { document.getElementById('formManuale').style.disp
 function resetFormManuale() {
   ['m_CodiceBP','m_PartNumber','m_SerialNumber','m_ArticoloWMS','m_PO','m_Posizione','m_Ubicazione']
   .forEach(id=>document.getElementById(id).value='');
+}
+
+// ---------- GENERA SERIALE AUTOMATICO ----------
+function generaSeriale() {
+  const commessa = document.getElementById('commessaSelect').value;
+  const now = new Date();
+
+  const yyyy = now.getFullYear();
+  const mm   = String(now.getMonth() + 1).padStart(2, '0');
+  const dd   = String(now.getDate()).padStart(2, '0');
+  const hh   = String(now.getHours()).padStart(2, '0');
+  const min  = String(now.getMinutes()).padStart(2, '0');
+  const ss   = String(now.getSeconds()).padStart(2, '0');
+
+  const seriale = `${commessa}-${yyyy}${mm}${dd}-${hh}${min}${ss}`;
+
+  const ta = document.getElementById('m_SerialNumber');
+  // Aggiungi a capo se c'è già del testo
+  if (ta.value.trim() !== '') {
+    ta.value = ta.value.trimEnd() + '\n' + seriale;
+  } else {
+    ta.value = seriale;
+  }
+  // Porta il cursore in fondo
+  ta.scrollTop = ta.scrollHeight;
+  ta.focus();
 }
 
 function downloadTemplate() {
@@ -303,8 +395,3 @@ document.getElementById('excelFile').addEventListener('change', e=>{
 </script>
 </body>
 </html>
-
-
-
-
-
