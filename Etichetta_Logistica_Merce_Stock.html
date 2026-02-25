@@ -177,10 +177,10 @@
     <div class="sn-row-label">
       <span>Serial Number/Lotto:</span>
       <button class="btn-genera-sn" onclick="generaSeriale()" title="Genera seriale automatico dalla commessa selezionata">
-         Genera seriale
+        ⚡ Genera seriale
       </button>
     </div>
-    <textarea id="m_SerialNumber" placeholder="Inserisci un seriale per riga, oppure usa  Genera seriale"></textarea>
+    <textarea id="m_SerialNumber" placeholder="Inserisci un seriale per riga, oppure usa ⚡ Genera seriale"></textarea>
 
     <label>PO: <input type="text" id="m_PO"></label>
     <label>Posizione: <input type="text" id="m_Posizione"></label>
@@ -220,13 +220,19 @@ function generaSeriale() {
   const seriale = `${commessa}-${yyyy}${mm}${dd}-${hh}${min}${ss}`;
 
   const ta = document.getElementById('m_SerialNumber');
-  // Aggiungi a capo se c'è già del testo
+  // Controlla se l'ultimo seriale inserito è già identico → non duplicare
+  const righe = ta.value.trimEnd().split('\n');
+  const ultimaRiga = righe[righe.length - 1].trim();
+  if (ultimaRiga === seriale) {
+    ta.focus();
+    return;
+  }
+
   if (ta.value.trim() !== '') {
     ta.value = ta.value.trimEnd() + '\n' + seriale;
   } else {
     ta.value = seriale;
   }
-  // Porta il cursore in fondo
   ta.scrollTop = ta.scrollHeight;
   ta.focus();
 }
