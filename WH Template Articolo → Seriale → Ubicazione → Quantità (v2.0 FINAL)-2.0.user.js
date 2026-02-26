@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         WH Template Articolo → Seriale → Ubicazione → Quantità (Excel + CSV)
 // @namespace    http://tampermonkey.net/
-// @version      5.5
-// @description  Supporta sia Excel (.xlsx/.xls) che CSV - Parsing ottimizzato
+// @version      6.0
+// @description  Supporta sia Excel (.xlsx/.xls) che CSV - Fix await + try/catch + QuantitàEffettiva invertita + Note update 26.02.26
 // @match        http://172.18.20.20/Transfer/Whs/*
 // @grant        GM_download
 // @grant        unsafeWindow
@@ -98,49 +98,69 @@
             downloadReport();
             return;
         }
+
         const r = dati[i];
-        let entry = { articolo: r.articolo, seriale: r.seriale, ubicazione: r.ubicazione, quantita: r.quantita, stato: "OK", errore: "" };
+        let entry = {
+            articolo: r.articolo,
+            seriale: r.seriale,
+            ubicazione: r.ubicazione,
+            quantita: r.quantita,
+            stato: "OK",
+            errore: ""
+        };
 
-        wm.scanG(r.articolo);
-        await delay(400);
+        try {
+            wm.scanG(r.articolo);
+            await delay(400);
 
-        let hasKeypad = false;
-        for (let t = 0; t < 5; t++) {
-            if (document.querySelector(".keypad-buttons")) { hasKeypad = true; break; }
-            await delay(100);
-        }
-
-        const hasLastBatchNum = document.querySelector("#lastBatchnum")?.textContent.trim().length > 0;
-
-        if (hasKeypad) {
-            await writeQuantity(r.quantita);
-            await insertUbicazioneWithCheckbox(r.ubicazione);
-        } else if (hasLastBatchNum) {
-            await insertUbicazioneWithCheckbox(r.ubicazione);
-        } else {
-            wm.scanG(r.seriale);
-            await delay(500);
-
-            hasKeypad = false;
-            for (let t = 0; t < 8; t++) {
+            let hasKeypad = false;
+            for (let t = 0; t < 5; t++) {
                 if (document.querySelector(".keypad-buttons")) { hasKeypad = true; break; }
                 await delay(100);
             }
 
+            const hasLastBatchNum = document.querySelector("#lastBatchnum")?.textContent.trim().length > 0;
+
             if (hasKeypad) {
                 await writeQuantity(r.quantita);
+                await insertUbicazioneWithCheckbox(r.ubicazione);
+            } else if (hasLastBatchNum) {
+                await insertUbicazioneWithCheckbox(r.ubicazione);
             } else {
-                if (r.ubicazionePrelievo) {
-                    await insertUbicazioneWithCheckbox(r.ubicazionePrelievo);
-                    await delay(400);
+                wm.scanG(r.seriale);
+                await delay(500);
+
+                hasKeypad = false;
+                for (let t = 0; t < 8; t++) {
+                    if (document.querySelector(".keypad-buttons")) { hasKeypad = true; break; }
+                    await delay(100);
                 }
-                await writeQuantity(r.quantita);
+
+                if (hasKeypad) {
+                    await writeQuantity(r.quantita);
+                } else {
+                    if (r.ubicazionePrelievo) {
+                        await insertUbicazioneWithCheckbox(r.ubicazionePrelievo);
+                        await delay(400);
+                    }
+                    await writeQuantity(r.quantita);
+                }
+                await insertUbicazioneWithCheckbox(r.ubicazione);
             }
-            await insertUbicazioneWithCheckbox(r.ubicazione);
+
+        } catch(err) {
+            entry.stato = "ERRORE";
+            entry.errore = "Eccezione: " + err.message;
+            console.error(`[Riga ${i}] Errore:`, err);
         }
 
         report.push(entry);
-        insertData(i + 1);
+
+        // Pausa di sicurezza tra una riga e l'altra per dare tempo all'UI di resettarsi
+        await delay(300);
+
+        // AWAIT qui: aspetta che la riga corrente sia completamente finita prima di passare alla prossima
+        await insertData(i + 1);
     }
 
     // PARSING EXCEL
@@ -166,7 +186,7 @@
             }));
     }
 
-    // PARSING CSV (identico al v2.4 che funzionava)
+    // PARSING CSV
     function parseCSV(text) {
         const lines = text.split(/\r?\n/);
 
@@ -221,6 +241,7 @@
 
                     console.log(`✅ Caricate ${parsed.length} righe`);
                     dati = parsed;
+                    report = [];
                     insertData(0);
 
                 } catch (error) {
@@ -247,18 +268,21 @@
 
         const righeWebApp = document.querySelectorAll("label.item-checkbox.item-content");
 
-        // crea un set con tutti i seriali/lotti presenti nella pagina
-        const serialiPresenti = new Set();
+        // Mappa seriale → quantità effettiva letta dalla pagina
+        const quantitaReali = {};
 
         righeWebApp.forEach(el => {
             const lottoSpan = el.querySelector(".fa-chain")?.parentElement;
-            if (lottoSpan) {
+            const qtyEl = el.querySelector(".bqty");
+            if (lottoSpan && qtyEl) {
                 const lotto = lottoSpan.textContent.trim();
-                if (lotto) serialiPresenti.add(lotto);
+                const qty = qtyEl.textContent.trim();
+                if (lotto) quantitaReali[lotto] = qty;
             }
         });
 
-        // scorri il report e segnala errore se il seriale non è presente nella pagina
+        // Scorri il report e segnala errore se il seriale non è presente nella pagina
+        const serialiPresenti = new Set(Object.keys(quantitaReali));
         report.forEach(r => {
             const lottoReport = r.seriale?.trim();
             if (lottoReport && !serialiPresenti.has(lottoReport)) {
@@ -267,23 +291,42 @@
             }
         });
 
-        // EXPORT NORMALE
-        const header = "Articolo;Seriale;Ubicazione;Quantità;Stato;Errore";
+        // --- Costruisce la colonna QuantitàEffettiva in ordine INVERSO ---
+        // Le righe del report sono in ordine 0,1,2...N
+        // La colonna QuantitàEffettiva viene assegnata partendo dall'ultima riga della pagina
+        // cioè: report[0] prende l'ultima quantità reale, report[N] prende la prima
+        const serialiOrdinati = Object.keys(quantitaReali); // ordine di apparizione nella pagina
+        const serialiInversi  = [...serialiOrdinati].reverse(); // invertito
+
+        report.forEach((r, i) => {
+            const serialeInverso = serialiInversi[i];
+            r.quantitaEffettiva = serialeInverso ? (quantitaReali[serialeInverso] ?? "0") : "0";
+
+            // Confronto: QuantitàEffettiva vs Quantità del report
+            const qAttesa   = String(r.quantita || "").trim();
+            const qEffettiva = String(r.quantitaEffettiva || "0").trim();
+            r.Errore1 = (qAttesa !== "" && qEffettiva !== qAttesa)
+                ? "ERRORE quantità non trovata"
+                : "";
+        });
+
+        // EXPORT CSV - tutto in ordine normale, solo QuantitàEffettiva è già invertita dentro ogni riga
+        const header = "Articolo;Seriale;Ubicazione;Quantità;QuantitàEffettiva;Errore1;Stato;Errore";
 
         const rows = report.map(r => {
             const serialeTesto = r.seriale ? "'" + r.seriale : '';
-            return `${r.articolo || ''};${serialeTesto};${r.ubicazione || ''};${r.quantita || ''};${r.stato};${r.errore}`;
+            return `${r.articolo || ''};${serialeTesto};${r.ubicazione || ''};${r.quantita || ''};${r.quantitaEffettiva || '0'};${r.Errore1 || ''};${r.stato};${r.errore}`;
         });
 
         const txt = [header, ...rows].join("\n");
 
         GM_download({
-            url:"data:text/csv;charset=utf-8,"+encodeURIComponent(txt),
-            name:"report_lotti.csv",
-            saveAs:true
+            url: "data:text/csv;charset=utf-8," + encodeURIComponent(txt),
+            name: "report_lotti.csv",
+            saveAs: true
         });
 
-        // APPLICA GLI STILI DOPO IL COMPLETAMENTO DEL TEMPLATE
+        // Applica gli stili dopo il completamento del template
         setTimeout(() => {
             applicaStiliLista();
         }, 300);
