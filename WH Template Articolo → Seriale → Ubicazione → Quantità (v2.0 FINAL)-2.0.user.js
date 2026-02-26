@@ -347,7 +347,7 @@
             div.innerHTML = `
                 <a class="button button-large button-fill" id="btnCaricaLottiMenu" style="background:#e74c3c;color:white;">
                     <i class="icon material-icons md-only">inbox</i>
-                    <span style="margin-left:12px;font-weight:bold;">Carica Template (Excel/CSV)</span>
+                    <span style="margin-left:12px;font-weight:bold;">Carica Template Lotti/Seriali (Excel/CSV)</span>
                 </a>
             `;
 
