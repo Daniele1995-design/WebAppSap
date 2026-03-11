@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         GRN - Controllo BOM + CSV + Etichette Collo Singole (Definitivo Perfetto)
+// @name         GRN - Controllo BOM + CSV + Etichette Collo Singole + Ricerca VDS
 // @namespace    http://tampermonkey.net/
-// @version      5.0
+// @version      6.1
 // @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati
-// @author       Daniele
+// @author       Daniele Izzo
 // @match        http://172.18.20.20/*
 // @match        http://172.18.20.20:8095/*
 // @require      https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js
@@ -19,6 +19,10 @@
     const DRIVE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvprxVE4qAvY5PMFEoz1tUi3yIynkE0fjCAebj10_v3wJEj-ezdtgYvJawAh2DqLX40f3pH6WUcDbS/pub?output=csv";
     const BOM_CSV_URL = "https://corsproxy.io/?" + encodeURIComponent(DRIVE_CSV_URL);
     let bomData = {};
+    let catalogoBP = {};
+const CATALOGO_BP_URL = "https://corsproxy.io/?" + encodeURIComponent(
+    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvprxVE4qAvY5PMFEoz1tUi3yIynkE0fjCAebj10_v3wJEj-ezdtgYvJawAh2DqLX40f3pH6WUcDbS/pub?gid=1382717559&single=true&output=csv"
+);
     console.log("Avvio BOM definitivo...");
     Papa.parse(BOM_CSV_URL, {
         download: true,
@@ -42,6 +46,7 @@
             aggiungiPulsantiBOM();
             addExportUI();
             aggiungiPulsanteGeneraLotto();
+            caricaCatalogoBP();
         },
         error: function() {
             alert("Errore caricamento BOM - verifica connessione/proxy");
@@ -279,6 +284,49 @@ setTimeout(gestisciPulsanteLotto, 3000);
         }
         return '';
     }
+    // ===================== CATALOGO BP =====================
+function caricaCatalogoBP() {
+    Papa.parse(CATALOGO_BP_URL, {
+        download: true,
+        header: false,
+        skipEmptyLines: true,
+        complete: function(results) {
+            results.data.forEach((row, i) => {
+                if (i === 0) return; // salta intestazione
+                const codiceArticolo = (row[0] || "").trim().toUpperCase();
+                const nCatalogoBP = (row[2] || "").trim(); // colonna C
+                if (codiceArticolo && nCatalogoBP) {
+                    catalogoBP[codiceArticolo] = nCatalogoBP;
+                }
+            });
+            console.log(`✅ Catalogo BP caricato: ${Object.keys(catalogoBP).length} voci`);
+            aggiornaRigheCatalogoBP();
+        },
+        error: function() {
+            console.warn("⚠️ Errore caricamento Catalogo BP");
+        }
+    });
+}
+
+function aggiornaRigheCatalogoBP() {
+    if (Object.keys(catalogoBP).length === 0) return; // aspetta che il catalogo sia caricato
+    document.querySelectorAll('li.item-content.item-input.item-input-outline').forEach(li => {
+        const headerDiv = li.querySelector("div[style*='display: flex'] div:nth-of-type(2)");
+        if (!headerDiv) return;
+        if (headerDiv.dataset.bpInjected) return;
+
+        const testo = headerDiv.textContent.trim();
+        const parti = testo.split('|');
+        if (parti.length < 2) return;
+
+        const codice = parti[0].trim().toUpperCase();
+        const resto = parti.slice(1).join('|').trim();
+        const bp = catalogoBP[codice] || '—';
+
+        headerDiv.textContent = `${codice} | ${bp} | ${resto}`;
+        headerDiv.dataset.bpInjected = 'true';
+    });
+}
 
     // ===================== POPUP BOM =====================
    function mostraPopup(articolo, qta) {
@@ -765,9 +813,61 @@ setTimeout(gestisciPulsanteLotto, 3000);
 
 new MutationObserver(() => {
     aggiungiPulsantiBOM();
+    aggiornaRigheCatalogoBP();
     // Aggiungi i pulsanti solo se non esistono già
     if (!document.getElementById('btn-freccia-home')) {
         aggiungiPulsanteGeneraLotto();
     }
+    function aggiungiRicercaVDS() {
+    const dialog = document.getElementById('dialogRiceraVDS');
+    if (!dialog || dialog.dataset.searchInjected) return;
+    const listaDiv = dialog.querySelector('.list.media-list');
+    if (!listaDiv) return;
+
+    const searchWrapper = document.createElement('div');
+    searchWrapper.style.cssText = `
+        padding: 8px 10px;
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+        border-bottom: 1px solid #ddd;
+    `;
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = '🔍 Cerca per AWB , reference, plant...';
+    searchInput.style.cssText = `
+        width: 100%;
+        padding: 8px 12px;
+        font-size: 14px;
+        border: 2px solid #1565c0;
+        border-radius: 6px;
+        box-sizing: border-box;
+        outline: none;
+    `;
+
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim().toLowerCase();
+        const items = dialog.querySelectorAll('#listaVDS > li');
+        items.forEach(li => {
+            const testo = li.textContent.toLowerCase();
+            li.style.display = (!query || testo.includes(query)) ? '' : 'none';
+        });
+    });
+
+    searchInput.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+        }
+    });
+
+    searchWrapper.appendChild(searchInput);
+    listaDiv.parentNode.insertBefore(searchWrapper, listaDiv);
+    setTimeout(() => searchInput.focus(), 100);
+    dialog.dataset.searchInjected = 'true';
+}
+    aggiungiRicercaVDS();
 }).observe(document.body, { childList: true, subtree: true });
 })();
