@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      15.0
+// @version      16.0
 // @description  Esporta seriali + PN in CSV e aggiunge funzionalità di stampa etichette 10x10 e 10x5
+// @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
 // @grant        GM_xmlhttpRequest
@@ -71,7 +72,7 @@ function getDataFromLi(li) {
             if (parts.length >= 1) articolo = parts[0] || '';
             if (parts.length >= 2) {
                 codiceBP = parts[1] || '';
-                pn = parts[1] || '';
+                pn = parts[parts.length - 1] || ''; //  sempre l'ultimo elemento
             }
         }
     }
@@ -160,7 +161,7 @@ function getDataFromLi(li) {
             if (m) seriale = m[1].trim();
         }
 
-        if (seriale) {
+        //if (seriale) {
             //let ubicazioneDest = '';
            // const inputUbicSerial = sr.querySelector('input[data-ubic-serial]');
            // if (inputUbicSerial) {
@@ -171,8 +172,15 @@ function getDataFromLi(li) {
           //  }
 
            // serials.push({ quantita, seriale, stato, ubicazioneDestinazione: ubicazioneDest });
-            serials.push({ quantita, seriale, stato, ubicazioneDestinazione: '' });
-        }
+         //   serials.push({ quantita, seriale, stato, ubicazioneDestinazione: '' });
+       // }
+        if (seriale) {
+    const cdcSelect = sr.querySelector('.cdc-select');
+    const cdcValue = cdcSelect ? cdcSelect.value : '';
+    serials.push({ quantita, seriale, stato, ubicazioneDestinazione: '', cdc: cdcValue });
+}
+
+
     });
 
     return {
@@ -181,6 +189,7 @@ function getDataFromLi(li) {
         posizione, serials, cdc
     };
 }
+
 //function aggiungiCampiUbicazione() {
   //  const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
 
@@ -582,7 +591,7 @@ downloadExcel(
                     pn: data.pn || '',
                     posizione: data.posizione || '',
                     seriale: s.seriale || '',
-                    cdc: data.cdc || '',
+                    cdc: s.cdc || data.cdc || '',
                     ubicazioneDestinazione: s.ubicazioneDestinazione || ''
                 });
             });
@@ -823,9 +832,12 @@ html, body {
             const vertCod = document.createElement('div');
             vertCod.className = 'vert';
             vertCod.innerText = 'COD. BP';
+            qrCod.style.marginTop = '-15mm';
+            vertCod.style.marginTop = '-15mm';
             qrCodContainer.appendChild(qrCod);
             qrCodContainer.appendChild(vertCod);
             rightTop.appendChild(qrCodContainer);
+
 
             topRow.appendChild(leftTop);
             topRow.appendChild(rightTop);
@@ -860,8 +872,8 @@ html, body {
             // Container flessibile per Po Nr° e Posizione affiancati
             const poPosContainer = document.createElement('div');
             poPosContainer.style.display = 'flex';
-            poPosContainer.style.justifyContent = 'space-between';
-            poPosContainer.style.marginBottom = '20px';
+            poPosContainer.style.justifyContent = 'flex-start';
+poPosContainer.style.gap = '10mm';
 
             // Po Nr°
             const poDiv = document.createElement('div');
@@ -874,8 +886,8 @@ html, body {
             // Posizione
             const posDiv = document.createElement('div');
             posDiv.className = 'field-block';
-            posDiv.style.marginLeft = 'auto';
-            posDiv.style.marginRight = '130px';
+            posDiv.style.marginLeft = '10mm';
+            posDiv.style.marginRight = '0px';
             const posLab = document.createElement('div');
             posLab.className = 'small';
             posLab.innerHTML = '<b>Posizione</b><div style="font-weight:700;font-size: 20px;">'+(lab.posizione||'')+'</div>';
@@ -909,7 +921,7 @@ html, body {
             qrPnContainer.appendChild(qrPn);
             qrPnContainer.appendChild(vertP);
             pnRight.appendChild(qrPnContainer);
-
+            pnRight.style.marginTop = '10mm';
             pnBlock.appendChild(pnLeft);
             pnBlock.appendChild(pnRight);
             left.appendChild(pnBlock);
@@ -941,7 +953,7 @@ html, body {
             qrSerialContainer.appendChild(qrSerial);
             qrSerialContainer.appendChild(vertS);
             sRight.appendChild(qrSerialContainer);
-
+            sRight.style.marginTop = '6mm';
             serialBlock.appendChild(sLeft);
             serialBlock.appendChild(sRight);
             left.appendChild(serialBlock);
@@ -1336,8 +1348,8 @@ body {
             // Container flessibile per Po Nr° e Posizione
             const poPosRow = document.createElement('div');
             poPosRow.className = 'detail-row';
-            poPosRow.style.justifyContent = 'space-between';
-            poPosRow.style.marginBottom = '0.1mm';
+            poPosRow.style.justifyContent = 'flex-start';
+            poPosRow.style.gap = '5mm';
 
             // Po Nr°
             const poDiv = document.createElement('div');
@@ -1359,7 +1371,7 @@ body {
             posDiv.style.alignItems = 'center';
             const posLabel = document.createElement('span');
             posLabel.className = 'detail-label';
-            posLabel.style.marginRight = '10mm';
+            posLabel.style.marginRight = '2mm';
             posLabel.textContent = 'Pos:';
             const posValue = document.createElement('span');
             posValue.className = 'detail-value';
@@ -1511,13 +1523,15 @@ body {
         righe.forEach(li => {
             const data = getDataFromLi(li);
             data.serials.forEach(s => {
-                allLabels.push({
-                    codiceBP: data.codiceBP || '',
-                    articolo: data.articolo || '',
-                    po: data.riferimentoOrdine || data.riferimento || '',
-                    pn: data.pn || '',
-                    seriale: s.seriale || ''
-                });
+allLabels.push({
+    codiceBP: data.codiceBP || '',
+    articolo: data.articolo || '',
+    po: data.riferimentoOrdine || data.riferimento || '',
+    pn: data.pn || '',
+    posizione: data.posizione || '',
+    seriale: s.seriale || '',
+    cdc: s.cdc || data.cdc || ''
+});
             });
         });
 
@@ -1571,19 +1585,19 @@ function printAllLabelsFromPNInfo() {
 
     printLabels10x5(allLabels);
 }
-    function printLabelsForRow(dataRow) {
-        const labels = dataRow.serials.map(s => ({
-            codiceBP: dataRow.codiceBP || '',
-            articolo: dataRow.articolo || '',
-            po: dataRow.riferimentoOrdine || dataRow.riferimento || '',
-            pn: dataRow.pn || '',
-            seriale: s.seriale || '',
-            cdc: dataRow.cdc || '',
-            ubicazioneDestinazione: s.ubicazioneDestinazione || ''
-        }));
-
-        printLabels(labels);
-    }
+function printLabelsForRow(dataRow) {
+    const labels = dataRow.serials.map(s => ({
+        codiceBP: dataRow.codiceBP || '',
+        articolo: dataRow.articolo || '',
+        po: dataRow.riferimentoOrdine || dataRow.riferimento || '',
+        pn: dataRow.pn || '',
+        posizione: dataRow.posizione || '',
+        seriale: s.seriale || '',
+        cdc: s.cdc || dataRow.cdc || '',
+        ubicazioneDestinazione: s.ubicazioneDestinazione || ''
+    }));
+    printLabels(labels);
+}
 
     function printLabels10x5ForRow(dataRow) {
         const labels = dataRow.serials.map(s => ({
@@ -1592,7 +1606,8 @@ function printAllLabelsFromPNInfo() {
             po: dataRow.riferimentoOrdine || dataRow.riferimento || '',
             pn: dataRow.pn || '',
             posizione: dataRow.posizione || '',
-            seriale: s.seriale || ''
+            seriale: s.seriale || '',
+            cdc: s.cdc || dataRow.cdc || ''
         }));
 
         printLabels10x5(labels);
@@ -1634,6 +1649,60 @@ function addPrintButtonsToRows() {
 if (li.querySelector('.stampa-wrapper')) {
     return;
 }
+        // Aggiungi select CDC a ogni sottoriga seriale
+const dropdownSub = li.querySelector("div[id^='dropdown-']");
+if (dropdownSub) {
+    dropdownSub.style.display = 'block';
+    const serialRowsSub = dropdownSub.querySelectorAll("ul > li");
+serialRowsSub.forEach((sr, srIdx) => {
+    if (sr.querySelector('.cdc-select')) return;
+
+    const grnNumber = document.getElementById('numeroGRN')?.textContent?.trim() || 'unknown';
+    const storageKey = `cdc-${grnNumber}-${idx}-${srIdx}`;
+
+    const select = document.createElement('select');
+    select.className = 'cdc-select';
+    select.style.cssText = `
+        margin-left: auto;
+        display: block;
+        padding: 1px 3px;
+        border-radius: 4px;
+        border: 1.5px solid #17a2b8;
+        font-size: 16px;
+        font-weight: 600;
+        background: #f8f9fa;
+        cursor: pointer;
+        width: 60px;
+    `;
+
+    ['- CDC -', 'IT2V', 'IT2N', 'IT6V', 'IT6N'].forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt === '- CDC -' ? '' : opt;
+        option.textContent = opt;
+        select.appendChild(option);
+    });
+
+    // Ripristina valore salvato
+    const savedCdc = sessionStorage.getItem(storageKey);
+    if (savedCdc) {
+        select.value = savedCdc;
+    }
+
+    // Salva quando cambia
+    select.addEventListener('change', () => {
+        const currentGrn = document.getElementById('numeroGRN')?.textContent?.trim() || 'unknown';
+        sessionStorage.setItem(`cdc-${currentGrn}-${idx}-${srIdx}`, select.value);
+    });
+
+const flexDiv = sr.querySelector("div[style*='display:flex']");
+if (flexDiv) {
+    flexDiv.appendChild(select);
+} else {
+    sr.appendChild(select);
+}
+});
+}
+
 // Contenitore relativo per il dropdown
 const wrapper = document.createElement('div');
 wrapper.className = 'stampa-wrapper';
