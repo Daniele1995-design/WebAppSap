@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Verbale di Carico Merce – ATS
+// @name         Verbale di Carico Merce – ATS14
 // @namespace    http://tampermonkey.net/
 // @version      5.1
 // @description  Verbale di Carico – UI identica HTML originale, tutti i fix , per il magazzino 14
