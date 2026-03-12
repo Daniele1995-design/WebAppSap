@@ -734,7 +734,7 @@ function buildOverlay() {
                     <select class="field-select" id="vdc-tipo-spedizione">
                         <option value="">— Seleziona —</option>
                         <option value="Standard">🚚 Standard</option>
-                        <option value="Express">⚡ Express</option>
+                        <option value="Espresso">⚡ Espresso</option>
                         <option value="Dedicato">🎯 Dedicato</option>
                     </select>
                 </div>
