@@ -184,7 +184,7 @@ function aggiungiPulsanteGeneraLotto() {
     }, 500);
 }
 
-// ✅ FUNZIONE per gestire il pulsante
+//  FUNZIONE per gestire il pulsante
 function gestisciPulsanteLotto() {
     const urlCorrente = window.location.href;
 
@@ -204,7 +204,7 @@ function gestisciPulsanteLotto() {
 
     const btnLottoEsistente = document.getElementById('btn-genera-lotto');
 
-    // ✅ Mostra il pulsante se:
+    //  Mostra il pulsante se:
     // - grn-articoli è VISIBILE (pagina dove serve il pulsante)
     // - OPPURE se menu-funzioni e wizard sono entrambi nascosti
     if ((grnArticoliVisibile || (!menuFunzioniVisibile && !wizardVisibile)) && !btnLottoEsistente) {
@@ -244,14 +244,14 @@ function gestisciPulsanteLotto() {
     }
 }
 
-// ✅ AVVIO
+//  AVVIO
 aggiungiPulsanteGeneraLotto();
 gestisciPulsanteLotto();
 
-// ✅ INTERVALLO molto frequente
+//  INTERVALLO molto frequente
 setInterval(gestisciPulsanteLotto, 100);
 
-// ✅ MUTATION OBSERVER aggressivo
+//  MUTATION OBSERVER aggressivo
 new MutationObserver(() => {
     gestisciPulsanteLotto();
 }).observe(document.body, {
@@ -261,14 +261,14 @@ new MutationObserver(() => {
     attributeFilter: ['style', 'class', 'display']
 });
 
-// ✅ Intercetta TUTTI i click sulla pagina
+//  Intercetta TUTTI i click sulla pagina
 document.addEventListener('click', () => {
     setTimeout(gestisciPulsanteLotto, 50);
     setTimeout(gestisciPulsanteLotto, 200);
     setTimeout(gestisciPulsanteLotto, 500);
 });
 
-// ✅ Timeout multipli all'avvio
+//  Timeout multipli all'avvio
 setTimeout(gestisciPulsanteLotto, 500);
 setTimeout(gestisciPulsanteLotto, 1000);
 setTimeout(gestisciPulsanteLotto, 2000);
@@ -508,7 +508,7 @@ function aggiornaRigheCatalogoBP() {
 
     .etichetta {
         width:9.5cm;
-        min-height:10cm;          /* ✅ NON height */
+        min-height:10cm;          /*  NON height */
         margin:0 auto 10px;
         padding:6px;
         box-sizing:border-box;
@@ -519,7 +519,7 @@ function aggiornaRigheCatalogoBP() {
         flex-direction:column;
 
         page-break-inside: avoid;
-        break-after: page;        /* ✅ moderno */
+        break-after: page;        /*  moderno */
     }
 
     .header {
