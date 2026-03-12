@@ -1675,7 +1675,7 @@ serialRowsSub.forEach((sr, srIdx) => {
         width: 60px;
     `;
 
-    ['- CDC -', 'IT2V', 'IT2N', 'IT6V', 'IT6N'].forEach(opt => {
+    ['- CDC -', 'IT2V', 'IT2N', 'IT7V', 'IT7N', 'IT6V', 'IT6N', 'IT4V', 'IT4N' ].forEach(opt => {
         const option = document.createElement('option');
         option.value = opt === '- CDC -' ? '' : opt;
         option.textContent = opt;
