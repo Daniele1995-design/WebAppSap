@@ -1343,6 +1343,7 @@ async function confermaVerbale() {
         const commessa = q('#vdc-commessa').value || '';
         const plant = q('#vdc-plant').value || '';
         const note = q('#vdc-note').value || '';
+        const dataExcel = data.replace(/-/g, '');
 
 
         const wb = XLSX.utils.book_new();
@@ -1357,7 +1358,7 @@ const hdrInt = [
 ];
 const rowInt = [
     docNum, codeBP, namesBP, '',
-    dataFmt, plant, tipoSpedizione, commessa, destino,
+    dataExcel, plant, tipoSpedizione, commessa, destino,
     note, totColli, totVolume.toFixed(3), totPeso.toFixed(1)
 ];
 const hdrInt2 = [
