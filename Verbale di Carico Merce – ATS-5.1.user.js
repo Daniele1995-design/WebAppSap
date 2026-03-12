@@ -2,7 +2,7 @@
 // @name         Verbale di Carico Merce – ATS
 // @namespace    http://tampermonkey.net/
 // @version      5.1
-// @description  Verbale di Carico – UI identica HTML originale, tutti i fix
+// @description  Verbale di Carico – UI identica HTML originale, tutti i fix , per il magazzino 14
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/
 // @match        http://172.18.20.20:8095/
@@ -18,7 +18,7 @@
 /* ================================================================
    CONFIG
 ================================================================ */
-const EMAIL_TO = 'dizzo@atsgruppo.eu';
+const EMAIL_TO = 'OperativoBollettazione14@atsgruppo.eu';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzG0jy-B_QbIYDTYqLzD0Jnr2Bvn9_uccdjdErK_y7oYU7vbseEF5AO5u0AjmdzFCcR/exec';
 const DEST_API_URL = 'https://script.google.com/macros/s/AKfycbzP-L7wJgg6njb6FKUGGYaceMHYm0vQ0nQAIte5W7hWiSorKykQYHjYfO140bC0TyhH/exec';
 
