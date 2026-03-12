@@ -33,11 +33,13 @@ const DEST_GID = {
 };
 
 const BUSINESS_PARTNERS = [
-    'F000001 – TELECOM ITALIA SPA',
     'C000021 – FASTWEB SPA',
-    'F000050 – DHL LOGISTICS SRL',
-    'F000075 – FEDEX ITALIA SRL',
-
+    'C000383 – ZAS TRADING SRL',
+    'C000384 – AG LOGISTICA SRL',
+    'C000223 – GREENCHEM SOLUTIONS SRL',
+    'C000198 – JOYGUM SRL',
+    'C000207 – INFRASTRUTTURE WIRELESS ITALIANE SPA',
+   
 ];
 
 /* ================================================================
