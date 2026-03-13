@@ -1227,13 +1227,37 @@ function chiudiODP() {
 }
 
 function aggiungiODP() {
-    const val = q('#m-odp-input').value.trim();
-    if (!val) return;
-    if (odps.includes(val)) { toast('⚠️ ODP già presente!'); return; }
-    odps.push(val);
+    const raw = q('#m-odp-input').value.trim();
+    if (!raw) return;
+
+    // Split su spazi, tab, newline, punto e virgola, virgola
+    const valori = raw.split(/[\s\t\n\r;,]+/).map(v => v.trim()).filter(v => v.length > 0);
+
+    let aggiunti = 0;
+    let duplicati = 0;
+
+    valori.forEach(val => {
+        if (odps.includes(val)) {
+            duplicati++;
+        } else {
+            odps.push(val);
+            aggiunti++;
+        }
+    });
+
     q('#m-odp-input').value = '';
     renderODPModal();
     q('#m-odp-input').focus();
+
+    if (duplicati > 0 && aggiunti === 0) {
+        toast(`⚠️ Tutti gli ODP erano già presenti!`);
+    } else if (duplicati > 0) {
+        toast(`✅ ${aggiunti} ODP aggiunt${aggiunti > 1 ? 'i' : 'o'}, ${duplicati} già present${duplicati > 1 ? 'i' : 'e'}`);
+    } else if (aggiunti > 1) {
+        toast(`✅ ${aggiunti} ODP aggiunti`);
+    } else {
+        toast(`✅ ODP aggiunto`);
+    }
 }
 
 function eliminaODPModal(val) {
