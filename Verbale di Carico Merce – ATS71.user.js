@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Verbale di Carico Merce – ATS71
+// @name         Verbale di Carico Merce – ATS14
 // @namespace    http://tampermonkey.net/
 // @version      5.1
-// @description  Verbale di Carico – UI identica HTML originale, tutti i fix per il magazzino71
+// @description  Verbale di Carico – UI identica HTML originale, tutti i fix , per il magazzino 14
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/
 // @match        http://172.18.20.20:8095/
@@ -66,6 +66,9 @@ let builtOnce = false;
         pad(now.getSeconds(), 2) +
         pad(now.getMilliseconds(), 3)
     );
+}
+    function fmtIt(num, decimali = 3) {
+    return Number(num).toFixed(decimali).replace('.', ',');
 }
 
 /* ================================================================
@@ -1125,20 +1128,28 @@ function calcolaVolume() {
     const l = parseFloat(q('#m-larghezza').value) || 0;
     const p = parseFloat(q('#m-profondita').value) || 0;
     const qty = parseInt(q('#m-quantita').value) || 1;
-    q('#m-volume').value = ((h * l * p * qty) / 1_000_000).toFixed(4);
+    const volUnit = (h * l * p) / 1_000_000;
+    q('#m-volume').value = (volUnit * qty).toFixed(4);
 }
 
 function salvaRiga() {
     const imballo = q('#m-imballo').value;
     if (!imballo) { toast('⚠️ Seleziona il tipo di imballo!'); return; }
+
+    const h = parseFloat(q('#m-altezza').value) || 0;
+    const l = parseFloat(q('#m-larghezza').value) || 0;
+    const p = parseFloat(q('#m-profondita').value) || 0;
+    const qty = parseInt(q('#m-quantita').value) || 1;
+    const volUnit = (h * l * p) / 1_000_000; // ← unitario, NON da m-volume
+
     righeCarico.push({
         id:         Date.now(),
         imballo,
-        quantita:   parseInt(q('#m-quantita').value) || 1,
-        altezza:    parseFloat(q('#m-altezza').value) || 0,
-        larghezza:  parseFloat(q('#m-larghezza').value)|| 0,
-        profondita: parseFloat(q('#m-profondita').value)||0,
-        volume:     parseFloat(q('#m-volume').value) || 0,
+        quantita:   qty,
+        altezza:    h,
+        larghezza:  l,
+        profondita: p,
+        volume:     volUnit, // ← salvato come UNITARIO
         peso:       parseFloat(q('#m-peso').value) || 0,
         note:       q('#m-note').value.trim()
     });
@@ -1173,8 +1184,8 @@ function aggiornaVistaCarico() {
     const totPeso = righeCarico.reduce((s,r) => s + r.peso, 0);
 
     q('#sumColli').textContent = totColli;
-    q('#sumVolume').textContent = totVolume.toFixed(3);
-    q('#sumPeso').textContent = totPeso.toFixed(1);
+    q('#sumVolume').textContent = fmtIt(totVolume, 3);
+    q('#sumPeso').textContent = fmtIt(totPeso, 1);
 
     container.innerHTML = '';
     righeCarico.forEach((r, idx) => {
@@ -1332,7 +1343,7 @@ async function confermaVerbale() {
         + `📍 Destino: ${destino || '—'}\n`
         + `🚚 Tipo Spedizione: ${tipoSpedizione || '—'}\n`
         + `🔢 ODP inseriti: ${odps.length}\n`
-        + `🗳️ Colli: ${totColli} | Volume: ${totVolume.toFixed(3)} m³ | Peso: ${totPeso.toFixed(1)} kg`;
+        + `🗳️ Colli: ${totColli} | Volume: ${totVolume.toFixed(3).replace('.',',')} m³ | Peso: ${totPeso.toFixed(1).replace('.',',')} kg`;
 
     if (!confirm(riepilogo)) return;
 
@@ -1361,7 +1372,7 @@ const hdrInt = [
 const rowInt = [
     docNum, codeBP, namesBP, '',
     dataExcel, plant, tipoSpedizione, commessa, destino,
-    note, totColli, totVolume.toFixed(3), totPeso.toFixed(1)
+    note, totColli, totVolume.toFixed(3).replace('.',','), totPeso.toFixed(1).replace('.',',')
 ];
 const hdrInt2 = [
     'DocNum','Code_BP','Business_Partner','AWB','Data','Plant','Tipo_Spedizione','Commessa','Destino',
@@ -1380,14 +1391,14 @@ XLSX.utils.book_append_sheet(wb, ws1, 'Intestazione');
         const rowsCar = righeCarico.map((r,i) => [
              docNum,i, r.imballo, r.quantita,
             r.altezza, r.larghezza, r.profondita,
-            r.volume.toFixed(4), (r.volume * r.quantita).toFixed(4),
-            r.peso.toFixed(1), r.note || ''
+            r.volume.toFixed(4).replace('.',','), (r.volume * r.quantita).toFixed(4).replace('.',','),
+            r.peso.toFixed(1).replace('.',','), r.note || ''
         ]);
-        rowsCar.push([
-            'TOTALE','', totColli,
-            '','','','', totVolume.toFixed(4),
-            totPeso.toFixed(1), ''
-        ]);
+        //rowsCar.push([
+          //  'TOTALE','', totColli,
+           // '','','','', totVolume.toFixed(4).replace('.',','),
+            //totPeso.toFixed(1).replace('.',','), ''
+        //]);
         const hdrCar2 = [
             'DocNum','LineNum','Imballo','Quantity',
             'Altezza_Cm','Larghezza_Cm','Profondita_Cm',
@@ -1429,7 +1440,7 @@ XLSX.utils.book_append_sheet(wb, ws3, 'Dettagli ODP');
                        + `Business Partner: ${bp}\n`
                        + `Destino: ${destino}\n`
                        + `Commessa: ${commessa}\n\n`
-                       + `Colli: ${totColli} | Volume: ${totVolume.toFixed(3)} m³ | Peso: ${totPeso.toFixed(1)} kg\n\n`
+                       + `Colli: ${totColli} | Volume: ${totVolume.toFixed(3).replace('.',',')} m³ | Peso: ${totPeso.toFixed(1).replace('.',',')} kg\n\n`
                        + `File allegato: ${fileName}`;
 
         GM_xmlhttpRequest({
