@@ -18,7 +18,7 @@
 /* ================================================================
    CONFIG
 ================================================================ */
-const EMAIL_TO = 'dizzo@atsgruppo.eu';
+const EMAIL_TO = 'OperativoBollettazione14@atsgruppo.eu';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzG0jy-B_QbIYDTYqLzD0Jnr2Bvn9_uccdjdErK_y7oYU7vbseEF5AO5u0AjmdzFCcR/exec';
 const DEST_API_URL = 'https://script.google.com/macros/s/AKfycbzP-L7wJgg6njb6FKUGGYaceMHYm0vQ0nQAIte5W7hWiSorKykQYHjYfO140bC0TyhH/exec';
 
