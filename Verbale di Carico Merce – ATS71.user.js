@@ -1445,12 +1445,15 @@ ws3['!cols'] = [{wch:5},{wch:25}];
 ws3['!rows'] = [{ hidden: true }, {}, ...rowsODP.map(() => ({}))];
 XLSX.utils.book_append_sheet(wb, ws3, 'Dettagli ODP');
 
-        /* --- NOME FILE: contiene il destino --- */
-        const destShort = destino
-            ? destino.substring(0,25).replace(/[^a-zA-Z0-9]/g,'_')
-            : 'NoDestino';
-        const dataStr  = data.replace(/-/g,'');
-        const fileName = `VDC_${destShort}_${dataStr}.xlsx`;
+/* --- NOME FILE: contiene commessa + destino --- */
+const commessaShort = commessa
+    ? commessa.replace(/[^a-zA-Z0-9\-]/g,'_')
+    : 'NoCommessa';
+const destShort = destino
+    ? destino.substring(0,25).replace(/[^a-zA-Z0-9]/g,'_')
+    : 'NoDestino';
+const dataStr  = data.replace(/-/g,'');
+const fileName = `VDC_${commessaShort}_${destShort}_${dataStr}.xlsx`;
 
         /* --- DOWNLOAD LOCALE --- */
         XLSX.writeFile(wb, fileName);
@@ -1459,13 +1462,14 @@ XLSX.utils.book_append_sheet(wb, ws3, 'Dettagli ODP');
         const wbArr = XLSX.write(wb, { bookType:'xlsx', type:'array' });
         const base64 = btoa(String.fromCharCode(...new Uint8Array(wbArr)));
 
-        const soggetto = `Verbale di Carico – ${destino || commessa} – ${dataFmt}`;
+        const soggetto = `Verbale di Carico – ${destino || commessa} –${commessa} – ${dataFmt}`;
         const corpo = `Verbale di Carico del ${dataFmt}\n`
                        + `Business Partner: ${bp}\n`
                        + `Destino: ${destino}\n`
                        + `Commessa: ${commessa}\n\n`
                        + `Colli: ${totColli} | Volume: ${totVolume.toFixed(3).replace('.',',')} m³ | Peso: ${totPeso.toFixed(1).replace('.',',')} kg\n\n`
                        + `File allegato: ${fileName}`;
+
 
         GM_xmlhttpRequest({
             method:  'POST',
