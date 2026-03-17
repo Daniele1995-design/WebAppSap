@@ -8,101 +8,185 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ================================================================
-   BASE — identico al Tampermonkey overlay
+   BASE
 ================================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; background: #f2f2f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; color: #1c1c1e; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+html, body { height: 100%; background: #f2f2f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #1c1c1e; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
 
 /* ---- LOGIN ---- */
 #loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f2f2f7; }
 .login-card { background: white; border-radius: 20px; padding: 40px 32px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,.10); }
-.login-icon { font-size: 52px; margin-bottom: 12px; display: block; line-height: 1; }
-.login-title { font-size: 22px; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
-.login-sub { font-size: 13px; color: #8e8e93; margin-bottom: 32px; }
-.btn-google { display: inline-flex; align-items: center; gap: 12px; background: white; color: #1c1c1e; border: 1.5px solid #e5e5ea; border-radius: 12px; padding: 13px 24px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s; width: 100%; justify-content: center; font-family: inherit; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+.login-icon { font-size: 48px; margin-bottom: 10px; display: block; line-height: 1; }
+.login-title { font-size: 20px; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
+.login-sub { font-size: 12px; color: #8e8e93; margin-bottom: 28px; }
+.btn-google { display: inline-flex; align-items: center; gap: 10px; background: white; color: #1c1c1e; border: 1.5px solid #e5e5ea; border-radius: 12px; padding: 12px 22px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; width: 100%; justify-content: center; font-family: inherit; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
 .btn-google:hover { background: #f9f9f9; border-color: #c7c7cc; }
-.btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
-.login-note { font-size: 12px; color: #c7c7cc; margin-top: 18px; line-height: 1.5; }
+.btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
+.login-note { font-size: 11px; color: #c7c7cc; margin-top: 16px; line-height: 1.5; }
 
 /* ---- APP SHELL ---- */
-#appShell { display: none; flex-direction: column; height: 100vh; }
+#appShell { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
 
-/* ---- TOP BAR ---- */
-.topbar { background: linear-gradient(135deg, #1e3a5f 0%, #2d5986 100%); padding: 0 16px; height: 54px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.25); flex-shrink: 0; }
-.topbar-logo { font-size: 18px; font-weight: 800; color: white; letter-spacing: .3px; flex-shrink: 0; }
+/* ================================================================
+   TOP BAR — include filtri compatti su tablet/desktop
+================================================================ */
+.topbar {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5986 100%);
+    padding: 0 14px;
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,.25);
+    z-index: 100;
+    flex-wrap: wrap;
+    /* Due righe su mobile, una su tablet */
+    min-height: 48px;
+}
+.topbar-logo { font-size: 16px; font-weight: 800; color: white; letter-spacing: .2px; flex-shrink: 0; white-space: nowrap; padding: 10px 0; }
 .topbar-logo span { opacity: .65; font-weight: 500; }
-.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.user-badge { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,.15); border-radius: 20px; padding: 4px 12px 4px 6px; font-size: 12px; color: white; }
-.user-avatar { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
-.user-avatar-fallback { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.25); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; }
-.btn-logout { background: rgba(255,255,255,.15); border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: white; cursor: pointer; font-family: inherit; transition: background .2s; }
-.btn-logout:hover { background: rgba(255,255,255,.25); }
 
-/* ---- FILTERS ---- */
-.filters-wrap { padding: 12px 14px 0; flex-shrink: 0; }
-.filter-card { background: white; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.08); overflow: hidden; }
-.filter-grid { display: grid; grid-template-columns: 1fr 1fr; }
-.filter-cell { padding: 11px 14px; border-bottom: .5px solid #e5e5ea; border-right: .5px solid #e5e5ea; display: flex; flex-direction: column; gap: 4px; }
-.filter-cell:nth-child(even) { border-right: none; }
-.filter-cell.full { grid-column: 1 / -1; border-right: none; }
-.filter-label { font-size: 10px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: .5px; }
-.filter-input, .filter-select { border: none; outline: none; font-size: 14px; color: #1c1c1e; background: transparent; width: 100%; font-family: inherit; -webkit-appearance: none; padding: 0; }
-.filter-select { cursor: pointer; }
-.filter-actions { padding: 10px 14px 14px; display: flex; gap: 8px; border-top: .5px solid #e5e5ea; }
-.btn-cerca { flex: 1; background: linear-gradient(135deg, #007aff 0%, #0055cc 100%); color: white; border: none; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,122,255,.28); font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; transition: transform .1s; }
-.btn-cerca:active { transform: scale(.98); }
-.btn-cerca:disabled { background: #c7c7cc; box-shadow: none; cursor: not-allowed; transform: none; }
-.btn-reset { background: none; border: 1.5px solid #d1d1d6; border-radius: 10px; padding: 13px 16px; font-size: 14px; color: #8e8e93; cursor: pointer; font-family: inherit; white-space: nowrap; transition: background .15s; }
-.btn-reset:hover { background: #f2f2f7; }
+/* ---- FILTER BAR — barra compatta inline ---- */
+.filter-bar {
+    display: flex; align-items: center; gap: 6px;
+    flex: 1; flex-wrap: wrap;
+    padding: 6px 0;
+}
+.fg {
+    display: flex; flex-direction: column; gap: 1px;
+    background: rgba(255,255,255,.12);
+    border-radius: 8px;
+    padding: 4px 9px;
+    min-width: 0;
+    cursor: pointer;
+    transition: background .15s;
+}
+.fg:hover { background: rgba(255,255,255,.18); }
+.fg.fg-date  { min-width: 100px; max-width: 120px; }
+.fg.fg-plant { min-width: 70px;  max-width: 90px; }
+.fg.fg-comm  { min-width: 100px; max-width: 140px; }
+.fg.fg-tipo  { min-width: 90px;  max-width: 120px; }
+.fg.fg-dest  { min-width: 110px; flex: 1; max-width: 200px; }
+.fl { font-size: 9px; font-weight: 700; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; }
+.filter-input, .filter-select {
+    border: none; outline: none;
+    font-size: 12px; font-weight: 600;
+    color: white; background: transparent;
+    width: 100%; font-family: inherit;
+    -webkit-appearance: none; padding: 0;
+    cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.filter-input::placeholder { color: rgba(255,255,255,.4); }
+.filter-input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(.5); }
+option { background: #1e3a5f; color: white; }
 
-/* ---- TABS ---- */
-.tabs-wrap { padding: 10px 14px 0; flex-shrink: 0; }
-.tabs { display: flex; background: white; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.08); overflow: hidden; }
-.tab-btn { flex: 1; padding: 11px 6px; border: none; background: none; font-size: 13px; font-weight: 600; color: #8e8e93; cursor: pointer; border-bottom: 3px solid transparent; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: inherit; }
+/* Bottoni nella barra */
+.btn-cerca {
+    background: rgba(255,255,255,.22); color: white;
+    border: 1.5px solid rgba(255,255,255,.35);
+    border-radius: 8px; padding: 7px 14px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: inherit; white-space: nowrap; flex-shrink: 0;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .15s;
+}
+.btn-cerca:hover { background: rgba(255,255,255,.32); }
+.btn-cerca:active { transform: scale(.97); }
+.btn-cerca:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+.btn-reset {
+    background: none; color: rgba(255,255,255,.5);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 8px; padding: 7px 10px;
+    font-size: 12px; cursor: pointer;
+    font-family: inherit; flex-shrink: 0;
+    transition: all .15s;
+}
+.btn-reset:hover { color: white; border-color: rgba(255,255,255,.4); }
+
+/* User + logout sulla destra */
+.topbar-right { display: flex; align-items: center; gap: 7px; flex-shrink: 0; padding: 6px 0; }
+.user-badge { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border-radius: 20px; padding: 3px 10px 3px 5px; font-size: 11px; color: rgba(255,255,255,.85); }
+.user-avatar { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
+.user-avatar-fallback { width: 20px; height: 20px; border-radius: 50%; background: rgba(255,255,255,.22); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; }
+.btn-logout { background: rgba(255,255,255,.12); border: none; border-radius: 7px; padding: 5px 10px; font-size: 11px; color: rgba(255,255,255,.7); cursor: pointer; font-family: inherit; transition: background .2s; }
+.btn-logout:hover { background: rgba(255,255,255,.22); color: white; }
+
+/* ================================================================
+   TABS — compatti, integrati nel layout
+================================================================ */
+.tabs-wrap { flex-shrink: 0; padding: 8px 10px 0; }
+.tabs { display: flex; background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; }
+.tab-btn { flex: 1; padding: 8px 4px; border: none; background: none; font-size: 12px; font-weight: 600; color: #8e8e93; cursor: pointer; border-bottom: 2.5px solid transparent; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 3px; font-family: inherit; }
 .tab-btn.active { color: #007aff; border-bottom-color: #007aff; }
-.badge { background: #e5e5ea; color: #8e8e93; border-radius: 10px; padding: 1px 6px; font-size: 11px; font-weight: 700; min-width: 18px; text-align: center; }
+.badge { background: #e5e5ea; color: #8e8e93; border-radius: 8px; padding: 1px 5px; font-size: 10px; font-weight: 700; min-width: 16px; text-align: center; }
 .tab-btn.active .badge { background: #e8f4ff; color: #007aff; }
 
-/* ---- SCROLL ---- */
-.scroll-area { flex: 1; overflow-y: auto; padding: 10px 14px 24px; -webkit-overflow-scrolling: touch; }
+/* ================================================================
+   SCROLL AREA — occupa tutto il resto
+================================================================ */
+.scroll-area { flex: 1; overflow-y: auto; padding: 8px 10px 16px; -webkit-overflow-scrolling: touch; min-height: 0; }
 
 /* ---- SUMMARY BAR ---- */
-.summary-bar { background: linear-gradient(135deg, #1e3a5f 0%, #2d5986 100%); padding: 14px; border-radius: 14px; display: flex; justify-content: space-around; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(30,58,95,.3); }
+.summary-bar { background: linear-gradient(135deg, #1e3a5f 0%, #2d5986 100%); padding: 10px 14px; border-radius: 12px; display: flex; justify-content: space-around; margin-bottom: 8px; box-shadow: 0 3px 10px rgba(30,58,95,.25); }
 .summary-item { text-align: center; }
-.summary-value { font-size: 22px; font-weight: 800; color: white; line-height: 1; }
-.summary-label { font-size: 11px; opacity: .8; margin-top: 3px; color: white; }
+.summary-value { font-size: 20px; font-weight: 800; color: white; line-height: 1; }
+.summary-label { font-size: 10px; opacity: .75; margin-top: 2px; color: white; }
 
 /* ---- TABLE ---- */
 .tab-panel { display: none; }
 .tab-panel.on { display: block; }
-.results-info { font-size: 12px; color: #8e8e93; text-align: right; padding: 6px 4px 8px; }
-.tbl-card { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+.results-info { font-size: 11px; color: #8e8e93; text-align: right; padding: 4px 2px 6px; }
+.tbl-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
 .tbl-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-thead tr:first-child th { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #8e8e93; padding: 8px 12px 3px; border-right: .5px solid #e5e5ea; background: #f9f9f9; white-space: nowrap; }
-thead tr:last-child th { font-size: 12px; font-weight: 600; color: #3c3c43; padding: 3px 12px 8px; border-right: .5px solid #e5e5ea; background: #f9f9f9; white-space: nowrap; border-bottom: 1px solid #e5e5ea; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead tr:first-child th { font-size: 9px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: #8e8e93; padding: 7px 10px 2px; border-right: .5px solid #e5e5ea; background: #f9f9f9; white-space: nowrap; }
+thead tr:last-child th { font-size: 11px; font-weight: 600; color: #3c3c43; padding: 2px 10px 7px; border-right: .5px solid #e5e5ea; background: #f9f9f9; white-space: nowrap; border-bottom: 1px solid #e5e5ea; }
 thead th:last-child { border-right: none !important; }
 tbody tr { border-bottom: .5px solid #e5e5ea; transition: background .1s; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: rgba(0,122,255,.03); }
-td { padding: 9px 12px; border-right: .5px solid #e5e5ea; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #1c1c1e; }
+td { padding: 7px 10px; border-right: .5px solid #e5e5ea; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #1c1c1e; }
 td:last-child { border-right: none; }
-td.dn { font-size: 11px; color: #8e8e93; }
-td.dest-col { font-size: 12px; font-weight: 600; color: #1e3a5f; max-width: 160px; }
+td.dn { font-size: 10px; color: #8e8e93; }
+td.dest-col { font-size: 11px; font-weight: 600; color: #1e3a5f; max-width: 140px; }
 
 /* ---- STATI ---- */
-.empty-state { text-align: center; padding: 44px 20px; color: #c7c7cc; font-size: 15px; }
-.empty-icon { font-size: 44px; margin-bottom: 10px; display: block; }
-.empty-title { font-weight: 600; color: #8e8e93; margin-bottom: 4px; font-size: 16px; }
-.empty-sub { font-size: 13px; }
-.loading-state { text-align: center; padding: 44px 20px; color: #8e8e93; font-size: 15px; }
-.spinner { width: 32px; height: 32px; border: 3px solid #e5e5ea; border-top-color: #007aff; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 14px; }
+.empty-state { text-align: center; padding: 36px 20px; color: #c7c7cc; }
+.empty-icon { font-size: 38px; margin-bottom: 8px; display: block; }
+.empty-title { font-weight: 600; color: #8e8e93; margin-bottom: 3px; font-size: 15px; }
+.empty-sub { font-size: 12px; }
+.loading-state { text-align: center; padding: 36px 20px; color: #8e8e93; font-size: 13px; }
+.spinner { width: 28px; height: 28px; border: 3px solid #e5e5ea; border-top-color: #007aff; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 12px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 2px; }
-@media (max-width: 380px) { .filter-grid { grid-template-columns: 1fr; } .filter-cell { border-right: none; } }
+
+/* ================================================================
+   RESPONSIVE
+================================================================ */
+
+/* Tablet (768px+) — tutto in una riga */
+@media (min-width: 768px) {
+    .topbar { flex-wrap: nowrap; min-height: 48px; padding: 0 16px; gap: 12px; }
+    .filter-bar { flex-wrap: nowrap; padding: 0; }
+    .fg.fg-date  { min-width: 110px; }
+    .fg.fg-plant { min-width: 80px; }
+    .fg.fg-comm  { min-width: 120px; }
+    .fg.fg-tipo  { min-width: 100px; }
+    .fg.fg-dest  { min-width: 130px; }
+    .filter-input, .filter-select { font-size: 13px; }
+}
+
+/* Mobile piccolo — due colonne */
+@media (max-width: 480px) {
+    .filter-bar { gap: 4px; }
+    .fg { padding: 4px 7px; }
+    .fg.fg-date, .fg.fg-plant { min-width: calc(50% - 4px); max-width: calc(50% - 4px); }
+    .fg.fg-comm, .fg.fg-tipo  { min-width: calc(50% - 4px); max-width: calc(50% - 4px); }
+    .fg.fg-dest { min-width: 100%; max-width: 100%; flex: none; }
+    .btn-cerca  { padding: 7px 10px; }
+}
 </style>
 </head>
 <body>
@@ -125,7 +209,35 @@ td.dest-col { font-size: 12px; font-weight: 600; color: #1e3a5f; max-width: 160p
 <div id="appShell">
 
     <header class="topbar">
-        <div class="topbar-logo">Storico <span>Spedizioni</span></div>
+        <div class="topbar-logo">Storico <span>Sped.</span></div>
+
+        <!-- FILTRI INLINE NELLA TOPBAR -->
+        <div class="filter-bar">
+            <div class="fg fg-date">
+                <span class="fl">Data</span>
+                <input type="text" class="filter-input" id="fDate" list="listDates" placeholder="GG/MM/AAAA" autocomplete="off">
+                <datalist id="listDates"></datalist>
+            </div>
+            <div class="fg fg-plant">
+                <span class="fl">Plant</span>
+                <select class="filter-select" id="fPlant"><option value="">Tutti</option></select>
+            </div>
+            <div class="fg fg-comm">
+                <span class="fl">Commessa</span>
+                <select class="filter-select" id="fCommessa"><option value="">Tutte</option></select>
+            </div>
+            <div class="fg fg-tipo">
+                <span class="fl">Spedizione</span>
+                <select class="filter-select" id="fTipo"><option value="">Tutti</option></select>
+            </div>
+            <div class="fg fg-dest">
+                <span class="fl">Destino</span>
+                <select class="filter-select" id="fDestino"><option value="">Tutti</option></select>
+            </div>
+            <button class="btn-cerca" id="btnCerca" onclick="loadData()" disabled>🔍 Carica</button>
+            <button class="btn-reset" onclick="resetFiltri()" title="Azzera filtri">✕</button>
+        </div>
+
         <div class="topbar-right">
             <div class="user-badge">
                 <div id="userAvatarWrap"></div>
@@ -134,39 +246,6 @@ td.dest-col { font-size: 12px; font-weight: 600; color: #1e3a5f; max-width: 160p
             <button class="btn-logout" onclick="signOut()">Esci</button>
         </div>
     </header>
-
-    <!-- FILTRI -->
-    <div class="filters-wrap">
-        <div class="filter-card">
-            <div class="filter-grid">
-                <div class="filter-cell">
-                    <span class="filter-label">Data</span>
-                    <input type="text" class="filter-input" id="fDate" list="listDates" placeholder="GG/MM/AAAA" autocomplete="off">
-                    <datalist id="listDates"></datalist>
-                </div>
-                <div class="filter-cell">
-                    <span class="filter-label">Plant</span>
-                    <select class="filter-select" id="fPlant"><option value="">— Tutti —</option></select>
-                </div>
-                <div class="filter-cell">
-                    <span class="filter-label">Commessa</span>
-                    <select class="filter-select" id="fCommessa"><option value="">— Tutte —</option></select>
-                </div>
-                <div class="filter-cell">
-                    <span class="filter-label">Tipo Spedizione</span>
-                    <select class="filter-select" id="fTipo"><option value="">— Tutti —</option></select>
-                </div>
-                <div class="filter-cell full">
-                    <span class="filter-label">Destino</span>
-                    <select class="filter-select" id="fDestino"><option value="">— Tutti —</option></select>
-                </div>
-            </div>
-            <div class="filter-actions">
-                <button class="btn-cerca" id="btnCerca" onclick="loadData()" disabled>🔍&nbsp; Carica Dati</button>
-                <button class="btn-reset" onclick="resetFiltri()">✕ Reset</button>
-            </div>
-        </div>
-    </div>
 
     <!-- TABS (nascosti finché non ci sono dati) -->
     <div class="tabs-wrap" id="tabsWrap" style="display:none">
