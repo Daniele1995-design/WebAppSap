@@ -7,25 +7,30 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-/* ================================================================
-   BASE
-================================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; background: #dfe4ee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #1c1c1e; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+html, body {
+    height: 100%;
+    background: #dfe4ee;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    color: #1c1c1e;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
 
-/* ---- LOGIN ---- */
+/* ---- LOGIN (non mostrato all'avvio) ---- */
 #loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #dfe4ee; }
 .login-card { background: white; border-radius: 20px; padding: 40px 32px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,.12); }
 .login-icon { font-size: 48px; margin-bottom: 10px; display: block; }
-.login-title { font-size: 20px; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
-.login-sub { font-size: 12px; color: #8e8e93; margin-bottom: 28px; }
-.btn-google { display: inline-flex; align-items: center; gap: 10px; background: white; color: #1c1c1e; border: 1.5px solid #e5e5ea; border-radius: 12px; padding: 12px 22px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; justify-content: center; font-family: inherit; box-shadow: 0 1px 6px rgba(0,0,0,.07); transition: all .2s; }
+.login-title { font-size: 22px; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
+.login-sub { font-size: 13px; color: #8e8e93; margin-bottom: 28px; }
+.btn-google { display: inline-flex; align-items: center; gap: 10px; background: white; color: #1c1c1e; border: 1.5px solid #e5e5ea; border-radius: 12px; padding: 12px 22px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; justify-content: center; font-family: inherit; box-shadow: 0 1px 6px rgba(0,0,0,.07); transition: all .2s; }
 .btn-google:hover { background: #f9f9f9; }
 .btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
-.login-note { font-size: 11px; color: #c7c7cc; margin-top: 14px; line-height: 1.5; }
+.login-note { font-size: 12px; color: #c7c7cc; margin-top: 14px; line-height: 1.5; }
 
 /* ---- APP SHELL ---- */
-#appShell { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+#appShell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 /* ================================================================
    TOPBAR
@@ -37,190 +42,161 @@ html, body { height: 100%; background: #dfe4ee; font-family: -apple-system, Blin
     flex-shrink: 0;
     box-shadow: 0 2px 10px rgba(0,0,0,.25);
     z-index: 100;
-    min-height: 46px;
+    min-height: 48px;
     flex-wrap: wrap;
 }
-.topbar-logo { font-size: 15px; font-weight: 800; color: white; letter-spacing: .2px; flex-shrink: 0; white-space: nowrap; padding: 8px 0; }
+.topbar-logo { font-size: 16px; font-weight: 800; color: white; letter-spacing: .2px; flex-shrink: 0; white-space: nowrap; padding: 8px 0; }
 .topbar-logo span { opacity: .6; font-weight: 500; }
 
-/* FILTER BAR */
 .filter-bar { display: flex; align-items: center; gap: 5px; flex: 1; flex-wrap: wrap; padding: 5px 0; min-width: 0; }
 
-/* ---- FIELD GROUP — select custom arrow ---- */
-.fg {
-    display: flex; flex-direction: column; gap: 1px;
-    background: rgba(255,255,255,.12);
-    border-radius: 7px; padding: 4px 8px;
-    transition: background .15s; flex: 1; min-width: 80px;
-    /* non serve cursor:pointer qui, il click è gestito da label/input dentro */
-}
+.fg { display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,.12); border-radius: 7px; padding: 4px 8px; transition: background .15s; flex: 1; min-width: 80px; }
 .fg:hover { background: rgba(255,255,255,.2); }
-.fl { font-size: 9px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; }
-
-.filter-input {
-    border: none; outline: none;
-    font-size: 12px; font-weight: 600; color: white; background: transparent;
-    width: 100%; font-family: inherit; padding: 0; cursor: text;
-}
+.fl { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; }
+.filter-input { border: none; outline: none; font-size: 13px; font-weight: 600; color: white; background: transparent; width: 100%; font-family: inherit; padding: 0; cursor: text; }
 .filter-input::placeholder { color: rgba(255,255,255,.35); }
 
-/* ---- SELECT: freccia visibile e click su tutto il campo ---- */
+/* Select wrapper: click ovunque apre il menu */
 .fg-sel {
     position: relative;
     display: flex; flex-direction: column; gap: 1px;
     background: rgba(255,255,255,.12);
     border-radius: 7px; padding: 4px 8px;
     transition: background .15s; flex: 1; min-width: 80px;
-    cursor: pointer;
 }
 .fg-sel:hover { background: rgba(255,255,255,.2); }
 .fg-sel .fl { pointer-events: none; }
-/* Il select occupa tutto il box, trasparente sopra — la freccia SVG è decorativa */
-.fg-sel select {
-    position: absolute; inset: 0;
-    opacity: 0;
-    width: 100%; height: 100%;
-    cursor: pointer;
-    border: none; outline: none;
-    -webkit-appearance: auto;
-    appearance: auto;
-    z-index: 2;
-}
-/* Valore visivo mostrato */
-.fg-sel .sel-val {
-    font-size: 12px; font-weight: 600; color: white;
-    pointer-events: none;
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 4px;
-}
-.fg-sel .sel-val svg {
-    flex-shrink: 0; opacity: .75;
-}
+/* Il select reale è invisibile ma copre tutta l'area */
+.fg-sel select { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: none; outline: none; z-index: 2; font-size: 16px; /* iOS fix */ }
+/* Valore visivo */
+.fg-sel .sel-val { font-size: 13px; font-weight: 600; color: white; pointer-events: none; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.fg-sel .sel-val svg { flex-shrink: 0; opacity: .85; }
 option { background: #1e3a5f; color: white; }
 
-.btn-cerca { background: rgba(255,255,255,.2); color: white; border: 1.5px solid rgba(255,255,255,.35); border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0; transition: background .15s; }
+.btn-cerca { background: rgba(255,255,255,.2); color: white; border: 1.5px solid rgba(255,255,255,.35); border-radius: 7px; padding: 6px 12px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0; transition: background .15s; }
 .btn-cerca:hover { background: rgba(255,255,255,.3); }
 .btn-cerca:disabled { opacity: .35; cursor: not-allowed; }
-.btn-reset { background: none; color: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.2); border-radius: 7px; padding: 6px 9px; font-size: 12px; cursor: pointer; font-family: inherit; flex-shrink: 0; transition: all .15s; }
+.btn-reset { background: none; color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.2); border-radius: 7px; padding: 6px 9px; font-size: 13px; cursor: pointer; font-family: inherit; flex-shrink: 0; transition: all .15s; }
 .btn-reset:hover { color: white; border-color: rgba(255,255,255,.4); }
 
-/* Utente */
 .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 5px 0; }
-.user-badge { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border-radius: 20px; padding: 3px 9px 3px 5px; font-size: 11px; color: rgba(255,255,255,.85); }
-.user-avatar { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
-.user-avatar-fallback { width: 20px; height: 20px; border-radius: 50%; background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; }
-.btn-logout { background: rgba(255,255,255,.12); border: none; border-radius: 6px; padding: 5px 9px; font-size: 11px; color: rgba(255,255,255,.7); cursor: pointer; font-family: inherit; transition: background .2s; }
+.user-badge { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border-radius: 20px; padding: 3px 9px 3px 5px; font-size: 12px; color: rgba(255,255,255,.85); }
+.user-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.user-avatar-fallback { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; }
+.btn-logout { background: rgba(255,255,255,.12); border: none; border-radius: 6px; padding: 5px 9px; font-size: 12px; color: rgba(255,255,255,.7); cursor: pointer; font-family: inherit; transition: background .2s; }
 .btn-logout:hover { background: rgba(255,255,255,.22); color: white; }
 
 /* ================================================================
-   INFOBAR
+   INFOBAR — una sola riga: stats | tab | col-toggle
 ================================================================ */
 .infobar {
     display: none;
     background: white;
     border-bottom: 1px solid #d1d8e8;
-    padding: 0 12px;
+    padding: 0 10px;
     align-items: center;
     gap: 0;
     flex-shrink: 0;
-    min-height: 38px;
+    height: 42px;       /* altezza fissa, risparmia spazio */
     box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    position: relative; /* per il dropdown colonne */
 }
 .infobar.show { display: flex; }
+
 .ib-stats { display: flex; gap: 0; flex-shrink: 0; }
-.ib-stat { display: flex; flex-direction: column; align-items: center; padding: 6px 14px 6px 0; margin-right: 14px; border-right: 1px solid #e5e5ea; }
+.ib-stat { display: flex; flex-direction: column; align-items: center; padding: 0 12px 0 0; margin-right: 12px; border-right: 1px solid #e5e5ea; }
 .ib-stat:last-of-type { border-right: none; margin-right: 0; padding-right: 0; }
-.ib-val { font-size: 16px; font-weight: 800; color: #1e3a5f; line-height: 1; }
+.ib-val { font-size: 17px; font-weight: 800; color: #1e3a5f; line-height: 1; }
 .ib-lbl { font-size: 9px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; margin-top: 1px; }
-.ib-div { width: 1px; background: #e5e5ea; align-self: stretch; margin: 6px 10px; flex-shrink: 0; }
-.ib-tabs { display: flex; gap: 2px; flex: 1; }
-/* Solo 2 tab: Carico e ODP */
-.ib-tab { flex: 1; padding: 6px 8px; border: none; background: none; font-size: 12px; font-weight: 600; color: #8e8e93; cursor: pointer; border-bottom: 2.5px solid transparent; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 3px; font-family: inherit; white-space: nowrap; }
+
+.ib-div { width: 1px; background: #e5e5ea; align-self: stretch; margin: 6px 8px; flex-shrink: 0; }
+
+/* Tab buttons */
+.ib-tabs { display: flex; gap: 0; }
+.ib-tab { padding: 0 12px; border: none; background: none; font-size: 13px; font-weight: 600; color: #8e8e93; cursor: pointer; border-bottom: 2.5px solid transparent; transition: all .2s; display: flex; align-items: center; gap: 4px; font-family: inherit; white-space: nowrap; height: 42px; }
 .ib-tab.active { color: #007aff; border-bottom-color: #007aff; }
-.badge { background: #e5e5ea; color: #8e8e93; border-radius: 8px; padding: 1px 5px; font-size: 10px; font-weight: 700; min-width: 16px; text-align: center; }
+.badge { background: #e5e5ea; color: #8e8e93; border-radius: 8px; padding: 1px 6px; font-size: 11px; font-weight: 700; min-width: 18px; text-align: center; }
 .ib-tab.active .badge { background: #e8f4ff; color: #007aff; }
+
+/* Spacer tra tab e col-toggle */
+.ib-spacer { flex: 1; }
+
+/* ---- COL TOGGLE — inline nell'infobar, dropdown verso il basso ---- */
+.ct-wrap { position: relative; flex-shrink: 0; }
+
+.ct-toggle-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #f4f6fa;
+    border: 1px solid #d1d8e8;
+    border-radius: 7px;
+    padding: 5px 11px;
+    font-size: 12px; font-weight: 700; color: #8e8e93;
+    cursor: pointer; font-family: inherit;
+    transition: all .15s; white-space: nowrap;
+    height: 30px;
+}
+.ct-toggle-btn:hover,
+.ct-toggle-btn.open { border-color: #007aff; color: #007aff; background: #eef5ff; }
+.ct-arrow { font-size: 9px; transition: transform .2s; line-height: 1; }
+.ct-toggle-btn.open .ct-arrow { transform: rotate(180deg); }
+
+/* Pannello colonne: dropdown fisso, appare sotto l'infobar */
+.ct-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: white;
+    border: 1px solid #d1d8e8;
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.13);
+    z-index: 500;
+    min-width: 300px;
+    max-width: 92vw;
+    animation: ctFade .15s ease;
+}
+.ct-panel.open { display: block; }
+@keyframes ctFade { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+.ct-row { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.ct-label { font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; flex-shrink: 0; margin-right: 3px; white-space: nowrap; }
+.ct-btn { border: 1px solid #d1d8e8; background: white; border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; color: #8e8e93; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+.ct-btn:hover { border-color: #007aff; color: #007aff; }
+.ct-btn.on { background: #007aff; border-color: #007aff; color: white; }
+.ct-btn.dest.on { background: #007aff; color: white; }
 
 /* ================================================================
    SCROLL AREA
 ================================================================ */
 .scroll-area { flex: 1; overflow-y: auto; padding: 8px 10px 16px; -webkit-overflow-scrolling: touch; min-height: 0; }
-
-/* ---- COL TOGGLE — nascosta, appare solo su click ---- */
-.col-toggle-wrap { margin-bottom: 6px; position: relative; }
-
-/* Bottone "..." per aprire/chiudere il pannello colonne */
-.ct-toggle-btn {
-    background: white;
-    border: 1px solid #d1d8e8;
-    border-radius: 7px;
-    padding: 4px 10px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #8e8e93;
-    cursor: pointer;
-    font-family: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    transition: all .15s;
-    margin-bottom: 4px;
-}
-.ct-toggle-btn:hover { border-color: #007aff; color: #007aff; background: #f0f7ff; }
-.ct-toggle-btn .ct-arrow { font-size: 10px; transition: transform .2s; display: inline-block; }
-.ct-toggle-btn.open .ct-arrow { transform: rotate(180deg); }
-
-/* Pannello colonne: collassato di default */
-.ct-panel {
-    display: none;
-    background: white;
-    border: 1px solid #d1d8e8;
-    border-radius: 10px;
-    padding: 8px 10px;
-    margin-bottom: 6px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.07);
-    animation: ctFade .15s ease;
-}
-.ct-panel.open { display: block; }
-@keyframes ctFade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-
-.ct-row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
-.ct-label { font-size: 10px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; flex-shrink: 0; margin-right: 2px; }
-.ct-btn { border: 1px solid #d1d8e8; background: white; border-radius: 20px; padding: 3px 9px; font-size: 11px; font-weight: 600; color: #8e8e93; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
-.ct-btn:hover { border-color: #007aff; color: #007aff; }
-.ct-btn.on { background: #007aff; border-color: #007aff; color: white; }
-.ct-btn.dest { background: #e8f4ff; border-color: #b3d7ff; color: #007aff; }
-.ct-btn.dest.on { background: #007aff; color: white; }
-
-/* ---- RESULTS INFO ---- */
-.results-info { font-size: 11px; color: #8e8e93; text-align: right; padding: 2px 2px 5px; }
+.results-info { font-size: 12px; color: #8e8e93; text-align: right; padding: 2px 2px 5px; }
 
 /* ---- TABLE ---- */
 .tab-panel { display: none; }
 .tab-panel.on { display: block; }
 .tbl-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
 .tbl-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-thead tr:first-child th { font-size: 9px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: #8e8e93; padding: 7px 10px 2px; border-right: .5px solid #e5e5ea; background: #f4f6fa; white-space: nowrap; }
-thead tr:last-child th { font-size: 11px; font-weight: 600; color: #3c3c43; padding: 2px 10px 7px; border-right: .5px solid #e5e5ea; background: #f4f6fa; white-space: nowrap; border-bottom: 1px solid #d8dde8; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead tr:first-child th { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #8e8e93; padding: 7px 10px 2px; border-right: .5px solid #e5e5ea; background: #f4f6fa; white-space: nowrap; }
+thead tr:last-child th { font-size: 13px; font-weight: 600; color: #3c3c43; padding: 2px 10px 7px; border-right: .5px solid #e5e5ea; background: #f4f6fa; white-space: nowrap; border-bottom: 1px solid #d8dde8; }
 thead th:last-child { border-right: none !important; }
 tbody tr { border-bottom: .5px solid #e8ecf2; transition: background .1s; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: rgba(0,122,255,.04); }
-td { padding: 7px 10px; border-right: .5px solid #ebeef4; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #1c1c1e; }
+td { padding: 8px 10px; border-right: .5px solid #ebeef4; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; font-size: 14px; color: #1c1c1e; }
 td:last-child { border-right: none; }
-td.dn { font-size: 10px; color: #8e8e93; }
-td.dest-col { font-size: 11px; font-weight: 600; color: #1e3a5f; max-width: 140px; }
-
-/* Colonne extra da intestazione in Carico e ODP */
-td.hdr-extra { font-size: 11px; font-weight: 500; color: #3a3a8c; }
+td.dn { font-size: 11px; color: #8e8e93; }
+td.dest-col { font-size: 13px; font-weight: 600; color: #1e3a5f; max-width: 160px; }
+td.hdr-extra { font-size: 13px; font-weight: 500; color: #3a3a8c; }
 th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
 
 /* ---- STATI ---- */
 .empty-state { text-align: center; padding: 36px 20px; color: #c7c7cc; }
 .empty-icon { font-size: 38px; margin-bottom: 8px; display: block; }
-.empty-title { font-weight: 600; color: #8e8e93; margin-bottom: 3px; font-size: 15px; }
-.empty-sub { font-size: 12px; }
-.loading-state { text-align: center; padding: 40px 20px; color: #8e8e93; font-size: 13px; }
+.empty-title { font-weight: 600; color: #8e8e93; margin-bottom: 3px; font-size: 16px; }
+.empty-sub { font-size: 13px; }
+.loading-state { text-align: center; padding: 40px 20px; color: #8e8e93; font-size: 14px; }
 .spinner { width: 28px; height: 28px; border: 3px solid #e5e5ea; border-top-color: #007aff; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 12px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -228,25 +204,22 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #c1c8d8; border-radius: 2px; }
 
-/* ================================================================
-   RESPONSIVE
-================================================================ */
 @media (min-width: 768px) {
-    .topbar { flex-wrap: nowrap; min-height: 46px; }
+    .topbar { flex-wrap: nowrap; }
     .filter-bar { flex-wrap: nowrap; padding: 0; }
     .fg, .fg-sel { min-width: 0; }
 }
 @media (max-width: 600px) {
     .fg, .fg-sel { min-width: calc(33% - 4px); }
-    .ib-stat { padding: 5px 10px 5px 0; margin-right: 10px; }
-    .ib-val { font-size: 14px; }
+    .ib-val { font-size: 15px; }
+    .ct-panel { right: -8px; min-width: 260px; }
 }
 </style>
 </head>
 <body>
 
-<!-- ===== LOGIN ===== -->
-<div id="loginScreen">
+<!-- LOGIN — nascosto, usato solo come fallback -->
+<div id="loginScreen" style="display:none;">
     <div class="login-card">
         <span class="login-icon">📜</span>
         <div class="login-title">Storico Spedizioni</div>
@@ -259,68 +232,50 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
     </div>
 </div>
 
-<!-- ===== APP ===== -->
+<!-- APP SHELL — visibile subito, senza login -->
 <div id="appShell">
 
-    <!-- TOPBAR -->
     <header class="topbar">
         <div class="topbar-logo">Storico <span>Sped.</span></div>
         <div class="filter-bar">
-            <!-- Data: campo testo libero -->
+            <!-- Data -->
             <div class="fg">
                 <span class="fl">Data</span>
                 <input type="text" class="filter-input" id="fDate" list="listDates" placeholder="GG/MM/AAAA" autocomplete="off">
                 <datalist id="listDates"></datalist>
             </div>
-
-            <!-- Plant select -->
-            <div class="fg-sel" id="fg-plant">
+            <!-- Plant -->
+            <div class="fg-sel">
                 <span class="fl">Plant</span>
-                <div class="sel-val" id="sv-plant">
-                    <span id="sv-plant-txt">Tutti</span>
-                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="sel-val"><span id="sv-plant-txt">Tutti</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
-                <select id="fPlant" onchange="syncSelVal('plant'); if(currentData){colVis={};render();}">
-                    <option value="">Tutti</option>
-                </select>
+                <select id="fPlant" onchange="syncSelVal('plant'); if(currentData){colVis={};render();}"><option value="">Tutti</option></select>
             </div>
-
-            <!-- Commessa select -->
-            <div class="fg-sel" id="fg-commessa">
+            <!-- Commessa -->
+            <div class="fg-sel">
                 <span class="fl">Commessa</span>
-                <div class="sel-val" id="sv-commessa">
-                    <span id="sv-commessa-txt">Tutte</span>
-                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="sel-val"><span id="sv-commessa-txt">Tutte</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
-                <select id="fCommessa" onchange="syncSelVal('commessa'); if(currentData){colVis={};render();}">
-                    <option value="">Tutte</option>
-                </select>
+                <select id="fCommessa" onchange="syncSelVal('commessa'); if(currentData){colVis={};render();}"><option value="">Tutte</option></select>
             </div>
-
-            <!-- Tipo spedizione select -->
-            <div class="fg-sel" id="fg-tipo">
+            <!-- Tipo spedizione -->
+            <div class="fg-sel">
                 <span class="fl">Spedizione</span>
-                <div class="sel-val" id="sv-tipo">
-                    <span id="sv-tipo-txt">Tutti</span>
-                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="sel-val"><span id="sv-tipo-txt">Tutti</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
-                <select id="fTipo" onchange="syncSelVal('tipo'); if(currentData){colVis={};render();}">
-                    <option value="">Tutti</option>
-                </select>
+                <select id="fTipo" onchange="syncSelVal('tipo'); if(currentData){colVis={};render();}"><option value="">Tutti</option></select>
             </div>
-
-            <!-- Destino select -->
-            <div class="fg-sel" id="fg-destino">
+            <!-- Destino -->
+            <div class="fg-sel">
                 <span class="fl">Destino</span>
-                <div class="sel-val" id="sv-destino">
-                    <span id="sv-destino-txt">Tutti</span>
-                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="sel-val"><span id="sv-destino-txt">Tutti</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
-                <select id="fDestino" onchange="syncSelVal('destino'); if(currentData){colVis={};render();}">
-                    <option value="">Tutti</option>
-                </select>
+                <select id="fDestino" onchange="syncSelVal('destino'); if(currentData){colVis={};render();}"><option value="">Tutti</option></select>
             </div>
-
             <button class="btn-cerca" id="btnCerca" onclick="loadData()" disabled>🔍 Carica</button>
             <button class="btn-reset" onclick="resetFiltri()" title="Azzera filtri">✕</button>
         </div>
@@ -333,16 +288,16 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
         </div>
     </header>
 
-    <!-- INFOBAR: summary + tab buttons — solo Carico e ODP -->
+    <!-- INFOBAR: stats | tab Carico | tab ODP | spacer | ☰ Colonne -->
     <div class="infobar" id="infobar">
         <div class="ib-stats">
             <div class="ib-stat">
                 <div class="ib-val" id="sDoc">0</div>
-                <div class="ib-lbl">Spedizioni</div>
+                <div class="ib-lbl">Sped.</div>
             </div>
             <div class="ib-stat">
                 <div class="ib-val" id="sCar">0</div>
-                <div class="ib-lbl">Righe Carico</div>
+                <div class="ib-lbl">Carico</div>
             </div>
             <div class="ib-stat">
                 <div class="ib-val" id="sOdp">0</div>
@@ -351,13 +306,21 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
         </div>
         <div class="ib-div"></div>
         <div class="ib-tabs">
-            <!-- Tab Carico attivo di default, Intestazione rimossa -->
             <button class="ib-tab active" data-tab="tc" onclick="switchTab('tc')">📦 Carico <span class="badge" id="cnt-tc">0</span></button>
             <button class="ib-tab" data-tab="to" onclick="switchTab('to')">🔢 ODP <span class="badge" id="cnt-to">0</span></button>
         </div>
+        <div class="ib-spacer"></div>
+        <!-- Bottone colonne + dropdown — tutto a destra, inline con i tab -->
+        <div class="ct-wrap" id="ct-wrap-global">
+            <button class="ct-toggle-btn" id="ct-btn-global" onclick="toggleCtPanel()">
+                ☰ Colonne <span class="ct-arrow">▾</span>
+            </button>
+            <div class="ct-panel" id="ct-panel-global">
+                <div class="ct-row"><span class="ct-label">Carica i dati per gestire le colonne</span></div>
+            </div>
+        </div>
     </div>
 
-    <!-- SCROLL AREA -->
     <div class="scroll-area">
         <div id="content">
             <div class="empty-state">
@@ -367,7 +330,6 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
             </div>
         </div>
     </div>
-
 </div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -378,559 +340,497 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
 var CLIENT_ID   = '256693770433-b1pjdpaglrh7827o6ln2s24802rcnshd.apps.googleusercontent.com';
 var FOLDER_ID   = '1dSm4qSDB2cZ5WhwDf_40TF-K7sjwStg4';
 var SHEET_NAMES = ['Intestazione','Dettagli Carico','Dettagli ODP'];
-
-var TOKEN = null, currentData = null, currentDate = null;
-
-/* ================================================================
-   activeTab: default = 'tc' (Carico), Intestazione rimossa
-================================================================ */
-var activeTab = 'tc';
+var TOKEN = null, currentData = null, currentDate = null, activeTab = 'tc';
+var colVis = {};
 
 /* ================================================================
    COLUMN VISIBILITY
 ================================================================ */
-var colVis = {};
+function nc(s){ return String(s||'').toLowerCase().replace(/[_\s\-]/g,''); }
 
-function nc(s) { return String(s||'').toLowerCase().replace(/[_\s\-]/g,''); }
-
-/* Colonne visibili di default — Intestazione non più tab, rimane
-   come sorgente dati extra per Carico e ODP.
-   Per Carico: aggiunge Commessa, AWB(nascosto), TipoSpedizione da Intestazione.
-   Le colonne toggleabili sono solo quelle di file + le extra. */
 var COL_DEF = {
-    'dettaglicarico': ['__dest__','linenum','imballo','qty','quantity','altezzacm','larghezzacm','profonditacm'],
-    'dettagliodp':    ['__dest__','linenum','odp','numeroodp']
+    'dettaglicarico': ['linenum','imballo','qty','quantity','altezzacm','larghezzacm','profonditacm'],
+    'dettagliodp':    ['linenum','odp','numeroodp']
 };
 
-function initColVis(sheetName, headers, hasDestCol) {
-    if (colVis[sheetName]) return;
+function initColVis(sheetName, headers){
+    if(colVis[sheetName]) return;
     var key = nc(sheetName);
-    var defs = COL_DEF[key] || [];
-    var h1 = (headers && headers[1]) ? headers[1] : [];
-    var arr = [];
-    // slot 0 = colonna Destino extra
-    if (hasDestCol) arr.push(defs.indexOf('__dest__') >= 0);
-    // slot 1 = Commessa extra (solo Carico e ODP)
-    arr.push(true);  // Commessa visibile
-    // slot 2 = TipoSpedizione extra
-    arr.push(true);
-    // poi le colonne del file (skippa DocNum che è index 0)
-    h1.forEach(function(h) { arr.push(defs.indexOf(nc(h)) >= 0); });
+    var defs = COL_DEF[key]||[];
+    var h1 = (headers&&headers[1])?headers[1]:[];
+    // slot 0 = Destino, 1 = Commessa, 2 = TipoSped (tutti visibili di default)
+    // slot 3+ = colonne file (DocNum index 0 sempre nascosto)
+    var arr = [true, true, true];
+    h1.forEach(function(h, ci){
+        if(ci===0){ arr.push(false); return; } // DocNum
+        arr.push(defs.indexOf(nc(h))>=0);
+    });
     colVis[sheetName] = arr;
 }
 
-function toggleCol(sheetName, colIdx) {
-    if (!colVis[sheetName]) return;
+function toggleCol(sheetName, colIdx){
+    if(!colVis[sheetName]) return;
     colVis[sheetName][colIdx] = !colVis[sheetName][colIdx];
     reRenderActive();
+    refreshColPanel();
 }
 
 /* ================================================================
-   TOGGLE PANNELLO COLONNE
+   COL TOGGLE PANEL
 ================================================================ */
-function toggleCtPanel(btnId, panelId) {
-    var btn   = document.getElementById(btnId);
-    var panel = document.getElementById(panelId);
-    if (!btn || !panel) return;
-    var isOpen = panel.classList.contains('open');
-    panel.classList.toggle('open', !isOpen);
-    btn.classList.toggle('open', !isOpen);
-    btn.querySelector('.ct-arrow').textContent = isOpen ? '▾' : '▴';
+function toggleCtPanel(){
+    var btn   = document.getElementById('ct-btn-global');
+    var panel = document.getElementById('ct-panel-global');
+    var open  = panel.classList.contains('open');
+    panel.classList.toggle('open', !open);
+    btn.classList.toggle('open', !open);
 }
 
-/* ================================================================
-   SYNC VISUAL VALUE per select
-================================================================ */
-function syncSelVal(key) {
-    var map = { plant:'fPlant', commessa:'fCommessa', tipo:'fTipo', destino:'fDestino' };
-    var phMap = { plant:'Tutti', commessa:'Tutte', tipo:'Tutti', destino:'Tutti' };
-    var sel = document.getElementById(map[key]);
-    var span = document.getElementById('sv-' + key + '-txt');
-    if (sel && span) span.textContent = sel.value || phMap[key];
-}
-
-/* ================================================================
-   INIT — NON fa login automatico; attende che l'utente interagisca
-================================================================ */
-window.onload = function () {
-    /* Mostra subito l'app shell (senza dati), login solo su richiesta.
-       Se c'è una sessione salvata la usiamo per ripristinare l'utente. */
-    var saved = getSaved();
-    if (saved) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appShell').style.display   = 'flex';
-        setUserUI(saved.name, saved.picture);
-    } else {
-        /* Mostra direttamente l'app shell senza login obbligatorio.
-           I pulsanti "Carica" e le funzionalità Drive richiederanno il token. */
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appShell').style.display   = 'flex';
-        document.getElementById('btnCerca').disabled = true; // disabilitato finché non loggato
+document.addEventListener('click', function(e){
+    var wrap = document.getElementById('ct-wrap-global');
+    if(wrap && !wrap.contains(e.target)){
+        document.getElementById('ct-panel-global').classList.remove('open');
+        document.getElementById('ct-btn-global').classList.remove('open');
     }
+});
+
+function refreshColPanel(){
+    var map = { tc:'Dettagli Carico', to:'Dettagli ODP' };
+    var sn  = map[activeTab];
+    if(!sn||!currentData) return;
+    var headers = currentData[sn].headers;
+    var h1  = (headers&&headers[1])?headers[1]:[];
+    var vis = colVis[sn]||[];
+    var snE = sn.replace(/'/g,"\\'");
+
+    var html = '<div class="ct-row"><span class="ct-label">Visibili</span>';
+    html += btn(0, vis, '📍 Destino',   snE, 'dest');
+    html += btn(1, vis, '🏷 Commessa',  snE, '');
+    html += btn(2, vis, '🚚 Tipo Sped.',snE, '');
+    h1.forEach(function(hname, ci){
+        if(ci===0) return;
+        html += btn(3+ci, vis, esc(String(hname||'')), snE, '');
+    });
+    html += '</div>';
+    document.getElementById('ct-panel-global').innerHTML = html;
+}
+
+function btn(idx, vis, label, snE, extra){
+    var on = vis[idx]!==false;
+    return '<button class="ct-btn '+(extra?extra+' ':'')+(on?'on':'')+'" onclick="toggleCol(\''+snE+'\','+idx+')">'+label+'</button>';
+}
+
+/* ================================================================
+   SYNC SELECT VALUE (visual display)
+================================================================ */
+function syncSelVal(key){
+    var map = {plant:'fPlant',commessa:'fCommessa',tipo:'fTipo',destino:'fDestino'};
+    var ph  = {plant:'Tutti',commessa:'Tutte',tipo:'Tutti',destino:'Tutti'};
+    var sel = document.getElementById(map[key]);
+    var sp  = document.getElementById('sv-'+key+'-txt');
+    if(sel&&sp) sp.textContent = sel.value||ph[key];
+}
+
+/* ================================================================
+   INIT — app shell visibile subito, login solo su richiesta
+================================================================ */
+window.onload = function(){
+    var saved = getSaved();
+    if(saved) setUserUI(saved.name, saved.picture);
+    else      addLoginBtn();
     waitGsi();
 };
 
-var tokenClient;
-var gsiReady = false;
+var tokenClient, gsiReady = false;
 
-function waitGsi() {
-    if (typeof google === 'undefined') { setTimeout(waitGsi, 150); return; }
+function waitGsi(){
+    if(typeof google==='undefined'){ setTimeout(waitGsi,150); return; }
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         callback: onToken
     });
     gsiReady = true;
+    // Rinnovo silenzioso solo se sessione già esistente
     var saved = getSaved();
-    if (saved && saved.email) {
-        /* Rinnova silenziosamente il token se c'era una sessione */
-        tokenClient.requestAccessToken({ prompt: '', login_hint: saved.email });
-    }
-    /* Abilita il bottone Google nella topbar se non ancora loggati */
-    updateLoginBtn();
-}
-
-function updateLoginBtn() {
-    /* Se non c'è token mostra un piccolo bottone "Accedi" nella topbar */
-    if (!TOKEN) {
-        var tb = document.querySelector('.topbar-right');
-        if (tb && !document.getElementById('btn-topbar-login')) {
-            var btn = document.createElement('button');
-            btn.id = 'btn-topbar-login';
-            btn.className = 'btn-cerca';
-            btn.style.background = 'rgba(255,255,255,.25)';
-            btn.innerHTML = '🔑 Accedi';
-            btn.onclick = function() { signIn(); };
-            tb.insertBefore(btn, tb.firstChild);
-        }
+    if(saved&&saved.email){
+        tokenClient.requestAccessToken({prompt:'', login_hint:saved.email});
     }
 }
 
-/* signIn esplicito — chiamato solo dal bottone utente */
-function signIn() {
-    if (!gsiReady) { alert('Google Sign-In non ancora pronto, riprova tra un secondo.'); return; }
-    tokenClient.requestAccessToken({ prompt: 'select_account' });
+function addLoginBtn(){
+    if(document.getElementById('btn-topbar-login')) return;
+    var tb = document.querySelector('.topbar-right');
+    if(!tb) return;
+    var b = document.createElement('button');
+    b.id = 'btn-topbar-login';
+    b.className = 'btn-cerca';
+    b.style.cssText = 'background:rgba(255,255,255,.25); margin-right:4px;';
+    b.innerHTML = '🔑 Accedi';
+    b.onclick = signIn;
+    tb.insertBefore(b, tb.firstChild);
 }
 
-function signOut() {
-    if (TOKEN) google.accounts.oauth2.revoke(TOKEN, function () {});
-    TOKEN = null; currentData = null;
+function signIn(){
+    if(!gsiReady){ setTimeout(signIn,200); return; }
+    tokenClient.requestAccessToken({prompt:'select_account'});
+}
+
+function signOut(){
+    if(TOKEN) google.accounts.oauth2.revoke(TOKEN,function(){});
+    TOKEN=null; currentData=null;
     localStorage.removeItem('vdc_storico_session');
     document.getElementById('infobar').classList.remove('show');
-    /* Svuota i dati ma resta nell'app shell */
     setContent('<div class="empty-state"><span class="empty-icon">🔐</span><div class="empty-title">Sessione terminata</div><div class="empty-sub">Premi "Accedi" per ricaricare</div></div>');
-    document.getElementById('btnCerca').disabled = true;
-    setUserUI('—', '');
-    updateLoginBtn();
+    document.getElementById('btnCerca').disabled=true;
+    setUserUI('—','');
+    addLoginBtn();
 }
 
-function onToken(resp) {
-    if (resp.error) { return; }
+function onToken(resp){
+    if(resp.error) return;
     TOKEN = resp.access_token;
-    /* Rimuovi bottone login topbar se presente */
     var lb = document.getElementById('btn-topbar-login');
-    if (lb) lb.remove();
+    if(lb) lb.remove();
     loadUserInfo();
     loadDates();
 }
 
-/* ================================================================
-   SESSION
-================================================================ */
-function getSaved()        { try { var s = localStorage.getItem('vdc_storico_session'); return s ? JSON.parse(s) : null; } catch(e) { return null; } }
-function setSaved(n, e, p) { try { localStorage.setItem('vdc_storico_session', JSON.stringify({ name: n, email: e, picture: p })); } catch(e) {} }
+/* SESSION */
+function getSaved(){ try{ var s=localStorage.getItem('vdc_storico_session'); return s?JSON.parse(s):null; }catch(e){return null;} }
+function setSaved(n,e,p){ try{localStorage.setItem('vdc_storico_session',JSON.stringify({name:n,email:e,picture:p}));}catch(e){} }
 
-/* ================================================================
-   USER UI
-================================================================ */
-function loadUserInfo() {
-    gFetch('https://www.googleapis.com/oauth2/v2/userinfo').then(function (u) {
-        if (u.error) return;
-        setSaved(u.name || u.email || '', u.email || '', u.picture || '');
-        setUserUI(u.name || u.email || '—', u.picture || '');
-    }).catch(function () {});
+/* USER */
+function loadUserInfo(){
+    gFetch('https://www.googleapis.com/oauth2/v2/userinfo').then(function(u){
+        if(u.error) return;
+        setSaved(u.name||u.email||'',u.email||'',u.picture||'');
+        setUserUI(u.name||u.email||'—',u.picture||'');
+    }).catch(function(){});
 }
-function setUserUI(name, picture) {
-    document.getElementById('userName').textContent = name || '—';
-    var wrap = document.getElementById('userAvatarWrap'); wrap.innerHTML = '';
-    if (picture) {
-        var img = document.createElement('img'); img.className = 'user-avatar'; img.referrerPolicy = 'no-referrer'; img.src = picture;
-        img.onerror = function () { wrap.innerHTML = makeInitial(name); };
+function setUserUI(name,picture){
+    document.getElementById('userName').textContent=name||'—';
+    var wrap=document.getElementById('userAvatarWrap'); wrap.innerHTML='';
+    if(picture){
+        var img=document.createElement('img'); img.className='user-avatar'; img.referrerPolicy='no-referrer'; img.src=picture;
+        img.onerror=function(){ wrap.innerHTML=makeInitial(name); };
         wrap.appendChild(img);
-    } else { wrap.innerHTML = makeInitial(name); }
+    } else { wrap.innerHTML=makeInitial(name); }
 }
-function makeInitial(str) { return '<div class="user-avatar-fallback">' + ((str||'?').trim().charAt(0).toUpperCase()) + '</div>'; }
+function makeInitial(s){ return '<div class="user-avatar-fallback">'+((s||'?').trim().charAt(0).toUpperCase())+'</div>'; }
 
 /* ================================================================
    DATE
 ================================================================ */
-function extractDate(name) { var m = name.match(/(\d{8})\.xlsx$/i); return m ? m[1] : null; }
+function extractDate(name){ var m=name.match(/(\d{8})\.xlsx$/i); return m?m[1]:null; }
 
-function loadDates() {
-    listFiles('"' + FOLDER_ID + '" in parents and mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" and trashed=false')
-    .then(function (files) {
-        var set = {};
-        files.forEach(function (f) { var d = extractDate(f.name); if (d) set[d] = true; });
-        var dates = Object.keys(set).sort().reverse();
-        var dl = document.getElementById('listDates');
-        dates.forEach(function (d) {
-            var txt = d.substr(6,2) + '/' + d.substr(4,2) + '/' + d.substr(0,4);
-            var o = document.createElement('option'); o.value = txt; dl.appendChild(o);
+function loadDates(){
+    listFiles('"'+FOLDER_ID+'" in parents and mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" and trashed=false')
+    .then(function(files){
+        var set={};
+        files.forEach(function(f){ var d=extractDate(f.name); if(d) set[d]=true; });
+        var dates=Object.keys(set).sort().reverse();
+        var dl=document.getElementById('listDates');
+        dates.forEach(function(d){
+            var txt=d.substr(6,2)+'/'+d.substr(4,2)+'/'+d.substr(0,4);
+            var o=document.createElement('option'); o.value=txt; dl.appendChild(o);
         });
-        if (!dates.length) return;
-        var now = new Date();
-        var todayStr = now.getFullYear().toString() + ('0'+(now.getMonth()+1)).slice(-2) + ('0'+now.getDate()).slice(-2);
-        var pick = (dates.indexOf(todayStr) >= 0) ? todayStr : dates[0];
-        document.getElementById('fDate').value = pick.substr(6,2) + '/' + pick.substr(4,2) + '/' + pick.substr(0,4);
-        document.getElementById('btnCerca').disabled = false;
+        if(!dates.length) return;
+        var now=new Date();
+        var today=now.getFullYear().toString()+('0'+(now.getMonth()+1)).slice(-2)+('0'+now.getDate()).slice(-2);
+        var pick=(dates.indexOf(today)>=0)?today:dates[0];
+        document.getElementById('fDate').value=pick.substr(6,2)+'/'+pick.substr(4,2)+'/'+pick.substr(0,4);
+        document.getElementById('btnCerca').disabled=false;
         loadData();
-    }).catch(function () {});
+    }).catch(function(){});
 }
 
-function parseDate(str) {
-    str = (str||'').trim();
-    var m = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (m) return m[3] + m[2] + m[1];
-    if (/^\d{8}$/.test(str)) return str;
+function parseDate(str){
+    str=(str||'').trim();
+    var m=str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if(m) return m[3]+m[2]+m[1];
+    if(/^\d{8}$/.test(str)) return str;
     return null;
 }
 
-document.getElementById('fDate').addEventListener('input', function () {
-    if (!TOKEN) { signIn(); return; }
-    document.getElementById('btnCerca').disabled = !parseDate(this.value);
+document.getElementById('fDate').addEventListener('input',function(){
+    if(!TOKEN){ signIn(); return; }
+    document.getElementById('btnCerca').disabled=!parseDate(this.value);
 });
 
 /* ================================================================
-   CARICA DATI
+   LOAD DATA
 ================================================================ */
-function loadData() {
-    if (!TOKEN) { signIn(); return; }
-    var dateStr = parseDate(document.getElementById('fDate').value);
-    if (!dateStr) return;
-    currentDate = dateStr; currentData = null;
-    colVis = {};
-    activeTab = 'tc'; // reset al tab Carico
-
+function loadData(){
+    if(!TOKEN){ signIn(); return; }
+    var dateStr=parseDate(document.getElementById('fDate').value);
+    if(!dateStr) return;
+    currentDate=dateStr; currentData=null; colVis={}; activeTab='tc';
     document.getElementById('infobar').classList.remove('show');
-    setContent(spinHtml('Ricerca file per ' + fmtD(dateStr) + '…'));
+    setContent(spinHtml('Ricerca file per '+fmtD(dateStr)+'…'));
 
-    listFiles('"' + FOLDER_ID + '" in parents and mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" and trashed=false')
-    .then(function (files) {
-        files = files.filter(function (f) { return extractDate(f.name) === dateStr; });
-        if (!files.length) throw new Error('Nessun file trovato per il ' + fmtD(dateStr));
-        setContent(spinHtml('Download ' + files.length + ' file…'));
-        return Promise.all(files.map(function (f) { return downloadFile(f.id).then(function (b) { return { blob: b }; }); }));
+    listFiles('"'+FOLDER_ID+'" in parents and mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" and trashed=false')
+    .then(function(files){
+        files=files.filter(function(f){ return extractDate(f.name)===dateStr; });
+        if(!files.length) throw new Error('Nessun file trovato per il '+fmtD(dateStr));
+        setContent(spinHtml('Download '+files.length+' file…'));
+        return Promise.all(files.map(function(f){ return downloadFile(f.id).then(function(b){ return {blob:b}; }); }));
     })
-    .then(function (results) {
+    .then(function(results){
         setContent(spinHtml('Elaborazione…'));
-        return Promise.all(results.map(function (r) { return parseXlsx(r.blob); }));
+        return Promise.all(results.map(function(r){ return parseXlsx(r.blob); }));
     })
-    .then(function (parsed) {
-        var merged = {}; SHEET_NAMES.forEach(function (sn) { merged[sn] = { headers: [], rows: [] }; });
-        var hSet = false;
-        parsed.forEach(function (p) {
-            SHEET_NAMES.forEach(function (sn) {
-                var sd = p[sn] || { headers: [], rows: [] };
-                if (!hSet && sd.headers.length) merged[sn].headers = sd.headers;
-                merged[sn].rows = merged[sn].rows.concat(sd.rows);
+    .then(function(parsed){
+        var merged={}; SHEET_NAMES.forEach(function(sn){ merged[sn]={headers:[],rows:[]}; });
+        var hSet=false;
+        parsed.forEach(function(p){
+            SHEET_NAMES.forEach(function(sn){
+                var sd=p[sn]||{headers:[],rows:[]};
+                if(!hSet&&sd.headers.length) merged[sn].headers=sd.headers;
+                merged[sn].rows=merged[sn].rows.concat(sd.rows);
             });
-            hSet = true;
+            hSet=true;
         });
-        SHEET_NAMES.forEach(function (sn) {
-            merged[sn].rows.sort(function (a, b) { return String(a[0]||'').localeCompare(String(b[0]||''), undefined, { numeric: true }); });
+        SHEET_NAMES.forEach(function(sn){
+            merged[sn].rows.sort(function(a,b){ return String(a[0]||'').localeCompare(String(b[0]||''),undefined,{numeric:true}); });
         });
-        currentData = merged;
+        currentData=merged;
         populateFilters(merged['Intestazione'].rows);
         render();
     })
-    .catch(function (e) {
-        setContent('<div class="empty-state"><span class="empty-icon">⚠️</span><div class="empty-title">Errore</div><div class="empty-sub">' + esc(e.message) + '</div></div>');
+    .catch(function(e){
+        setContent('<div class="empty-state"><span class="empty-icon">⚠️</span><div class="empty-title">Errore</div><div class="empty-sub">'+esc(e.message)+'</div></div>');
     });
 }
 
 /* ================================================================
    RENDER
 ================================================================ */
-function render() {
-    if (!currentData) return;
+function render(){
+    if(!currentData) return;
+    var fP=document.getElementById('fPlant').value.trim();
+    var fC=document.getElementById('fCommessa').value.trim();
+    var fT=document.getElementById('fTipo').value.trim();
+    var fD=document.getElementById('fDestino').value.trim();
 
-    var fPlant    = document.getElementById('fPlant').value.trim();
-    var fCommessa = document.getElementById('fCommessa').value.trim();
-    var fTipo     = document.getElementById('fTipo').value.trim();
-    var fDestino  = document.getElementById('fDestino').value.trim();
-
-    var ok = {};
-    currentData['Intestazione'].rows.forEach(function (r) {
-        if (fPlant    && String(r[5]||'').trim() !== fPlant)    return;
-        if (fCommessa && String(r[7]||'').trim() !== fCommessa) return;
-        if (fTipo     && String(r[6]||'').trim() !== fTipo)     return;
-        if (fDestino  && String(r[8]||'').trim() !== fDestino)  return;
-        ok[norm(r[0])] = true;
+    var ok={};
+    currentData['Intestazione'].rows.forEach(function(r){
+        if(fP&&String(r[5]||'').trim()!==fP) return;
+        if(fC&&String(r[7]||'').trim()!==fC) return;
+        if(fT&&String(r[6]||'').trim()!==fT) return;
+        if(fD&&String(r[8]||'').trim()!==fD) return;
+        ok[norm(r[0])]=true;
     });
 
-    /* Intestazione non è più un tab ma serve come sorgente filtro */
-    var fInt = currentData['Intestazione'].rows.filter(function (r) { return ok[norm(r[0])]; });
-    var fCar = currentData['Dettagli Carico'].rows.filter(function (r) { return ok[norm(r[0])]; });
-    var fOdp = currentData['Dettagli ODP'].rows.filter(function (r) { return ok[norm(r[0])]; });
+    var fInt=currentData['Intestazione'].rows.filter(function(r){ return ok[norm(r[0])]; });
+    var fCar=currentData['Dettagli Carico'].rows.filter(function(r){ return ok[norm(r[0])]; });
+    var fOdp=currentData['Dettagli ODP'].rows.filter(function(r){ return ok[norm(r[0])]; });
 
-    document.getElementById('sDoc').textContent = fInt.length;
-    document.getElementById('sCar').textContent = fCar.length;
-    document.getElementById('sOdp').textContent = fOdp.length;
-    document.getElementById('cnt-tc').textContent = fCar.length;
-    document.getElementById('cnt-to').textContent = fOdp.length;
+    document.getElementById('sDoc').textContent=fInt.length;
+    document.getElementById('sCar').textContent=fCar.length;
+    document.getElementById('sOdp').textContent=fOdp.length;
+    document.getElementById('cnt-tc').textContent=fCar.length;
+    document.getElementById('cnt-to').textContent=fOdp.length;
     document.getElementById('infobar').classList.add('show');
 
-    /* Mappa DocNum → { destino, commessa, tipoSped, awb } da Intestazione */
-    var metaMap = {};
-    currentData['Intestazione'].rows.forEach(function (r) {
-        metaMap[norm(r[0])] = {
-            destino:   String(r[8]||'').trim(),
-            commessa:  String(r[7]||'').trim(),
-            tipoSped:  String(r[6]||'').trim(),
-            awb:       String(r[3]||'').trim()   // colonna AWB (index 3)
+    var metaMap={};
+    currentData['Intestazione'].rows.forEach(function(r){
+        metaMap[norm(r[0])]={
+            destino: String(r[8]||'').trim(),
+            commessa:String(r[7]||'').trim(),
+            tipoSped:String(r[6]||'').trim(),
+            awb:     String(r[3]||'').trim()
         };
     });
 
-    initColVis('Dettagli Carico', currentData['Dettagli Carico'].headers, true);
-    initColVis('Dettagli ODP',    currentData['Dettagli ODP'].headers,    true);
+    initColVis('Dettagli Carico',currentData['Dettagli Carico'].headers);
+    initColVis('Dettagli ODP',   currentData['Dettagli ODP'].headers);
 
-    var html = '';
-    html += '<div id="panel-tc" class="tab-panel' + (activeTab==='tc'?' on':'') + '">'
-          + buildPanel('Dettagli Carico', currentData['Dettagli Carico'].headers, fCar, metaMap, fCar.length) + '</div>';
-    html += '<div id="panel-to" class="tab-panel' + (activeTab==='to'?' on':'') + '">'
-          + buildPanel('Dettagli ODP',    currentData['Dettagli ODP'].headers,    fOdp, metaMap, fOdp.length) + '</div>';
+    var html='';
+    html+='<div id="panel-tc" class="tab-panel'+(activeTab==='tc'?' on':'')+'">'
+         +buildPanel('Dettagli Carico',currentData['Dettagli Carico'].headers,fCar,metaMap,fCar.length)+'</div>';
+    html+='<div id="panel-to" class="tab-panel'+(activeTab==='to'?' on':'')+'">'
+         +buildPanel('Dettagli ODP',currentData['Dettagli ODP'].headers,fOdp,metaMap,fOdp.length)+'</div>';
 
     setContent(html);
-    document.querySelectorAll('.ib-tab').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === activeTab); });
+    document.querySelectorAll('.ib-tab').forEach(function(b){ b.classList.toggle('active',b.dataset.tab===activeTab); });
+    refreshColPanel();
 }
 
-function reRenderActive() {
-    if (!currentData) return;
-    var map = { tc: 'Dettagli Carico', to: 'Dettagli ODP' };
-    var sn = map[activeTab];
-    if (!sn) return;
-    var panel = document.getElementById('panel-' + activeTab);
-    if (!panel) return;
+function reRenderActive(){
+    if(!currentData) return;
+    var map={tc:'Dettagli Carico',to:'Dettagli ODP'};
+    var sn=map[activeTab]; if(!sn) return;
+    var panel=document.getElementById('panel-'+activeTab); if(!panel) return;
 
-    var fPlant    = document.getElementById('fPlant').value.trim();
-    var fCommessa = document.getElementById('fCommessa').value.trim();
-    var fTipo     = document.getElementById('fTipo').value.trim();
-    var fDestino  = document.getElementById('fDestino').value.trim();
-    var ok = {};
-    currentData['Intestazione'].rows.forEach(function (r) {
-        if (fPlant    && String(r[5]||'').trim() !== fPlant)    return;
-        if (fCommessa && String(r[7]||'').trim() !== fCommessa) return;
-        if (fTipo     && String(r[6]||'').trim() !== fTipo)     return;
-        if (fDestino  && String(r[8]||'').trim() !== fDestino)  return;
-        ok[norm(r[0])] = true;
+    var fP=document.getElementById('fPlant').value.trim();
+    var fC=document.getElementById('fCommessa').value.trim();
+    var fT=document.getElementById('fTipo').value.trim();
+    var fD=document.getElementById('fDestino').value.trim();
+    var ok={};
+    currentData['Intestazione'].rows.forEach(function(r){
+        if(fP&&String(r[5]||'').trim()!==fP) return;
+        if(fC&&String(r[7]||'').trim()!==fC) return;
+        if(fT&&String(r[6]||'').trim()!==fT) return;
+        if(fD&&String(r[8]||'').trim()!==fD) return;
+        ok[norm(r[0])]=true;
     });
-    var rows = currentData[sn].rows.filter(function (r) { return ok[norm(r[0])]; });
-    var metaMap = {};
-    currentData['Intestazione'].rows.forEach(function (r) {
-        metaMap[norm(r[0])] = {
-            destino:  String(r[8]||'').trim(),
-            commessa: String(r[7]||'').trim(),
-            tipoSped: String(r[6]||'').trim(),
-            awb:      String(r[3]||'').trim()
-        };
+    var rows=currentData[sn].rows.filter(function(r){ return ok[norm(r[0])]; });
+    var metaMap={};
+    currentData['Intestazione'].rows.forEach(function(r){
+        metaMap[norm(r[0])]={destino:String(r[8]||'').trim(),commessa:String(r[7]||'').trim(),tipoSped:String(r[6]||'').trim(),awb:String(r[3]||'').trim()};
     });
-    panel.innerHTML = buildPanel(sn, currentData[sn].headers, rows, metaMap, rows.length);
+    panel.innerHTML=buildPanel(sn,currentData[sn].headers,rows,metaMap,rows.length);
 }
 
 /* ================================================================
-   BUILD PANEL
-   Extra colonne da Intestazione in Carico e ODP:
-     slot 0 → Destino     (toggleabile, indice 0)
-     slot 1 → Commessa    (toggleabile, indice 1)
-     slot 2 → Tipo Sped.  (toggleabile, indice 2)
-     slot 3+ → colonne file (skippa DocNum = col 0)
+   BUILD PANEL (niente col-toggle row — è nell'infobar)
 ================================================================ */
-function buildPanel(sheetName, headers, rows, metaMap, total) {
-    var h1 = (headers && headers[1]) ? headers[1] : [];
-    var vis = colVis[sheetName] || [];
+function buildPanel(sheetName, headers, rows, metaMap, total){
+    var h1=(headers&&headers[1])?headers[1]:[];
+    var h0=(headers&&headers[0])?headers[0]:[];
+    var vis=colVis[sheetName]||[];
+    var nc_cnt=Math.max(h1.length, rows[0]?rows[0].length:0);
 
-    /* Nomi univoci per btn e panel toggle */
-    var safeId = sheetName.replace(/\s/g,'_');
-    var btnId   = 'ct-btn-'   + safeId;
-    var panelId = 'ct-panel-' + safeId;
-    var snEsc   = sheetName.replace(/'/g,"\\'");
-
-    /* ---- Col toggle button + panel (chiuso di default) ---- */
-    var togHtml = '<div class="col-toggle-wrap">';
-    togHtml += '<button class="ct-toggle-btn" id="' + btnId + '" onclick="toggleCtPanel(\'' + btnId + '\',\'' + panelId + '\')">'
-             + '☰ Colonne <span class="ct-arrow">▾</span></button>';
-    togHtml += '<div class="ct-panel" id="' + panelId + '"><div class="ct-row"><span class="ct-label">Visibili</span>';
-
-    /* Bottoni extra */
-    togHtml += '<button class="ct-btn dest' + (vis[0]!==false?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',0)">📍 Destino</button>';
-    togHtml += '<button class="ct-btn' + (vis[1]!==false?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',1)">🏷 Commessa</button>';
-    togHtml += '<button class="ct-btn' + (vis[2]!==false?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',2)">🚚 Tipo Sped.</button>';
-
-    /* Bottoni colonne file (indice nel vis = 3 + ci) — skippa DocNum (ci=0) */
-    h1.forEach(function(hname, ci) {
-        if (ci === 0) return; // DocNum nascosto
-        var visIdx = 3 + ci;
-        var isOn = vis[visIdx] !== false;
-        togHtml += '<button class="ct-btn' + (isOn?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',' + visIdx + ')">' + esc(String(hname||'')) + '</button>';
-    });
-    togHtml += '</div></div></div>'; /* chiude ct-row, ct-panel, col-toggle-wrap */
-
-    if (!rows.length) {
-        return togHtml + '<div class="empty-state"><span class="empty-icon">📭</span><div class="empty-title">Nessun dato</div><div class="empty-sub">Prova a modificare i filtri</div></div>';
+    if(!rows.length){
+        return '<div class="empty-state"><span class="empty-icon">📭</span><div class="empty-title">Nessun dato</div><div class="empty-sub">Prova a modificare i filtri</div></div>';
     }
 
-    var infoHtml = '<div class="results-info">' + total + ' riga' + (total !== 1 ? 'he' : '') + '</div>';
+    var info='<div class="results-info">'+total+' riga'+(total!==1?'he':'')+'</div>';
 
-    var h0 = (headers && headers[0]) ? headers[0] : [];
-    var nc_cnt = Math.max(h1.length, rows[0] ? rows[0].length : 0);
-
-    var tHtml = '<div class="tbl-card"><div class="tbl-wrap"><table><thead>';
-
-    /* Header riga 1 (tecnico) */
-    tHtml += '<tr>';
-    if (vis[0] !== false) tHtml += '<th class="hdr-extra">DESTINO</th>';
-    if (vis[1] !== false) tHtml += '<th class="hdr-extra">COMMESSA</th>';
-    if (vis[2] !== false) tHtml += '<th class="hdr-extra">TIPO_SPED</th>';
-    for (var c = 1; c < nc_cnt; c++) { /* salta col 0 = DocNum */
-        var vi1 = 3 + c;
-        if (vis[vi1] === false) continue;
-        tHtml += '<th>' + esc(String(h0[c]||'')) + '</th>';
+    /* Header riga 1 (codice tecnico) */
+    var t='<div class="tbl-card"><div class="tbl-wrap"><table><thead><tr>';
+    if(vis[0]!==false) t+='<th class="hdr-extra">DESTINO</th>';
+    if(vis[1]!==false) t+='<th class="hdr-extra">COMMESSA</th>';
+    if(vis[2]!==false) t+='<th class="hdr-extra">TIPO_SPED</th>';
+    for(var c=1;c<nc_cnt;c++){
+        if(vis[3+c]===false) continue;
+        t+='<th>'+esc(String(h0[c]||''))+'</th>';
     }
-    tHtml += '</tr>';
-
+    t+='</tr><tr>';
     /* Header riga 2 (leggibile) */
-    tHtml += '<tr>';
-    if (vis[0] !== false) tHtml += '<th class="hdr-extra">Destino</th>';
-    if (vis[1] !== false) tHtml += '<th class="hdr-extra">Commessa</th>';
-    if (vis[2] !== false) tHtml += '<th class="hdr-extra">Tipo Sped.</th>';
-    for (var c = 1; c < nc_cnt; c++) {
-        var vi2 = 3 + c;
-        if (vis[vi2] === false) continue;
-        tHtml += '<th>' + esc(String(h1[c]||'')) + '</th>';
+    if(vis[0]!==false) t+='<th class="hdr-extra">Destino</th>';
+    if(vis[1]!==false) t+='<th class="hdr-extra">Commessa</th>';
+    if(vis[2]!==false) t+='<th class="hdr-extra">Tipo Sped.</th>';
+    for(var c=1;c<nc_cnt;c++){
+        if(vis[3+c]===false) continue;
+        t+='<th>'+esc(String(h1[c]||''))+'</th>';
     }
-    tHtml += '</tr></thead><tbody>';
+    t+='</tr></thead><tbody>';
 
-    rows.forEach(function (row) {
-        var dn   = norm(row[0]);
-        var meta = metaMap[dn] || { destino:'', commessa:'', tipoSped:'', awb:'' };
-        tHtml += '<tr>';
-        if (vis[0] !== false) tHtml += '<td class="dest-col">'    + esc(meta.destino)  + '</td>';
-        if (vis[1] !== false) tHtml += '<td class="hdr-extra">'   + esc(meta.commessa) + '</td>';
-        if (vis[2] !== false) tHtml += '<td class="hdr-extra">'   + esc(meta.tipoSped) + '</td>';
-        for (var c = 1; c < nc_cnt; c++) {
-            var vi3 = 3 + c;
-            if (vis[vi3] === false) continue;
-            var v = row[c] !== undefined ? row[c] : '';
-            tHtml += '<td>' + esc(String(v===null||v===undefined?'':v)) + '</td>';
+    rows.forEach(function(row){
+        var dn=norm(row[0]);
+        var m=metaMap[dn]||{destino:'',commessa:'',tipoSped:'',awb:''};
+        t+='<tr>';
+        if(vis[0]!==false) t+='<td class="dest-col">'+esc(m.destino)+'</td>';
+        if(vis[1]!==false) t+='<td class="hdr-extra">'+esc(m.commessa)+'</td>';
+        if(vis[2]!==false) t+='<td class="hdr-extra">'+esc(m.tipoSped)+'</td>';
+        for(var c=1;c<nc_cnt;c++){
+            if(vis[3+c]===false) continue;
+            var v=row[c]!==undefined?row[c]:'';
+            t+='<td>'+esc(String(v===null||v===undefined?'':v))+'</td>';
         }
-        tHtml += '</tr>';
+        t+='</tr>';
     });
-    tHtml += '</tbody></table></div></div>';
+    t+='</tbody></table></div></div>';
 
-    return togHtml + infoHtml + tHtml;
+    return info+t;
 }
 
 /* ================================================================
    TABS
 ================================================================ */
-function switchTab(id) {
-    activeTab = id;
-    document.querySelectorAll('.ib-tab').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === id); });
-    document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('on'); });
-    var p = document.getElementById('panel-' + id);
-    if (p) p.classList.add('on');
-    document.getElementById('content').parentElement.scrollTop = 0;
+function switchTab(id){
+    activeTab=id;
+    document.querySelectorAll('.ib-tab').forEach(function(b){ b.classList.toggle('active',b.dataset.tab===id); });
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('on'); });
+    var p=document.getElementById('panel-'+id); if(p) p.classList.add('on');
+    document.getElementById('content').parentElement.scrollTop=0;
+    refreshColPanel();
 }
 
 /* ================================================================
-   FILTRI DINAMICI
+   FILTRI
 ================================================================ */
-function populateFilters(intRows) {
-    var plants={}, commesse={}, tipi={}, destini={};
-    intRows.forEach(function (r) {
-        var p=String(r[5]||'').trim(), c=String(r[7]||'').trim(), t=String(r[6]||'').trim(), d=String(r[8]||'').trim();
+function populateFilters(intRows){
+    var plants={},commesse={},tipi={},destini={};
+    intRows.forEach(function(r){
+        var p=String(r[5]||'').trim(),c=String(r[7]||'').trim(),t=String(r[6]||'').trim(),d=String(r[8]||'').trim();
         if(p) plants[p]=true; if(c) commesse[c]=true; if(t) tipi[t]=true; if(d) destini[d]=true;
     });
-    fillSel('fPlant',    plants,   'Tutti');
-    fillSel('fCommessa', commesse, 'Tutte');
-    fillSel('fTipo',     tipi,     'Tutti');
-    fillSel('fDestino',  destini,  'Tutti');
-    /* Sync visivi dopo populate */
+    fillSel('fPlant',plants,'Tutti'); fillSel('fCommessa',commesse,'Tutte');
+    fillSel('fTipo',tipi,'Tutti');    fillSel('fDestino',destini,'Tutti');
     ['plant','commessa','tipo','destino'].forEach(syncSelVal);
 }
 
-function fillSel(id, obj, ph) {
-    var sel = document.getElementById(id), prev = sel.value;
-    sel.innerHTML = '<option value="">' + ph + '</option>';
-    Object.keys(obj).sort().forEach(function (v) {
-        var o = document.createElement('option'); o.value = v; o.textContent = v;
-        if (v === prev) o.selected = true;
+function fillSel(id,obj,ph){
+    var sel=document.getElementById(id),prev=sel.value;
+    sel.innerHTML='<option value="">'+ph+'</option>';
+    Object.keys(obj).sort().forEach(function(v){
+        var o=document.createElement('option'); o.value=v; o.textContent=v;
+        if(v===prev) o.selected=true;
         sel.appendChild(o);
     });
-    if (prev && sel.value !== prev) sel.value = '';
+    if(prev&&sel.value!==prev) sel.value='';
 }
 
-function resetFiltri() {
-    ['fPlant','fCommessa','fTipo','fDestino'].forEach(function (id) { document.getElementById(id).value = ''; });
+function resetFiltri(){
+    ['fPlant','fCommessa','fTipo','fDestino'].forEach(function(id){ document.getElementById(id).value=''; });
     ['plant','commessa','tipo','destino'].forEach(syncSelVal);
-    if (currentData) { colVis = {}; render(); }
+    if(currentData){colVis={};render();}
 }
 
 /* ================================================================
    PARSE XLSX
 ================================================================ */
-function parseXlsx(blob) {
-    return new Promise(function (resolve, reject) {
-        var reader = new FileReader();
-        reader.onload = function (e) {
-            try {
-                var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
-                var out = {};
-                SHEET_NAMES.forEach(function (sn) {
-                    var rn = wb.SheetNames.find(function (n) { return n.trim().toLowerCase() === sn.trim().toLowerCase(); });
-                    if (!rn) { out[sn] = { headers: [], rows: [] }; return; }
-                    var raw = XLSX.utils.sheet_to_json(wb.Sheets[rn], { header: 1, defval: '' });
-                    var rows = [];
-                    for (var i = 2; i < raw.length; i++) {
-                        var row = raw[i];
-                        if (!row.some(function (c) { return c !== ''; })) continue;
-                        rows.push(row.map(function (c) { return c instanceof Date ? fmtDate(c) : c; }));
+function parseXlsx(blob){
+    return new Promise(function(resolve,reject){
+        var reader=new FileReader();
+        reader.onload=function(e){
+            try{
+                var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+                var out={};
+                SHEET_NAMES.forEach(function(sn){
+                    var rn=wb.SheetNames.find(function(n){ return n.trim().toLowerCase()===sn.trim().toLowerCase(); });
+                    if(!rn){out[sn]={headers:[],rows:[]};return;}
+                    var raw=XLSX.utils.sheet_to_json(wb.Sheets[rn],{header:1,defval:''});
+                    var rows=[];
+                    for(var i=2;i<raw.length;i++){
+                        var row=raw[i];
+                        if(!row.some(function(c){return c!=='';})) continue;
+                        rows.push(row.map(function(c){return c instanceof Date?fmtDate(c):c;}));
                     }
-                    out[sn] = { headers: raw.slice(0, 2), rows: rows };
+                    out[sn]={headers:raw.slice(0,2),rows:rows};
                 });
                 resolve(out);
-            } catch (err) { reject(err); }
+            }catch(err){reject(err);}
         };
-        reader.onerror = reject;
+        reader.onerror=reject;
         reader.readAsArrayBuffer(blob);
     });
 }
 
-/* ================================================================
-   DRIVE API
-================================================================ */
-function listFiles(q) {
-    return gFetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id,name)&pageSize=200')
-           .then(function (r) { return r.files || []; });
+/* DRIVE */
+function listFiles(q){
+    return gFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)&pageSize=200')
+           .then(function(r){return r.files||[];});
 }
-function downloadFile(id) {
-    return fetch('https://www.googleapis.com/drive/v3/files/' + id + '?alt=media', { headers: { Authorization: 'Bearer ' + TOKEN } })
-           .then(function (r) { if (!r.ok) throw new Error('Download fallito: ' + r.status); return r.blob(); });
+function downloadFile(id){
+    return fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{headers:{Authorization:'Bearer '+TOKEN}})
+           .then(function(r){if(!r.ok) throw new Error('Download fallito: '+r.status); return r.blob();});
 }
-function gFetch(url) {
-    if (!TOKEN) return Promise.reject(new Error('No token'));
-    return fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(function (r) { return r.json(); });
+function gFetch(url){
+    if(!TOKEN) return Promise.reject(new Error('No token'));
+    return fetch(url,{headers:{Authorization:'Bearer '+TOKEN}}).then(function(r){return r.json();});
 }
 
-/* ================================================================
-   UTILITY
-================================================================ */
-function setContent(h)  { document.getElementById('content').innerHTML = h; }
-function spinHtml(msg)  { return '<div class="loading-state"><div class="spinner"></div>' + esc(msg) + '</div>'; }
-function norm(v)        { if (v===null||v===undefined) return ''; var s=String(v).trim(); if(/^\d+\.0+$/.test(s)) s=s.replace(/\.0+$/,''); return s; }
-function esc(s)         { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(d)     { return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
-function fmtD(s)        { return s.substr(6,2)+'/'+s.substr(4,2)+'/'+s.substr(0,4); }
+/* UTILITY */
+function setContent(h){ document.getElementById('content').innerHTML=h; }
+function spinHtml(msg){ return '<div class="loading-state"><div class="spinner"></div>'+esc(msg)+'</div>'; }
+function norm(v){ if(v===null||v===undefined) return ''; var s=String(v).trim(); if(/^\d+\.0+$/.test(s)) s=s.replace(/\.0+$/,''); return s; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d){ return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
+function fmtD(s){ return s.substr(6,2)+'/'+s.substr(4,2)+'/'+s.substr(0,4); }
 </script>
 </body>
 </html>
