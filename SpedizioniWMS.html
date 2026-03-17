@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Storico Spedizioni · ATS14</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ================================================================
+   BASE — identico al Tampermonkey overlay
+================================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: #f2f2f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; color: #1c1c1e; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+/* ---- LOGIN ---- */
+#loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f2f2f7; }
+.login-card { background: white; border-radius: 20px; padding: 40px 32px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,.10); }
+.login-icon { font-size: 52px; margin-bottom: 12px; display: block; line-height: 1; }
+.login-title { font-size: 22px; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
+.login-sub { font-size: 13px; color: #8e8e93; margin-bottom: 32px; }
+.btn-google { display: inline-flex; align-items: center; gap: 12px; background: white; color: #1c1c1e; border: 1.5px solid #e5e5ea; border-radius: 12px; padding: 13px 24px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s; width: 100%; justify-content: center; font-family: inherit; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+.btn-google:hover { background: #f9f9f9; border-color: #c7c7cc; }
+.btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+.login-note { font-size: 12px; color: #c7c7cc; margin-top: 18px; line-height: 1.5; }
+
+/* ---- APP SHELL ---- */
+#appShell { display: none; flex-direction: column; height: 100vh; }
+
+/* ---- TOP BAR ---- */
+.topbar { background: linear-gradient(135deg, #1e3a5f 0%, #2d5986 100%); padding: 0 16px; height: 54px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.25); flex-shrink: 0; }
+.topbar-logo { font-size: 18px; font-weight: 800; color: white; letter-spacing: .3px; flex-shrink: 0; }
+.topbar-logo span { opacity: .65; font-weight: 500; }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.user-badge { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,.15); border-radius: 20px; padding: 4px 12px 4px 6px; font-size: 12px; color: white; }
+.user-avatar { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
+.user-avatar-fallback { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.25); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; }
+.btn-logout { background: rgba(255,255,255,.15); border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: white; cursor: pointer; font-family: inherit; transition: background .2s; }
+.btn-logout:hover { background: rgba(255,255,255,.25); }
+
+/* ---- FILTERS ---- */
+.filters-wrap { padding: 12px 14px 0; flex-shrink: 0; }
+.filter-card { background: white; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.08); overflow: hidden; }
+.filter-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.filter-cell { padding: 11px 14px; border-bottom: .5px solid #e5e5ea; border-right: .5px solid #e5e5ea; display: flex; flex-direction: column; gap: 4px; }
+.filter-cell:nth-child(even) { border-right: none; }
+.filter-cell.full { grid-column: 1 / -1; border-right: none; }
+.filter-label { font-size: 10px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: .5px; }
+.filter-input, .filter-select { border: none; outline: none; font-size: 14px; color: #1c1c1e; background: transparent; width: 100%; font-family: inherit; -webkit-appearance: none; padding: 0; }
+.filter-select { cursor: pointer; }
+.filter-actions { padding: 10px 14px 14px; display: flex; gap: 8px; border-top: .5px solid #e5e5ea; }
+.btn-cerca { flex: 1; background: linear-gradient(135deg, #007aff 0%, #0055cc 100%); color: white; border: none; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,122,255,.28); font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; transition: transform .1s; }
+.btn-cerca:active { transform: scale(.98); }
+.btn-cerca:disabled { background: #c7c7cc; box-shadow: none; cursor: not-allowed; transform: none; }
+.btn-reset { background: none; border: 1.5px solid #d1d1d6; border-radius: 10px; padding: 13px 16px; font-size: 14px; color: #8e8e93; cursor: pointer; font-family: inherit; white-space: nowrap; transition: background .15s; }
+.btn-reset:hover { background: #f2f2f7; }
+
+/* ---- TABS ---- */
+.tabs-wrap { padding: 10px 14px 0; flex-shrink: 0; }
+.tabs { display: flex; background: white; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.08); overflow: hidden; }
+.tab-btn { flex: 1; padding: 11px 6px; border: none; background: none; font-size: 13px; font-weight: 600; color: #8e8e93; cursor: pointer; border-bottom: 3px solid transparent; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: inherit; }
+.tab-btn.active { color: #007aff; border-bottom-color: #007aff; }
+.badge { background: #e5e5ea; color: #8e8e93; border-radius: 10px; padding: 1px 6px; font-size: 11px; font-weight: 700; min-width: 18px; text-align: center; }
+.tab-btn.active .badge { background: #e8f4ff; color: #007aff; }
+
+/* ---- SCROLL ---- */
+.scroll-area { flex: 1; overflow-y: auto; padding: 10px 14px 24px; -webkit-overflow-scrolling: touch; }
+
+/* ---- SUMMARY BAR ---- */
+.summary-bar { background: linear-gradient(135deg, #1e3a5f 0%, #2d5986 100%); padding: 14px; border-radius: 14px; display: flex; justify-content: space-around; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(30,58,95,.3); }
+.summary-item { text-align: center; }
+.summary-value { font-size: 22px; font-weight: 800; color: white; line-height: 1; }
+.summary-label { font-size: 11px; opacity: .8; margin-top: 3px; color: white; }
+
+/* ---- TABLE ---- */
+.tab-panel { display: none; }
+.tab-panel.on { display: block; }
+.results-info { font-size: 12px; color: #8e8e93; text-align: right; padding: 6px 4px 8px; }
+.tbl-card { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+thead tr:first-child th { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #8e8e93; padding: 8px 12px 3px; border-right: .5px solid #e5e5ea; background: #f9f9f9; white-space: nowrap; }
+thead tr:last-child th { font-size: 12px; font-weight: 600; color: #3c3c43; padding: 3px 12px 8px; border-right: .5px solid #e5e5ea; background: #f9f9f9; white-space: nowrap; border-bottom: 1px solid #e5e5ea; }
+thead th:last-child { border-right: none !important; }
+tbody tr { border-bottom: .5px solid #e5e5ea; transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(0,122,255,.03); }
+td { padding: 9px 12px; border-right: .5px solid #e5e5ea; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #1c1c1e; }
+td:last-child { border-right: none; }
+td.dn { font-size: 11px; color: #8e8e93; }
+td.dest-col { font-size: 12px; font-weight: 600; color: #1e3a5f; max-width: 160px; }
+
+/* ---- STATI ---- */
+.empty-state { text-align: center; padding: 44px 20px; color: #c7c7cc; font-size: 15px; }
+.empty-icon { font-size: 44px; margin-bottom: 10px; display: block; }
+.empty-title { font-weight: 600; color: #8e8e93; margin-bottom: 4px; font-size: 16px; }
+.empty-sub { font-size: 13px; }
+.loading-state { text-align: center; padding: 44px 20px; color: #8e8e93; font-size: 15px; }
+.spinner { width: 32px; height: 32px; border: 3px solid #e5e5ea; border-top-color: #007aff; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 2px; }
+@media (max-width: 380px) { .filter-grid { grid-template-columns: 1fr; } .filter-cell { border-right: none; } }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+    <div class="login-card">
+        <span class="login-icon">📜</span>
+        <div class="login-title">Storico Spedizioni</div>
+        <div class="login-sub">ATS14 · Bollettazione</div>
+        <button class="btn-google" onclick="signIn()">
+            <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Accedi con Google
+        </button>
+        <p class="login-note">Accesso in sola lettura ai file xlsx su Drive.</p>
+    </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="appShell">
+
+    <header class="topbar">
+        <div class="topbar-logo">Storico <span>Spedizioni</span></div>
+        <div class="topbar-right">
+            <div class="user-badge">
+                <div id="userAvatarWrap"></div>
+                <span id="userName">—</span>
+            </div>
+            <button class="btn-logout" onclick="signOut()">Esci</button>
+        </div>
+    </header>
+
+    <!-- FILTRI -->
+    <div class="filters-wrap">
+        <div class="filter-card">
+            <div class="filter-grid">
+                <div class="filter-cell">
+                    <span class="filter-label">Data</span>
+                    <input type="text" class="filter-input" id="fDate" list="listDates" placeholder="GG/MM/AAAA" autocomplete="off">
+                    <datalist id="listDates"></datalist>
+                </div>
+                <div class="filter-cell">
+                    <span class="filter-label">Plant</span>
+                    <select class="filter-select" id="fPlant"><option value="">— Tutti —</option></select>
+                </div>
+                <div class="filter-cell">
+                    <span class="filter-label">Commessa</span>
+                    <select class="filter-select" id="fCommessa"><option value="">— Tutte —</option></select>
+                </div>
+                <div class="filter-cell">
+                    <span class="filter-label">Tipo Spedizione</span>
+                    <select class="filter-select" id="fTipo"><option value="">— Tutti —</option></select>
+                </div>
+                <div class="filter-cell full">
+                    <span class="filter-label">Destino</span>
+                    <select class="filter-select" id="fDestino"><option value="">— Tutti —</option></select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn-cerca" id="btnCerca" onclick="loadData()" disabled>🔍&nbsp; Carica Dati</button>
+                <button class="btn-reset" onclick="resetFiltri()">✕ Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABS (nascosti finché non ci sono dati) -->
+    <div class="tabs-wrap" id="tabsWrap" style="display:none">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="ti" onclick="switchTab('ti')">📋 Intestazione <span class="badge" id="cnt-ti">0</span></button>
+            <button class="tab-btn"        data-tab="tc" onclick="switchTab('tc')">📦 Carico <span class="badge" id="cnt-tc">0</span></button>
+            <button class="tab-btn"        data-tab="to" onclick="switchTab('to')">🔢 ODP <span class="badge" id="cnt-to">0</span></button>
+        </div>
+    </div>
+
+    <!-- SCROLL AREA -->
+    <div class="scroll-area">
+        <!-- Summary -->
+        <div id="summaryBar" style="display:none" class="summary-bar">
+            <div class="summary-item"><div class="summary-value" id="sDoc">0</div><div class="summary-label">Spedizioni</div></div>
+            <div class="summary-item"><div class="summary-value" id="sCar">0</div><div class="summary-label">Det. Carico</div></div>
+            <div class="summary-item"><div class="summary-value" id="sOdp">0</div><div class="summary-label">ODP</div></div>
+        </div>
+        <!-- Contenuto tab -->
+        <div id="content">
+            <div class="empty-state">
+                <span class="empty-icon">🔍</span>
+                <div class="empty-title">Nessun dato caricato</div>
+                <div class="empty-sub">Seleziona la data e premi Carica Dati</div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /appShell -->
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+/* ================================================================
+   CONFIG — stessi valori del tuo HTML originale
+================================================================ */
+var CLIENT_ID   = '256693770433-b1pjdpaglrh7827o6ln2s24802rcnshd.apps.googleusercontent.com';
+var FOLDER_ID   = '1dSm4qSDB2cZ5WhwDf_40TF-K7sjwStg4';
+var SHEET_NAMES = ['Intestazione','Dettagli Carico','Dettagli ODP'];
+
+var TOKEN = null, currentData = null, currentDate = null, activeTab = 'ti';
+
+/* ================================================================
+   INIT
+================================================================ */
+window.onload = function () {
+    var saved = getSaved();
+    if (saved) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appShell').style.display   = 'flex';
+        setUserUI(saved.name, saved.picture);
+    }
+    waitGsi();
+};
+
+var tokenClient;
+function waitGsi() {
+    if (typeof google === 'undefined') { setTimeout(waitGsi, 150); return; }
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+        callback: onToken
+    });
+    var saved = getSaved();
+    if (saved) tokenClient.requestAccessToken({ prompt: '', login_hint: saved.email || '' });
+}
+
+function signIn()  { tokenClient.requestAccessToken({ prompt: 'select_account' }); }
+function signOut() {
+    if (TOKEN) google.accounts.oauth2.revoke(TOKEN, function () {});
+    TOKEN = null; currentData = null;
+    localStorage.removeItem('vdc_storico_session');
+    document.getElementById('appShell').style.display    = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+}
+function onToken(resp) {
+    if (resp.error) { if (!getSaved()) { document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('appShell').style.display = 'none'; } return; }
+    TOKEN = resp.access_token;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').style.display    = 'flex';
+    loadUserInfo();
+    loadDates();
+}
+
+/* ================================================================
+   SESSION
+================================================================ */
+function getSaved()        { try { var s = localStorage.getItem('vdc_storico_session'); return s ? JSON.parse(s) : null; } catch(e) { return null; } }
+function setSaved(n, e, p) { try { localStorage.setItem('vdc_storico_session', JSON.stringify({ name: n, email: e, picture: p })); } catch(e) {} }
+
+/* ================================================================
+   USER UI
+================================================================ */
+function loadUserInfo() {
+    gFetch('https://www.googleapis.com/oauth2/v2/userinfo').then(function (u) {
+        if (u.error) return;
+        setSaved(u.name || u.email || '', u.email || '', u.picture || '');
+        setUserUI(u.name || u.email || '—', u.picture || '');
+    }).catch(function () {});
+}
+function setUserUI(name, picture) {
+    document.getElementById('userName').textContent = name || '—';
+    var wrap = document.getElementById('userAvatarWrap'); wrap.innerHTML = '';
+    if (picture) {
+        var img = document.createElement('img'); img.className = 'user-avatar'; img.referrerPolicy = 'no-referrer'; img.src = picture;
+        img.onerror = function () { wrap.innerHTML = makeInitial(name); };
+        wrap.appendChild(img);
+    } else { wrap.innerHTML = makeInitial(name); }
+}
+function makeInitial(str) { return '<div class="user-avatar-fallback">' + ((str || '?').trim().charAt(0).toUpperCase()) + '</div>'; }
+
+/* ================================================================
+   DATE — legge i file disponibili dalla cartella Drive
+================================================================ */
+function extractDate(name) { var m = name.match(/(\d{8})\.xlsx$/i); return m ? m[1] : null; }
+
+function loadDates() {
+    listFiles('"' + FOLDER_ID + '" in parents and mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" and trashed=false')
+    .then(function (files) {
+        var set = {};
+        files.forEach(function (f) { var d = extractDate(f.name); if (d) set[d] = true; });
+        var dates = Object.keys(set).sort().reverse();
+        var dl = document.getElementById('listDates');
+        dates.forEach(function (d) {
+            var txt = d.substr(6,2) + '/' + d.substr(4,2) + '/' + d.substr(0,4);
+            var o = document.createElement('option'); o.value = txt; dl.appendChild(o);
+        });
+        if (dates.length) {
+            document.getElementById('fDate').value = dates[0].substr(6,2) + '/' + dates[0].substr(4,2) + '/' + dates[0].substr(0,4);
+            document.getElementById('btnCerca').disabled = false;
+        }
+    }).catch(function () {});
+}
+
+function parseDate(str) {
+    str = (str || '').trim();
+    var m = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) return m[3] + m[2] + m[1];
+    if (/^\d{8}$/.test(str)) return str;
+    return null;
+}
+
+document.getElementById('fDate').addEventListener('input', function () {
+    document.getElementById('btnCerca').disabled = !parseDate(this.value);
+});
+
+/* ================================================================
+   CARICA DATI
+================================================================ */
+function loadData() {
+    var dateStr = parseDate(document.getElementById('fDate').value);
+    if (!dateStr) return;
+    currentDate = dateStr; currentData = null;
+
+    document.getElementById('tabsWrap').style.display   = 'none';
+    document.getElementById('summaryBar').style.display = 'none';
+    setContent(spinHtml('Ricerca file per ' + fmtD(dateStr) + '…'));
+
+    listFiles('"' + FOLDER_ID + '" in parents and mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" and trashed=false')
+    .then(function (files) {
+        files = files.filter(function (f) { return extractDate(f.name) === dateStr; });
+        if (!files.length) throw new Error('Nessun file trovato per il ' + fmtD(dateStr));
+        setContent(spinHtml('Download ' + files.length + ' file…'));
+        return Promise.all(files.map(function (f) { return downloadFile(f.id).then(function (b) { return { blob: b }; }); }));
+    })
+    .then(function (results) {
+        setContent(spinHtml('Elaborazione…'));
+        return Promise.all(results.map(function (r) { return parseXlsx(r.blob); }));
+    })
+    .then(function (parsed) {
+        // Merge di tutti i file della stessa data
+        var merged = {}; SHEET_NAMES.forEach(function (sn) { merged[sn] = { headers: [], rows: [] }; });
+        var hSet = false;
+        parsed.forEach(function (p) {
+            SHEET_NAMES.forEach(function (sn) {
+                var sd = p[sn] || { headers: [], rows: [] };
+                if (!hSet && sd.headers.length) merged[sn].headers = sd.headers;
+                merged[sn].rows = merged[sn].rows.concat(sd.rows);
+            });
+            hSet = true;
+        });
+        // Ordina per DocNum
+        SHEET_NAMES.forEach(function (sn) {
+            merged[sn].rows.sort(function (a, b) { return String(a[0]||'').localeCompare(String(b[0]||''), undefined, { numeric: true }); });
+        });
+        currentData = merged;
+        populateFilters(merged['Intestazione'].rows);
+        render();
+    })
+    .catch(function (e) {
+        setContent('<div class="empty-state"><span class="empty-icon">⚠️</span><div class="empty-title">Errore</div><div class="empty-sub">' + esc(e.message) + '</div></div>');
+    });
+}
+
+/* ================================================================
+   RENDER — applica filtri e disegna le tab
+================================================================ */
+function render() {
+    if (!currentData) return;
+
+    var fPlant    = document.getElementById('fPlant').value.trim();
+    var fCommessa = document.getElementById('fCommessa').value.trim();
+    var fTipo     = document.getElementById('fTipo').value.trim();
+    var fDestino  = document.getElementById('fDestino').value.trim();
+
+    // Costruisce set di DocNum validi
+    var ok = {};
+    currentData['Intestazione'].rows.forEach(function (r) {
+        if (fPlant    && String(r[5]||'').trim() !== fPlant)    return;
+        if (fCommessa && String(r[7]||'').trim() !== fCommessa) return;
+        if (fTipo     && String(r[6]||'').trim() !== fTipo)     return;
+        if (fDestino  && String(r[8]||'').trim() !== fDestino)  return;
+        ok[norm(r[0])] = true;
+    });
+
+    var fInt = currentData['Intestazione'].rows.filter(function (r) { return ok[norm(r[0])]; });
+    var fCar = currentData['Dettagli Carico'].rows.filter(function (r) { return ok[norm(r[0])]; });
+    var fOdp = currentData['Dettagli ODP'].rows.filter(function (r) { return ok[norm(r[0])]; });
+
+    // Summary
+    document.getElementById('sDoc').textContent = fInt.length;
+    document.getElementById('sCar').textContent = fCar.length;
+    document.getElementById('sOdp').textContent = fOdp.length;
+    document.getElementById('summaryBar').style.display = 'flex';
+
+    // Badge
+    document.getElementById('cnt-ti').textContent = fInt.length;
+    document.getElementById('cnt-tc').textContent = fCar.length;
+    document.getElementById('cnt-to').textContent = fOdp.length;
+    document.getElementById('tabsWrap').style.display = 'block';
+
+    // Mappa DocNum → Destino per le sheet di dettaglio
+    var destiMap = {};
+    currentData['Intestazione'].rows.forEach(function (r) { destiMap[norm(r[0])] = String(r[8]||'').trim(); });
+
+    // Render le 3 tab
+    var html = '';
+    html += '<div id="panel-ti" class="tab-panel' + (activeTab==='ti' ? ' on' : '') + '">'
+          + buildTable(currentData['Intestazione'].headers, fInt, true, null) + '</div>';
+    html += '<div id="panel-tc" class="tab-panel' + (activeTab==='tc' ? ' on' : '') + '">'
+          + buildTable(currentData['Dettagli Carico'].headers, fCar, false, destiMap) + '</div>';
+    html += '<div id="panel-to" class="tab-panel' + (activeTab==='to' ? ' on' : '') + '">'
+          + buildTable(currentData['Dettagli ODP'].headers, fOdp, false, destiMap) + '</div>';
+
+    setContent(html);
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === activeTab); });
+}
+
+/* ================================================================
+   BUILD TABLE
+================================================================ */
+function buildTable(headers, rows, isInt, destiMap) {
+    if (!rows.length) return '<div class="empty-state"><span class="empty-icon">📭</span><div class="empty-title">Nessun dato</div><div class="empty-sub">Prova a modificare i filtri</div></div>';
+
+    var nc = Math.max(
+        (headers[0] ? headers[0].length : 0),
+        (rows[0] ? rows[0].length : 0)
+    );
+    var showDest = !isInt;
+    var h = '<div class="results-info">' + rows.length + ' riga' + (rows.length !== 1 ? 'he' : '') + '</div>';
+    h += '<div class="tbl-card"><div class="tbl-wrap"><table><thead>';
+
+    if (headers[0] && headers[0].length) {
+        h += '<tr>';
+        if (showDest) h += '<th>DESTINO</th>';
+        for (var c = 0; c < nc; c++) h += '<th>' + esc(String(headers[0][c]||'')) + '</th>';
+        h += '</tr>';
+    }
+    if (headers[1] && headers[1].length) {
+        h += '<tr>';
+        if (showDest) h += '<th>Destino</th>';
+        for (var c = 0; c < nc; c++) h += '<th>' + esc(String(headers[1][c]||'')) + '</th>';
+        h += '</tr>';
+    }
+    h += '</thead><tbody>';
+
+    rows.forEach(function (row) {
+        var dn = norm(row[0]);
+        h += '<tr>';
+        if (showDest) h += '<td class="dest-col">' + esc(destiMap[dn]||'') + '</td>';
+        for (var c = 0; c < nc; c++) {
+            var v = row[c] !== undefined ? row[c] : '';
+            h += '<td' + (c===0 ? ' class="dn"' : '') + '>' + esc(String(v===null||v===undefined?'':v)) + '</td>';
+        }
+        h += '</tr>';
+    });
+    h += '</tbody></table></div></div>';
+    return h;
+}
+
+/* ================================================================
+   TABS
+================================================================ */
+function switchTab(id) {
+    activeTab = id;
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === id); });
+    document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('on'); });
+    var p = document.getElementById('panel-' + id);
+    if (p) p.classList.add('on');
+}
+
+/* ================================================================
+   FILTRI DINAMICI
+================================================================ */
+function populateFilters(intRows) {
+    var plants={}, commesse={}, tipi={}, destini={};
+    intRows.forEach(function (r) {
+        var p=String(r[5]||'').trim(), c=String(r[7]||'').trim(), t=String(r[6]||'').trim(), d=String(r[8]||'').trim();
+        if(p) plants[p]=true; if(c) commesse[c]=true; if(t) tipi[t]=true; if(d) destini[d]=true;
+    });
+    fillSel('fPlant',    plants,   '— Tutti —');
+    fillSel('fCommessa', commesse, '— Tutte —');
+    fillSel('fTipo',     tipi,     '— Tutti —');
+    fillSel('fDestino',  destini,  '— Tutti —');
+
+    // Cambiando un filtro → re-render immediato senza ritornare su Drive
+    ['fPlant','fCommessa','fTipo','fDestino'].forEach(function (id) {
+        document.getElementById(id).onchange = function () { if (currentData) render(); };
+    });
+}
+
+function fillSel(id, obj, ph) {
+    var sel = document.getElementById(id), prev = sel.value;
+    sel.innerHTML = '<option value="">' + ph + '</option>';
+    Object.keys(obj).sort().forEach(function (v) {
+        var o = document.createElement('option'); o.value = v; o.textContent = v;
+        if (v === prev) o.selected = true;
+        sel.appendChild(o);
+    });
+    if (prev && sel.value !== prev) sel.value = '';
+}
+
+function resetFiltri() {
+    ['fPlant','fCommessa','fTipo','fDestino'].forEach(function (id) { document.getElementById(id).value = ''; });
+    if (currentData) render();
+}
+
+/* ================================================================
+   PARSE XLSX (sola lettura, nessun __fileRowIdx necessario)
+================================================================ */
+function parseXlsx(blob) {
+    return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+                var out = {};
+                SHEET_NAMES.forEach(function (sn) {
+                    var rn = wb.SheetNames.find(function (n) { return n.trim().toLowerCase() === sn.trim().toLowerCase(); });
+                    if (!rn) { out[sn] = { headers: [], rows: [] }; return; }
+                    var raw = XLSX.utils.sheet_to_json(wb.Sheets[rn], { header: 1, defval: '' });
+                    var rows = [];
+                    for (var i = 2; i < raw.length; i++) {
+                        var row = raw[i];
+                        if (!row.some(function (c) { return c !== ''; })) continue;
+                        rows.push(row.map(function (c) { return c instanceof Date ? fmtDate(c) : c; }));
+                    }
+                    out[sn] = { headers: raw.slice(0, 2), rows: rows };
+                });
+                resolve(out);
+            } catch (err) { reject(err); }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(blob);
+    });
+}
+
+/* ================================================================
+   DRIVE API — solo lettura
+================================================================ */
+function listFiles(q) {
+    return gFetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id,name)&pageSize=200')
+           .then(function (r) { return r.files || []; });
+}
+function downloadFile(id) {
+    return fetch('https://www.googleapis.com/drive/v3/files/' + id + '?alt=media', { headers: { Authorization: 'Bearer ' + TOKEN } })
+           .then(function (r) { if (!r.ok) throw new Error('Download fallito: ' + r.status); return r.blob(); });
+}
+function gFetch(url) {
+    if (!TOKEN) return Promise.reject(new Error('No token'));
+    return fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(function (r) { return r.json(); });
+}
+
+/* ================================================================
+   UTILITY
+================================================================ */
+function setContent(h)    { document.getElementById('content').innerHTML = h; }
+function spinHtml(msg)    { return '<div class="loading-state"><div class="spinner"></div>' + esc(msg) + '</div>'; }
+function norm(v)          { if (v===null||v===undefined) return ''; var s=String(v).trim(); if (/^\d+\.0+$/.test(s)) s=s.replace(/\.0+$/,''); return s; }
+function esc(s)           { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d)       { return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
+function fmtD(s)          { return s.substr(6,2)+'/'+s.substr(4,2)+'/'+s.substr(0,4); }
+</script>
+</body>
+</html>
