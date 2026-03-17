@@ -18,17 +18,6 @@ html, body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* ---- LOGIN (non mostrato all'avvio) ---- */
-#loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #dfe4ee; }
-.login-card { background: white; border-radius: 20px; padding: 40px 32px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,.12); }
-.login-icon { font-size: 48px; margin-bottom: 10px; display: block; }
-.login-title { font-size: 22px; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
-.login-sub { font-size: 13px; color: #8e8e93; margin-bottom: 28px; }
-.btn-google { display: inline-flex; align-items: center; gap: 10px; background: white; color: #1c1c1e; border: 1.5px solid #e5e5ea; border-radius: 12px; padding: 12px 22px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; justify-content: center; font-family: inherit; box-shadow: 0 1px 6px rgba(0,0,0,.07); transition: all .2s; }
-.btn-google:hover { background: #f9f9f9; }
-.btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
-.login-note { font-size: 12px; color: #c7c7cc; margin-top: 14px; line-height: 1.5; }
-
 /* ---- APP SHELL ---- */
 #appShell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
@@ -66,9 +55,7 @@ html, body {
 }
 .fg-sel:hover { background: rgba(255,255,255,.2); }
 .fg-sel .fl { pointer-events: none; }
-/* Il select reale è invisibile ma copre tutta l'area */
-.fg-sel select { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: none; outline: none; z-index: 2; font-size: 16px; /* iOS fix */ }
-/* Valore visivo */
+.fg-sel select { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: none; outline: none; z-index: 2; font-size: 16px; }
 .fg-sel .sel-val { font-size: 13px; font-weight: 600; color: white; pointer-events: none; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .fg-sel .sel-val svg { flex-shrink: 0; opacity: .85; }
 option { background: #1e3a5f; color: white; }
@@ -79,15 +66,13 @@ option { background: #1e3a5f; color: white; }
 .btn-reset { background: none; color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.2); border-radius: 7px; padding: 6px 9px; font-size: 13px; cursor: pointer; font-family: inherit; flex-shrink: 0; transition: all .15s; }
 .btn-reset:hover { color: white; border-color: rgba(255,255,255,.4); }
 
+/* Topbar-right: solo pulsante logout/accedi, niente badge utente */
 .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 5px 0; }
-.user-badge { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border-radius: 20px; padding: 3px 9px 3px 5px; font-size: 12px; color: rgba(255,255,255,.85); }
-.user-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
-.user-avatar-fallback { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; }
 .btn-logout { background: rgba(255,255,255,.12); border: none; border-radius: 6px; padding: 5px 9px; font-size: 12px; color: rgba(255,255,255,.7); cursor: pointer; font-family: inherit; transition: background .2s; }
 .btn-logout:hover { background: rgba(255,255,255,.22); color: white; }
 
 /* ================================================================
-   INFOBAR — una sola riga: stats | tab | col-toggle
+   INFOBAR — una sola riga: stats | tab | spacer | col-toggle
 ================================================================ */
 .infobar {
     display: none;
@@ -97,9 +82,9 @@ option { background: #1e3a5f; color: white; }
     align-items: center;
     gap: 0;
     flex-shrink: 0;
-    height: 42px;       /* altezza fissa, risparmia spazio */
+    height: 42px;
     box-shadow: 0 1px 4px rgba(0,0,0,.06);
-    position: relative; /* per il dropdown colonne */
+    position: relative;
 }
 .infobar.show { display: flex; }
 
@@ -108,52 +93,33 @@ option { background: #1e3a5f; color: white; }
 .ib-stat:last-of-type { border-right: none; margin-right: 0; padding-right: 0; }
 .ib-val { font-size: 17px; font-weight: 800; color: #1e3a5f; line-height: 1; }
 .ib-lbl { font-size: 9px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; margin-top: 1px; }
+.ib-div { width: 1px; background: #e5e5ea; align-self: stretch; margin: 5px 8px; flex-shrink: 0; }
 
-.ib-div { width: 1px; background: #e5e5ea; align-self: stretch; margin: 6px 8px; flex-shrink: 0; }
-
-/* Tab buttons */
 .ib-tabs { display: flex; gap: 0; }
 .ib-tab { padding: 0 12px; border: none; background: none; font-size: 13px; font-weight: 600; color: #8e8e93; cursor: pointer; border-bottom: 2.5px solid transparent; transition: all .2s; display: flex; align-items: center; gap: 4px; font-family: inherit; white-space: nowrap; height: 42px; }
 .ib-tab.active { color: #007aff; border-bottom-color: #007aff; }
 .badge { background: #e5e5ea; color: #8e8e93; border-radius: 8px; padding: 1px 6px; font-size: 11px; font-weight: 700; min-width: 18px; text-align: center; }
 .ib-tab.active .badge { background: #e8f4ff; color: #007aff; }
 
-/* Spacer tra tab e col-toggle */
 .ib-spacer { flex: 1; }
 
 /* ---- COL TOGGLE — inline nell'infobar, dropdown verso il basso ---- */
 .ct-wrap { position: relative; flex-shrink: 0; }
-
 .ct-toggle-btn {
     display: inline-flex; align-items: center; gap: 5px;
-    background: #f4f6fa;
-    border: 1px solid #d1d8e8;
-    border-radius: 7px;
-    padding: 5px 11px;
-    font-size: 12px; font-weight: 700; color: #8e8e93;
-    cursor: pointer; font-family: inherit;
-    transition: all .15s; white-space: nowrap;
-    height: 30px;
+    background: #f4f6fa; border: 1px solid #d1d8e8; border-radius: 7px;
+    padding: 5px 11px; font-size: 12px; font-weight: 700; color: #8e8e93;
+    cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; height: 30px;
 }
-.ct-toggle-btn:hover,
-.ct-toggle-btn.open { border-color: #007aff; color: #007aff; background: #eef5ff; }
+.ct-toggle-btn:hover, .ct-toggle-btn.open { border-color: #007aff; color: #007aff; background: #eef5ff; }
 .ct-arrow { font-size: 9px; transition: transform .2s; line-height: 1; }
 .ct-toggle-btn.open .ct-arrow { transform: rotate(180deg); }
 
-/* Pannello colonne: dropdown fisso, appare sotto l'infobar */
 .ct-panel {
-    display: none;
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    background: white;
-    border: 1px solid #d1d8e8;
-    border-radius: 10px;
-    padding: 10px 12px;
-    box-shadow: 0 6px 20px rgba(0,0,0,.13);
-    z-index: 500;
-    min-width: 300px;
-    max-width: 92vw;
+    display: none; position: absolute; top: calc(100% + 4px); right: 0;
+    background: white; border: 1px solid #d1d8e8; border-radius: 10px;
+    padding: 10px 12px; box-shadow: 0 6px 20px rgba(0,0,0,.13);
+    z-index: 500; min-width: 300px; max-width: 92vw;
     animation: ctFade .15s ease;
 }
 .ct-panel.open { display: block; }
@@ -164,7 +130,6 @@ option { background: #1e3a5f; color: white; }
 .ct-btn { border: 1px solid #d1d8e8; background: white; border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; color: #8e8e93; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
 .ct-btn:hover { border-color: #007aff; color: #007aff; }
 .ct-btn.on { background: #007aff; border-color: #007aff; color: white; }
-.ct-btn.dest.on { background: #007aff; color: white; }
 
 /* ================================================================
    SCROLL AREA
@@ -186,10 +151,11 @@ tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: rgba(0,122,255,.04); }
 td { padding: 8px 10px; border-right: .5px solid #ebeef4; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; font-size: 14px; color: #1c1c1e; }
 td:last-child { border-right: none; }
-td.dn { font-size: 11px; color: #8e8e93; }
-td.dest-col { font-size: 13px; font-weight: 600; color: #1e3a5f; max-width: 160px; }
-td.hdr-extra { font-size: 13px; font-weight: 500; color: #3a3a8c; }
-th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
+td.col-docnum { font-size: 11px; color: #8e8e93; font-family: monospace; }
+td.col-awb    { font-size: 12px; color: #555; }
+td.col-extra  { font-size: 13px; font-weight: 500; color: #3a3a8c; }
+td.col-dest   { font-size: 13px; font-weight: 600; color: #1e3a5f; max-width: 160px; }
+th.col-extra  { background: #f0f4ff !important; color: #3a3a8c !important; }
 
 /* ---- STATI ---- */
 .empty-state { text-align: center; padding: 36px 20px; color: #c7c7cc; }
@@ -204,47 +170,22 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #c1c8d8; border-radius: 2px; }
 
-@media (min-width: 768px) {
-    .topbar { flex-wrap: nowrap; }
-    .filter-bar { flex-wrap: nowrap; padding: 0; }
-    .fg, .fg-sel { min-width: 0; }
-}
-@media (max-width: 600px) {
-    .fg, .fg-sel { min-width: calc(33% - 4px); }
-    .ib-val { font-size: 15px; }
-    .ct-panel { right: -8px; min-width: 260px; }
-}
+@media (min-width: 768px) { .topbar { flex-wrap: nowrap; } .filter-bar { flex-wrap: nowrap; padding: 0; } .fg, .fg-sel { min-width: 0; } }
+@media (max-width: 600px) { .fg, .fg-sel { min-width: calc(33% - 4px); } .ib-val { font-size: 15px; } .ct-panel { right: -8px; min-width: 260px; } }
 </style>
 </head>
 <body>
 
-<!-- LOGIN — nascosto, usato solo come fallback -->
-<div id="loginScreen" style="display:none;">
-    <div class="login-card">
-        <span class="login-icon">📜</span>
-        <div class="login-title">Storico Spedizioni</div>
-        <div class="login-sub">ATS14 · Bollettazione</div>
-        <button class="btn-google" onclick="signIn()">
-            <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-            Accedi con Google
-        </button>
-        <p class="login-note">Accesso in sola lettura ai file xlsx su Drive.</p>
-    </div>
-</div>
-
-<!-- APP SHELL — visibile subito, senza login -->
 <div id="appShell">
 
     <header class="topbar">
         <div class="topbar-logo">Storico <span>Sped.</span></div>
         <div class="filter-bar">
-            <!-- Data -->
             <div class="fg">
                 <span class="fl">Data</span>
                 <input type="text" class="filter-input" id="fDate" list="listDates" placeholder="GG/MM/AAAA" autocomplete="off">
                 <datalist id="listDates"></datalist>
             </div>
-            <!-- Plant -->
             <div class="fg-sel">
                 <span class="fl">Plant</span>
                 <div class="sel-val"><span id="sv-plant-txt">Tutti</span>
@@ -252,7 +193,6 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
                 </div>
                 <select id="fPlant" onchange="syncSelVal('plant'); if(currentData){colVis={};render();}"><option value="">Tutti</option></select>
             </div>
-            <!-- Commessa -->
             <div class="fg-sel">
                 <span class="fl">Commessa</span>
                 <div class="sel-val"><span id="sv-commessa-txt">Tutte</span>
@@ -260,7 +200,6 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
                 </div>
                 <select id="fCommessa" onchange="syncSelVal('commessa'); if(currentData){colVis={};render();}"><option value="">Tutte</option></select>
             </div>
-            <!-- Tipo spedizione -->
             <div class="fg-sel">
                 <span class="fl">Spedizione</span>
                 <div class="sel-val"><span id="sv-tipo-txt">Tutti</span>
@@ -268,7 +207,6 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
                 </div>
                 <select id="fTipo" onchange="syncSelVal('tipo'); if(currentData){colVis={};render();}"><option value="">Tutti</option></select>
             </div>
-            <!-- Destino -->
             <div class="fg-sel">
                 <span class="fl">Destino</span>
                 <div class="sel-val"><span id="sv-destino-txt">Tutti</span>
@@ -279,44 +217,29 @@ th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
             <button class="btn-cerca" id="btnCerca" onclick="loadData()" disabled>🔍 Carica</button>
             <button class="btn-reset" onclick="resetFiltri()" title="Azzera filtri">✕</button>
         </div>
+        <!-- Topbar-right: solo Esci, niente badge utente -->
         <div class="topbar-right">
-            <div class="user-badge">
-                <div id="userAvatarWrap"></div>
-                <span id="userName">—</span>
-            </div>
-            <button class="btn-logout" onclick="signOut()">Esci</button>
+            <button class="btn-logout" id="btn-logout-top" onclick="signOut()" style="display:none;">Esci</button>
         </div>
     </header>
 
     <!-- INFOBAR: stats | tab Carico | tab ODP | spacer | ☰ Colonne -->
     <div class="infobar" id="infobar">
         <div class="ib-stats">
-            <div class="ib-stat">
-                <div class="ib-val" id="sDoc">0</div>
-                <div class="ib-lbl">Sped.</div>
-            </div>
-            <div class="ib-stat">
-                <div class="ib-val" id="sCar">0</div>
-                <div class="ib-lbl">Carico</div>
-            </div>
-            <div class="ib-stat">
-                <div class="ib-val" id="sOdp">0</div>
-                <div class="ib-lbl">ODP</div>
-            </div>
+            <div class="ib-stat"><div class="ib-val" id="sDoc">0</div><div class="ib-lbl">Sped.</div></div>
+            <div class="ib-stat"><div class="ib-val" id="sCar">0</div><div class="ib-lbl">Carico</div></div>
+            <div class="ib-stat"><div class="ib-val" id="sOdp">0</div><div class="ib-lbl">ODP</div></div>
         </div>
         <div class="ib-div"></div>
         <div class="ib-tabs">
             <button class="ib-tab active" data-tab="tc" onclick="switchTab('tc')">📦 Carico <span class="badge" id="cnt-tc">0</span></button>
-            <button class="ib-tab" data-tab="to" onclick="switchTab('to')">🔢 ODP <span class="badge" id="cnt-to">0</span></button>
+            <button class="ib-tab"        data-tab="to" onclick="switchTab('to')">🔢 ODP <span class="badge" id="cnt-to">0</span></button>
         </div>
         <div class="ib-spacer"></div>
-        <!-- Bottone colonne + dropdown — tutto a destra, inline con i tab -->
         <div class="ct-wrap" id="ct-wrap-global">
-            <button class="ct-toggle-btn" id="ct-btn-global" onclick="toggleCtPanel()">
-                ☰ Colonne <span class="ct-arrow">▾</span>
-            </button>
+            <button class="ct-toggle-btn" id="ct-btn-global" onclick="toggleCtPanel()">☰ Colonne <span class="ct-arrow">▾</span></button>
             <div class="ct-panel" id="ct-panel-global">
-                <div class="ct-row"><span class="ct-label">Carica i dati per gestire le colonne</span></div>
+                <div class="ct-row"><span class="ct-label">Carica i dati prima</span></div>
             </div>
         </div>
     </div>
@@ -344,25 +267,44 @@ var TOKEN = null, currentData = null, currentDate = null, activeTab = 'tc';
 var colVis = {};
 
 /* ================================================================
-   COLUMN VISIBILITY
-================================================================ */
-function nc(s){ return String(s||'').toLowerCase().replace(/[_\s\-]/g,''); }
+   STRUTTURA COLONNE
+   Ogni sheet ha uno schema fisso di slot:
+   CARICO:  0=DocNum  1=Destino  2=Commessa  3=TipoSped  4=AWB  5..N=colonne file (skip DocNum=0)
+   ODP:     0=DocNum  1=Destino  2=Commessa  3=TipoSped  4=AWB  5..N=colonne file (skip DocNum=0)
 
-var COL_DEF = {
-    'dettaglicarico': ['linenum','imballo','qty','quantity','altezzacm','larghezzacm','profonditacm'],
+   Visibilità default:
+   - DocNum : false (nascosto)
+   - Destino: true
+   - Commessa: true
+   - TipoSped: true
+   - AWB: false (nascosto, disponibile nel toggle)
+   - colonne file: secondo COL_DEF
+================================================================ */
+var SLOT = { DOCNUM:0, DESTINO:1, COMMESSA:2, TIPOSED:3, AWB:4, FILE_START:5 };
+
+var COL_DEF_VIS = {
+    'dettaglicarico': ['linenum','imballo','qty','quantity','altezzacm','larghezzacm','profonditacm','volumeunitariomcc','volumetotalerigamc','pesototalerrigakg'],
     'dettagliodp':    ['linenum','odp','numeroodp']
 };
+
+function nc(s){ return String(s||'').toLowerCase().replace(/[_\s\-]/g,''); }
 
 function initColVis(sheetName, headers){
     if(colVis[sheetName]) return;
     var key = nc(sheetName);
-    var defs = COL_DEF[key]||[];
+    var defs = COL_DEF_VIS[key]||[];
     var h1 = (headers&&headers[1])?headers[1]:[];
-    // slot 0 = Destino, 1 = Commessa, 2 = TipoSped (tutti visibili di default)
-    // slot 3+ = colonne file (DocNum index 0 sempre nascosto)
-    var arr = [true, true, true];
+    // slot fissi
+    var arr = [
+        false, // 0 DocNum — nascosto
+        true,  // 1 Destino
+        true,  // 2 Commessa
+        true,  // 3 TipoSped
+        false  // 4 AWB — nascosto di default
+    ];
+    // slot colonne file (h1[0] = DocNum → sempre skip)
     h1.forEach(function(h, ci){
-        if(ci===0){ arr.push(false); return; } // DocNum
+        if(ci===0){ arr.push(false); return; } // DocNum del file, nascosto
         arr.push(defs.indexOf(nc(h))>=0);
     });
     colVis[sheetName] = arr;
@@ -382,10 +324,9 @@ function toggleCtPanel(){
     var btn   = document.getElementById('ct-btn-global');
     var panel = document.getElementById('ct-panel-global');
     var open  = panel.classList.contains('open');
-    panel.classList.toggle('open', !open);
-    btn.classList.toggle('open', !open);
+    panel.classList.toggle('open',!open);
+    btn.classList.toggle('open',!open);
 }
-
 document.addEventListener('click', function(e){
     var wrap = document.getElementById('ct-wrap-global');
     if(wrap && !wrap.contains(e.target)){
@@ -404,24 +345,28 @@ function refreshColPanel(){
     var snE = sn.replace(/'/g,"\\'");
 
     var html = '<div class="ct-row"><span class="ct-label">Visibili</span>';
-    html += btn(0, vis, '📍 Destino',   snE, 'dest');
-    html += btn(1, vis, '🏷 Commessa',  snE, '');
-    html += btn(2, vis, '🚚 Tipo Sped.',snE, '');
+    // Slot fissi
+    html += ctBtn(SLOT.DOCNUM,  vis, '🔑 DocNum',    snE, '');
+    html += ctBtn(SLOT.DESTINO, vis, '📍 Destino',   snE, '');
+    html += ctBtn(SLOT.COMMESSA,vis, '🏷 Commessa',  snE, '');
+    html += ctBtn(SLOT.TIPOSED, vis, '🚚 TipoSped',  snE, '');
+    html += ctBtn(SLOT.AWB,     vis, '✈️ AWB',        snE, '');
+    // Colonne file (skip DocNum = ci=0)
     h1.forEach(function(hname, ci){
         if(ci===0) return;
-        html += btn(3+ci, vis, esc(String(hname||'')), snE, '');
+        html += ctBtn(SLOT.FILE_START+ci, vis, esc(String(hname||'')), snE, '');
     });
     html += '</div>';
     document.getElementById('ct-panel-global').innerHTML = html;
 }
 
-function btn(idx, vis, label, snE, extra){
+function ctBtn(idx, vis, label, snE, extra){
     var on = vis[idx]!==false;
     return '<button class="ct-btn '+(extra?extra+' ':'')+(on?'on':'')+'" onclick="toggleCol(\''+snE+'\','+idx+')">'+label+'</button>';
 }
 
 /* ================================================================
-   SYNC SELECT VALUE (visual display)
+   SYNC SELECT VALUE
 ================================================================ */
 function syncSelVal(key){
     var map = {plant:'fPlant',commessa:'fCommessa',tipo:'fTipo',destino:'fDestino'};
@@ -432,28 +377,32 @@ function syncSelVal(key){
 }
 
 /* ================================================================
-   INIT — app shell visibile subito, login solo su richiesta
+   INIT — app visibile subito, login su richiesta
 ================================================================ */
 window.onload = function(){
     var saved = getSaved();
-    if(saved) setUserUI(saved.name, saved.picture);
-    else      addLoginBtn();
+    if(saved && saved.email){
+        // Mostra Esci, nasconde Accedi
+        showLogoutBtn();
+    } else {
+        addLoginBtn();
+    }
     waitGsi();
 };
 
-var tokenClient, gsiReady = false;
+var tokenClient, gsiReady=false;
 
 function waitGsi(){
     if(typeof google==='undefined'){ setTimeout(waitGsi,150); return; }
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+        scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.email',
         callback: onToken
     });
     gsiReady = true;
-    // Rinnovo silenzioso solo se sessione già esistente
+    // Rinnovo silenzioso solo se sessione già presente
     var saved = getSaved();
-    if(saved&&saved.email){
+    if(saved && saved.email){
         tokenClient.requestAccessToken({prompt:'', login_hint:saved.email});
     }
 }
@@ -463,19 +412,22 @@ function addLoginBtn(){
     var tb = document.querySelector('.topbar-right');
     if(!tb) return;
     var b = document.createElement('button');
-    b.id = 'btn-topbar-login';
-    b.className = 'btn-cerca';
-    b.style.cssText = 'background:rgba(255,255,255,.25); margin-right:4px;';
-    b.innerHTML = '🔑 Accedi';
-    b.onclick = signIn;
+    b.id='btn-topbar-login'; b.className='btn-cerca';
+    b.style.cssText='background:rgba(255,255,255,.25);';
+    b.innerHTML='🔑 Accedi'; b.onclick=signIn;
     tb.insertBefore(b, tb.firstChild);
+}
+function showLogoutBtn(){
+    var lb = document.getElementById('btn-topbar-login');
+    if(lb) lb.remove();
+    var el = document.getElementById('btn-logout-top');
+    if(el) el.style.display='';
 }
 
 function signIn(){
     if(!gsiReady){ setTimeout(signIn,200); return; }
     tokenClient.requestAccessToken({prompt:'select_account'});
 }
-
 function signOut(){
     if(TOKEN) google.accounts.oauth2.revoke(TOKEN,function(){});
     TOKEN=null; currentData=null;
@@ -483,41 +435,23 @@ function signOut(){
     document.getElementById('infobar').classList.remove('show');
     setContent('<div class="empty-state"><span class="empty-icon">🔐</span><div class="empty-title">Sessione terminata</div><div class="empty-sub">Premi "Accedi" per ricaricare</div></div>');
     document.getElementById('btnCerca').disabled=true;
-    setUserUI('—','');
+    document.getElementById('btn-logout-top').style.display='none';
     addLoginBtn();
 }
-
 function onToken(resp){
     if(resp.error) return;
-    TOKEN = resp.access_token;
-    var lb = document.getElementById('btn-topbar-login');
-    if(lb) lb.remove();
-    loadUserInfo();
+    TOKEN=resp.access_token;
+    showLogoutBtn();
+    // Salva solo email (no nome, no avatar)
+    gFetch('https://www.googleapis.com/oauth2/v2/userinfo').then(function(u){
+        if(u&&u.email) setSaved('',u.email,'');
+    }).catch(function(){});
     loadDates();
 }
 
 /* SESSION */
 function getSaved(){ try{ var s=localStorage.getItem('vdc_storico_session'); return s?JSON.parse(s):null; }catch(e){return null;} }
 function setSaved(n,e,p){ try{localStorage.setItem('vdc_storico_session',JSON.stringify({name:n,email:e,picture:p}));}catch(e){} }
-
-/* USER */
-function loadUserInfo(){
-    gFetch('https://www.googleapis.com/oauth2/v2/userinfo').then(function(u){
-        if(u.error) return;
-        setSaved(u.name||u.email||'',u.email||'',u.picture||'');
-        setUserUI(u.name||u.email||'—',u.picture||'');
-    }).catch(function(){});
-}
-function setUserUI(name,picture){
-    document.getElementById('userName').textContent=name||'—';
-    var wrap=document.getElementById('userAvatarWrap'); wrap.innerHTML='';
-    if(picture){
-        var img=document.createElement('img'); img.className='user-avatar'; img.referrerPolicy='no-referrer'; img.src=picture;
-        img.onerror=function(){ wrap.innerHTML=makeInitial(name); };
-        wrap.appendChild(img);
-    } else { wrap.innerHTML=makeInitial(name); }
-}
-function makeInitial(s){ return '<div class="user-avatar-fallback">'+((s||'?').trim().charAt(0).toUpperCase())+'</div>'; }
 
 /* ================================================================
    DATE
@@ -532,8 +466,9 @@ function loadDates(){
         var dates=Object.keys(set).sort().reverse();
         var dl=document.getElementById('listDates');
         dates.forEach(function(d){
-            var txt=d.substr(6,2)+'/'+d.substr(4,2)+'/'+d.substr(0,4);
-            var o=document.createElement('option'); o.value=txt; dl.appendChild(o);
+            var o=document.createElement('option');
+            o.value=d.substr(6,2)+'/'+d.substr(4,2)+'/'+d.substr(0,4);
+            dl.appendChild(o);
         });
         if(!dates.length) return;
         var now=new Date();
@@ -552,7 +487,6 @@ function parseDate(str){
     if(/^\d{8}$/.test(str)) return str;
     return null;
 }
-
 document.getElementById('fDate').addEventListener('input',function(){
     if(!TOKEN){ signIn(); return; }
     document.getElementById('btnCerca').disabled=!parseDate(this.value);
@@ -606,13 +540,11 @@ function loadData(){
 /* ================================================================
    RENDER
 ================================================================ */
-function render(){
-    if(!currentData) return;
+function getFilteredOk(){
     var fP=document.getElementById('fPlant').value.trim();
     var fC=document.getElementById('fCommessa').value.trim();
     var fT=document.getElementById('fTipo').value.trim();
     var fD=document.getElementById('fDestino').value.trim();
-
     var ok={};
     currentData['Intestazione'].rows.forEach(function(r){
         if(fP&&String(r[5]||'').trim()!==fP) return;
@@ -621,7 +553,26 @@ function render(){
         if(fD&&String(r[8]||'').trim()!==fD) return;
         ok[norm(r[0])]=true;
     });
+    return ok;
+}
 
+function buildMetaMap(){
+    var m={};
+    currentData['Intestazione'].rows.forEach(function(r){
+        m[norm(r[0])]={
+            destino: String(r[8]||'').trim(),
+            commessa:String(r[7]||'').trim(),
+            tipoSped:String(r[6]||'').trim(),
+            awb:     String(r[3]||'').trim(),
+            docnum:  String(r[0]||'').trim()
+        };
+    });
+    return m;
+}
+
+function render(){
+    if(!currentData) return;
+    var ok=getFilteredOk();
     var fInt=currentData['Intestazione'].rows.filter(function(r){ return ok[norm(r[0])]; });
     var fCar=currentData['Dettagli Carico'].rows.filter(function(r){ return ok[norm(r[0])]; });
     var fOdp=currentData['Dettagli ODP'].rows.filter(function(r){ return ok[norm(r[0])]; });
@@ -633,16 +584,7 @@ function render(){
     document.getElementById('cnt-to').textContent=fOdp.length;
     document.getElementById('infobar').classList.add('show');
 
-    var metaMap={};
-    currentData['Intestazione'].rows.forEach(function(r){
-        metaMap[norm(r[0])]={
-            destino: String(r[8]||'').trim(),
-            commessa:String(r[7]||'').trim(),
-            tipoSped:String(r[6]||'').trim(),
-            awb:     String(r[3]||'').trim()
-        };
-    });
-
+    var metaMap=buildMetaMap();
     initColVis('Dettagli Carico',currentData['Dettagli Carico'].headers);
     initColVis('Dettagli ODP',   currentData['Dettagli ODP'].headers);
 
@@ -651,8 +593,8 @@ function render(){
          +buildPanel('Dettagli Carico',currentData['Dettagli Carico'].headers,fCar,metaMap,fCar.length)+'</div>';
     html+='<div id="panel-to" class="tab-panel'+(activeTab==='to'?' on':'')+'">'
          +buildPanel('Dettagli ODP',currentData['Dettagli ODP'].headers,fOdp,metaMap,fOdp.length)+'</div>';
-
     setContent(html);
+
     document.querySelectorAll('.ib-tab').forEach(function(b){ b.classList.toggle('active',b.dataset.tab===activeTab); });
     refreshColPanel();
 }
@@ -662,78 +604,79 @@ function reRenderActive(){
     var map={tc:'Dettagli Carico',to:'Dettagli ODP'};
     var sn=map[activeTab]; if(!sn) return;
     var panel=document.getElementById('panel-'+activeTab); if(!panel) return;
-
-    var fP=document.getElementById('fPlant').value.trim();
-    var fC=document.getElementById('fCommessa').value.trim();
-    var fT=document.getElementById('fTipo').value.trim();
-    var fD=document.getElementById('fDestino').value.trim();
-    var ok={};
-    currentData['Intestazione'].rows.forEach(function(r){
-        if(fP&&String(r[5]||'').trim()!==fP) return;
-        if(fC&&String(r[7]||'').trim()!==fC) return;
-        if(fT&&String(r[6]||'').trim()!==fT) return;
-        if(fD&&String(r[8]||'').trim()!==fD) return;
-        ok[norm(r[0])]=true;
-    });
+    var ok=getFilteredOk();
     var rows=currentData[sn].rows.filter(function(r){ return ok[norm(r[0])]; });
-    var metaMap={};
-    currentData['Intestazione'].rows.forEach(function(r){
-        metaMap[norm(r[0])]={destino:String(r[8]||'').trim(),commessa:String(r[7]||'').trim(),tipoSped:String(r[6]||'').trim(),awb:String(r[3]||'').trim()};
-    });
+    var metaMap=buildMetaMap();
     panel.innerHTML=buildPanel(sn,currentData[sn].headers,rows,metaMap,rows.length);
 }
 
 /* ================================================================
-   BUILD PANEL (niente col-toggle row — è nell'infobar)
+   BUILD PANEL
+   Ogni riga ha slot fissi PRIMA delle colonne file:
+   col 0 = DocNum (da metaMap, stesso del file)
+   col 1 = Destino (da metaMap)
+   col 2 = Commessa (da metaMap)
+   col 3 = TipoSped (da metaMap)
+   col 4 = AWB (da metaMap)
+   col 5..N = colonne del file (h1[1..] — skip h1[0]=DocNum)
 ================================================================ */
 function buildPanel(sheetName, headers, rows, metaMap, total){
     var h1=(headers&&headers[1])?headers[1]:[];
     var h0=(headers&&headers[0])?headers[0]:[];
     var vis=colVis[sheetName]||[];
-    var nc_cnt=Math.max(h1.length, rows[0]?rows[0].length:0);
+    var nc_file=Math.max(h1.length, rows[0]?rows[0].length:0);
 
     if(!rows.length){
-        return '<div class="empty-state"><span class="empty-icon">📭</span><div class="empty-title">Nessun dato</div><div class="empty-sub">Prova a modificare i filtri</div></div>';
+        return '<div class="empty-state"><span class="empty-icon">📭</span>'
+              +'<div class="empty-title">Nessun dato</div>'
+              +'<div class="empty-sub">Prova a modificare i filtri</div></div>';
     }
 
     var info='<div class="results-info">'+total+' riga'+(total!==1?'he':'')+'</div>';
 
-    /* Header riga 1 (codice tecnico) */
+    /* ---- header riga 1 (codice SAP) ---- */
     var t='<div class="tbl-card"><div class="tbl-wrap"><table><thead><tr>';
-    if(vis[0]!==false) t+='<th class="hdr-extra">DESTINO</th>';
-    if(vis[1]!==false) t+='<th class="hdr-extra">COMMESSA</th>';
-    if(vis[2]!==false) t+='<th class="hdr-extra">TIPO_SPED</th>';
-    for(var c=1;c<nc_cnt;c++){
-        if(vis[3+c]===false) continue;
+    if(vis[SLOT.DOCNUM]!==false)  t+='<th>DOCNUM</th>';
+    if(vis[SLOT.DESTINO]!==false) t+='<th class="col-extra">DESTINO</th>';
+    if(vis[SLOT.COMMESSA]!==false)t+='<th class="col-extra">COMMESSA</th>';
+    if(vis[SLOT.TIPOSED]!==false) t+='<th class="col-extra">TIPO_SPED</th>';
+    if(vis[SLOT.AWB]!==false)     t+='<th class="col-extra">AWB</th>';
+    for(var c=1;c<nc_file;c++){
+        if(vis[SLOT.FILE_START+c]===false) continue;
         t+='<th>'+esc(String(h0[c]||''))+'</th>';
     }
-    t+='</tr><tr>';
-    /* Header riga 2 (leggibile) */
-    if(vis[0]!==false) t+='<th class="hdr-extra">Destino</th>';
-    if(vis[1]!==false) t+='<th class="hdr-extra">Commessa</th>';
-    if(vis[2]!==false) t+='<th class="hdr-extra">Tipo Sped.</th>';
-    for(var c=1;c<nc_cnt;c++){
-        if(vis[3+c]===false) continue;
+    t+='</tr>';
+    /* ---- header riga 2 (leggibile) ---- */
+    t+='<tr>';
+    if(vis[SLOT.DOCNUM]!==false)  t+='<th>DocNum</th>';
+    if(vis[SLOT.DESTINO]!==false) t+='<th class="col-extra">Destino</th>';
+    if(vis[SLOT.COMMESSA]!==false)t+='<th class="col-extra">Commessa</th>';
+    if(vis[SLOT.TIPOSED]!==false) t+='<th class="col-extra">Tipo Sped.</th>';
+    if(vis[SLOT.AWB]!==false)     t+='<th class="col-extra">AWB</th>';
+    for(var c=1;c<nc_file;c++){
+        if(vis[SLOT.FILE_START+c]===false) continue;
         t+='<th>'+esc(String(h1[c]||''))+'</th>';
     }
     t+='</tr></thead><tbody>';
 
+    /* ---- righe dati ---- */
     rows.forEach(function(row){
-        var dn=norm(row[0]);
-        var m=metaMap[dn]||{destino:'',commessa:'',tipoSped:'',awb:''};
+        var dn  =norm(row[0]);
+        var meta=metaMap[dn]||{destino:'',commessa:'',tipoSped:'',awb:'',docnum:dn};
         t+='<tr>';
-        if(vis[0]!==false) t+='<td class="dest-col">'+esc(m.destino)+'</td>';
-        if(vis[1]!==false) t+='<td class="hdr-extra">'+esc(m.commessa)+'</td>';
-        if(vis[2]!==false) t+='<td class="hdr-extra">'+esc(m.tipoSped)+'</td>';
-        for(var c=1;c<nc_cnt;c++){
-            if(vis[3+c]===false) continue;
+        if(vis[SLOT.DOCNUM]!==false)  t+='<td class="col-docnum">'+esc(meta.docnum)+'</td>';
+        if(vis[SLOT.DESTINO]!==false) t+='<td class="col-dest">'+esc(meta.destino)+'</td>';
+        if(vis[SLOT.COMMESSA]!==false)t+='<td class="col-extra">'+esc(meta.commessa)+'</td>';
+        if(vis[SLOT.TIPOSED]!==false) t+='<td class="col-extra">'+esc(meta.tipoSped)+'</td>';
+        if(vis[SLOT.AWB]!==false)     t+='<td class="col-awb">'+esc(meta.awb)+'</td>';
+        for(var c=1;c<nc_file;c++){
+            if(vis[SLOT.FILE_START+c]===false) continue;
             var v=row[c]!==undefined?row[c]:'';
             t+='<td>'+esc(String(v===null||v===undefined?'':v))+'</td>';
         }
         t+='</tr>';
     });
     t+='</tbody></table></div></div>';
-
     return info+t;
 }
 
@@ -755,25 +698,24 @@ function switchTab(id){
 function populateFilters(intRows){
     var plants={},commesse={},tipi={},destini={};
     intRows.forEach(function(r){
-        var p=String(r[5]||'').trim(),c=String(r[7]||'').trim(),t=String(r[6]||'').trim(),d=String(r[8]||'').trim();
-        if(p) plants[p]=true; if(c) commesse[c]=true; if(t) tipi[t]=true; if(d) destini[d]=true;
+        var p=String(r[5]||'').trim(),c=String(r[7]||'').trim(),
+            t=String(r[6]||'').trim(),d=String(r[8]||'').trim();
+        if(p) plants[p]=true; if(c) commesse[c]=true;
+        if(t) tipi[t]=true;   if(d) destini[d]=true;
     });
     fillSel('fPlant',plants,'Tutti'); fillSel('fCommessa',commesse,'Tutte');
     fillSel('fTipo',tipi,'Tutti');    fillSel('fDestino',destini,'Tutti');
     ['plant','commessa','tipo','destino'].forEach(syncSelVal);
 }
-
 function fillSel(id,obj,ph){
     var sel=document.getElementById(id),prev=sel.value;
     sel.innerHTML='<option value="">'+ph+'</option>';
     Object.keys(obj).sort().forEach(function(v){
         var o=document.createElement('option'); o.value=v; o.textContent=v;
-        if(v===prev) o.selected=true;
-        sel.appendChild(o);
+        if(v===prev) o.selected=true; sel.appendChild(o);
     });
     if(prev&&sel.value!==prev) sel.value='';
 }
-
 function resetFiltri(){
     ['fPlant','fCommessa','fTipo','fDestino'].forEach(function(id){ document.getElementById(id).value=''; });
     ['plant','commessa','tipo','destino'].forEach(syncSelVal);
@@ -825,12 +767,12 @@ function gFetch(url){
 }
 
 /* UTILITY */
-function setContent(h){ document.getElementById('content').innerHTML=h; }
-function spinHtml(msg){ return '<div class="loading-state"><div class="spinner"></div>'+esc(msg)+'</div>'; }
-function norm(v){ if(v===null||v===undefined) return ''; var s=String(v).trim(); if(/^\d+\.0+$/.test(s)) s=s.replace(/\.0+$/,''); return s; }
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(d){ return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
-function fmtD(s){ return s.substr(6,2)+'/'+s.substr(4,2)+'/'+s.substr(0,4); }
+function setContent(h){document.getElementById('content').innerHTML=h;}
+function spinHtml(msg){return '<div class="loading-state"><div class="spinner"></div>'+esc(msg)+'</div>';}
+function norm(v){if(v===null||v===undefined)return'';var s=String(v).trim();if(/^\d+\.0+$/.test(s))s=s.replace(/\.0+$/,'');return s;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(d){return('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();}
+function fmtD(s){return s.substr(6,2)+'/'+s.substr(4,2)+'/'+s.substr(0,4);}
 </script>
 </body>
 </html>
