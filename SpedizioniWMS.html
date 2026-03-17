@@ -46,52 +46,63 @@ html, body { height: 100%; background: #dfe4ee; font-family: -apple-system, Blin
 /* FILTER BAR */
 .filter-bar { display: flex; align-items: center; gap: 5px; flex: 1; flex-wrap: wrap; padding: 5px 0; min-width: 0; }
 
-/* Ogni gruppo filtro è cliccabile su tutta la sua area */
+/* ---- FIELD GROUP — select custom arrow ---- */
 .fg {
     display: flex; flex-direction: column; gap: 1px;
     background: rgba(255,255,255,.12);
     border-radius: 7px; padding: 4px 8px;
-    cursor: pointer;
-    transition: background .15s;
-    flex: 1; min-width: 80px;
-    position: relative;
+    transition: background .15s; flex: 1; min-width: 80px;
+    /* non serve cursor:pointer qui, il click è gestito da label/input dentro */
 }
 .fg:hover { background: rgba(255,255,255,.2); }
+.fl { font-size: 9px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; }
 
-/* Cliccando ovunque nel .fg si apre il select/input */
-.fg-clickable { position: absolute; inset: 0; z-index: 1; cursor: pointer; }
-
-.fl { font-size: 9px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; position: relative; z-index: 2; pointer-events: none; }
-
-.filter-input, .filter-select {
+.filter-input {
     border: none; outline: none;
-    font-size: 12px; font-weight: 600; color: white;
-    background: transparent; width: 100%; font-family: inherit;
-    -webkit-appearance: none; padding: 0; cursor: pointer;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    position: relative; z-index: 2;
+    font-size: 12px; font-weight: 600; color: white; background: transparent;
+    width: 100%; font-family: inherit; padding: 0; cursor: text;
 }
 .filter-input::placeholder { color: rgba(255,255,255,.35); }
 
-/* Freccia select visibile e bianca */
-.select-wrapper { position: relative; width: 100%; z-index: 2; }
-.select-wrapper::after {
-    content: '▾';
-    position: absolute;
-    right: 0; top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255,255,255,.7);
-    font-size: 10px;
-    pointer-events: none;
+/* ---- SELECT: freccia visibile e click su tutto il campo ---- */
+.fg-sel {
+    position: relative;
+    display: flex; flex-direction: column; gap: 1px;
+    background: rgba(255,255,255,.12);
+    border-radius: 7px; padding: 4px 8px;
+    transition: background .15s; flex: 1; min-width: 80px;
+    cursor: pointer;
 }
-.select-wrapper .filter-select { padding-right: 14px; }
-
+.fg-sel:hover { background: rgba(255,255,255,.2); }
+.fg-sel .fl { pointer-events: none; }
+/* Il select occupa tutto il box, trasparente sopra — la freccia SVG è decorativa */
+.fg-sel select {
+    position: absolute; inset: 0;
+    opacity: 0;
+    width: 100%; height: 100%;
+    cursor: pointer;
+    border: none; outline: none;
+    -webkit-appearance: auto;
+    appearance: auto;
+    z-index: 2;
+}
+/* Valore visivo mostrato */
+.fg-sel .sel-val {
+    font-size: 12px; font-weight: 600; color: white;
+    pointer-events: none;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 4px;
+}
+.fg-sel .sel-val svg {
+    flex-shrink: 0; opacity: .75;
+}
 option { background: #1e3a5f; color: white; }
+
 .btn-cerca { background: rgba(255,255,255,.2); color: white; border: 1.5px solid rgba(255,255,255,.35); border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0; transition: background .15s; }
 .btn-cerca:hover { background: rgba(255,255,255,.3); }
 .btn-cerca:disabled { opacity: .35; cursor: not-allowed; }
-.btn-reset { background: none; color: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.3); border-radius: 7px; padding: 6px 9px; font-size: 12px; cursor: pointer; font-family: inherit; flex-shrink: 0; transition: all .15s; }
-.btn-reset:hover { color: white; border-color: rgba(255,255,255,.5); }
+.btn-reset { background: none; color: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.2); border-radius: 7px; padding: 6px 9px; font-size: 12px; cursor: pointer; font-family: inherit; flex-shrink: 0; transition: all .15s; }
+.btn-reset:hover { color: white; border-color: rgba(255,255,255,.4); }
 
 /* Utente */
 .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 5px 0; }
@@ -116,17 +127,14 @@ option { background: #1e3a5f; color: white; }
     box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 .infobar.show { display: flex; }
-
 .ib-stats { display: flex; gap: 0; flex-shrink: 0; }
 .ib-stat { display: flex; flex-direction: column; align-items: center; padding: 6px 14px 6px 0; margin-right: 14px; border-right: 1px solid #e5e5ea; }
 .ib-stat:last-of-type { border-right: none; margin-right: 0; padding-right: 0; }
 .ib-val { font-size: 16px; font-weight: 800; color: #1e3a5f; line-height: 1; }
 .ib-lbl { font-size: 9px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; margin-top: 1px; }
-
 .ib-div { width: 1px; background: #e5e5ea; align-self: stretch; margin: 6px 10px; flex-shrink: 0; }
-
-/* Tab buttons — Intestazione rimossa, ora solo Carico e ODP */
 .ib-tabs { display: flex; gap: 2px; flex: 1; }
+/* Solo 2 tab: Carico e ODP */
 .ib-tab { flex: 1; padding: 6px 8px; border: none; background: none; font-size: 12px; font-weight: 600; color: #8e8e93; cursor: pointer; border-bottom: 2.5px solid transparent; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 3px; font-family: inherit; white-space: nowrap; }
 .ib-tab.active { color: #007aff; border-bottom-color: #007aff; }
 .badge { background: #e5e5ea; color: #8e8e93; border-radius: 8px; padding: 1px 5px; font-size: 10px; font-weight: 700; min-width: 16px; text-align: center; }
@@ -137,53 +145,46 @@ option { background: #1e3a5f; color: white; }
 ================================================================ */
 .scroll-area { flex: 1; overflow-y: auto; padding: 8px 10px 16px; -webkit-overflow-scrolling: touch; min-height: 0; }
 
-/* ----------------------------------------------------------------
-   COL TOGGLE — nascosta, appare su click del bottone "..."
----------------------------------------------------------------- */
-.col-toggle-wrap {
-    margin-bottom: 6px;
-    position: relative;
-}
+/* ---- COL TOGGLE — nascosta, appare solo su click ---- */
+.col-toggle-wrap { margin-bottom: 6px; position: relative; }
 
-/* bottone trigger "..." */
-.ct-trigger {
+/* Bottone "..." per aprire/chiudere il pannello colonne */
+.ct-toggle-btn {
     background: white;
     border: 1px solid #d1d8e8;
-    border-radius: 8px;
+    border-radius: 7px;
     padding: 4px 10px;
     font-size: 12px;
     font-weight: 700;
     color: #8e8e93;
     cursor: pointer;
     font-family: inherit;
-    transition: all .15s;
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    transition: all .15s;
     margin-bottom: 4px;
 }
-.ct-trigger:hover { border-color: #007aff; color: #007aff; background: #f0f8ff; }
-.ct-trigger.open { border-color: #007aff; color: #007aff; background: #e8f4ff; }
+.ct-toggle-btn:hover { border-color: #007aff; color: #007aff; background: #f0f7ff; }
+.ct-toggle-btn .ct-arrow { font-size: 10px; transition: transform .2s; display: inline-block; }
+.ct-toggle-btn.open .ct-arrow { transform: rotate(180deg); }
 
-/* pannello colonne — nascosto di default */
+/* Pannello colonne: collassato di default */
 .ct-panel {
     display: none;
     background: white;
     border: 1px solid #d1d8e8;
     border-radius: 10px;
     padding: 8px 10px;
-    box-shadow: 0 4px 16px rgba(0,0,0,.1);
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 50;
-    min-width: 260px;
-    max-width: 100%;
+    margin-bottom: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    animation: ctFade .15s ease;
 }
-.ct-panel.show { display: block; }
+.ct-panel.open { display: block; }
+@keyframes ctFade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
 .ct-row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
-.ct-label { font-size: 10px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; flex-shrink: 0; margin-right: 2px; width: 100%; margin-bottom: 4px; }
+.ct-label { font-size: 10px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; flex-shrink: 0; margin-right: 2px; }
 .ct-btn { border: 1px solid #d1d8e8; background: white; border-radius: 20px; padding: 3px 9px; font-size: 11px; font-weight: 600; color: #8e8e93; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
 .ct-btn:hover { border-color: #007aff; color: #007aff; }
 .ct-btn.on { background: #007aff; border-color: #007aff; color: white; }
@@ -210,8 +211,9 @@ td:last-child { border-right: none; }
 td.dn { font-size: 10px; color: #8e8e93; }
 td.dest-col { font-size: 11px; font-weight: 600; color: #1e3a5f; max-width: 140px; }
 
-/* Colonne aggiuntive intestazione nella tab Carico/ODP */
-td.meta-col { font-size: 11px; color: #5a6a8a; font-weight: 500; }
+/* Colonne extra da intestazione in Carico e ODP */
+td.hdr-extra { font-size: 11px; font-weight: 500; color: #3a3a8c; }
+th.hdr-extra { background: #f0f4ff !important; color: #3a3a8c !important; }
 
 /* ---- STATI ---- */
 .empty-state { text-align: center; padding: 36px 20px; color: #c7c7cc; }
@@ -221,17 +223,6 @@ td.meta-col { font-size: 11px; color: #5a6a8a; font-weight: 500; }
 .loading-state { text-align: center; padding: 40px 20px; color: #8e8e93; font-size: 13px; }
 .spinner { width: 28px; height: 28px; border: 3px solid #e5e5ea; border-top-color: #007aff; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 12px; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* ---- LOGIN LAZY (per tab Storico) ---- */
-#lazyLoginBanner {
-    display: none;
-    text-align: center;
-    padding: 48px 20px;
-}
-#lazyLoginBanner.show { display: block; }
-#lazyLoginBanner .lazy-icon { font-size: 44px; margin-bottom: 12px; display: block; }
-#lazyLoginBanner .lazy-title { font-size: 17px; font-weight: 700; color: #1e3a5f; margin-bottom: 6px; }
-#lazyLoginBanner .lazy-sub { font-size: 13px; color: #8e8e93; margin-bottom: 22px; }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -243,10 +234,10 @@ td.meta-col { font-size: 11px; color: #5a6a8a; font-weight: 500; }
 @media (min-width: 768px) {
     .topbar { flex-wrap: nowrap; min-height: 46px; }
     .filter-bar { flex-wrap: nowrap; padding: 0; }
-    .fg { min-width: 0; }
+    .fg, .fg-sel { min-width: 0; }
 }
 @media (max-width: 600px) {
-    .fg { min-width: calc(33% - 4px); }
+    .fg, .fg-sel { min-width: calc(33% - 4px); }
     .ib-stat { padding: 5px 10px 5px 0; margin-right: 10px; }
     .ib-val { font-size: 14px; }
 }
@@ -254,8 +245,8 @@ td.meta-col { font-size: 11px; color: #5a6a8a; font-weight: 500; }
 </head>
 <body>
 
-<!-- ===== LOGIN (mostrato solo per tab Storico se non autenticato) ===== -->
-<div id="loginScreen" style="display:none;">
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
     <div class="login-card">
         <span class="login-icon">📜</span>
         <div class="login-title">Storico Spedizioni</div>
@@ -264,64 +255,85 @@ td.meta-col { font-size: 11px; color: #5a6a8a; font-weight: 500; }
             <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
             Accedi con Google
         </button>
-        <p class="login-note">Accesso necessario per visualizzare lo storico.</p>
+        <p class="login-note">Accesso in sola lettura ai file xlsx su Drive.</p>
     </div>
 </div>
 
 <!-- ===== APP ===== -->
-<div id="appShell" style="display:flex;">
+<div id="appShell">
 
-    <!-- ① TOPBAR -->
+    <!-- TOPBAR -->
     <header class="topbar">
         <div class="topbar-logo">Storico <span>Sped.</span></div>
         <div class="filter-bar">
-            <!-- Data -->
-            <div class="fg" onclick="document.getElementById('fDate').focus()">
+            <!-- Data: campo testo libero -->
+            <div class="fg">
                 <span class="fl">Data</span>
                 <input type="text" class="filter-input" id="fDate" list="listDates" placeholder="GG/MM/AAAA" autocomplete="off">
                 <datalist id="listDates"></datalist>
             </div>
-            <!-- Plant -->
-            <div class="fg" onclick="document.getElementById('fPlant').focus(); document.getElementById('fPlant').click()">
+
+            <!-- Plant select -->
+            <div class="fg-sel" id="fg-plant">
                 <span class="fl">Plant</span>
-                <div class="select-wrapper">
-                    <select class="filter-select" id="fPlant"><option value="">Tutti</option></select>
+                <div class="sel-val" id="sv-plant">
+                    <span id="sv-plant-txt">Tutti</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
+                <select id="fPlant" onchange="syncSelVal('plant'); if(currentData){colVis={};render();}">
+                    <option value="">Tutti</option>
+                </select>
             </div>
-            <!-- Commessa -->
-            <div class="fg" onclick="document.getElementById('fCommessa').focus(); document.getElementById('fCommessa').click()">
+
+            <!-- Commessa select -->
+            <div class="fg-sel" id="fg-commessa">
                 <span class="fl">Commessa</span>
-                <div class="select-wrapper">
-                    <select class="filter-select" id="fCommessa"><option value="">Tutte</option></select>
+                <div class="sel-val" id="sv-commessa">
+                    <span id="sv-commessa-txt">Tutte</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
+                <select id="fCommessa" onchange="syncSelVal('commessa'); if(currentData){colVis={};render();}">
+                    <option value="">Tutte</option>
+                </select>
             </div>
-            <!-- Tipo Spedizione -->
-            <div class="fg" onclick="document.getElementById('fTipo').focus(); document.getElementById('fTipo').click()">
+
+            <!-- Tipo spedizione select -->
+            <div class="fg-sel" id="fg-tipo">
                 <span class="fl">Spedizione</span>
-                <div class="select-wrapper">
-                    <select class="filter-select" id="fTipo"><option value="">Tutti</option></select>
+                <div class="sel-val" id="sv-tipo">
+                    <span id="sv-tipo-txt">Tutti</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
+                <select id="fTipo" onchange="syncSelVal('tipo'); if(currentData){colVis={};render();}">
+                    <option value="">Tutti</option>
+                </select>
             </div>
-            <!-- Destino -->
-            <div class="fg" onclick="document.getElementById('fDestino').focus(); document.getElementById('fDestino').click()">
+
+            <!-- Destino select -->
+            <div class="fg-sel" id="fg-destino">
                 <span class="fl">Destino</span>
-                <div class="select-wrapper">
-                    <select class="filter-select" id="fDestino"><option value="">Tutti</option></select>
+                <div class="sel-val" id="sv-destino">
+                    <span id="sv-destino-txt">Tutti</span>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
+                <select id="fDestino" onchange="syncSelVal('destino'); if(currentData){colVis={};render();}">
+                    <option value="">Tutti</option>
+                </select>
             </div>
+
             <button class="btn-cerca" id="btnCerca" onclick="loadData()" disabled>🔍 Carica</button>
             <button class="btn-reset" onclick="resetFiltri()" title="Azzera filtri">✕</button>
         </div>
         <div class="topbar-right">
-            <div class="user-badge" id="userBadge" style="display:none;">
+            <div class="user-badge">
                 <div id="userAvatarWrap"></div>
                 <span id="userName">—</span>
             </div>
-            <button class="btn-logout" id="btnLogout" style="display:none;" onclick="signOut()">Esci</button>
+            <button class="btn-logout" onclick="signOut()">Esci</button>
         </div>
     </header>
 
-    <!-- ② INFOBAR: summary + tab buttons — Intestazione RIMOSSA -->
+    <!-- INFOBAR: summary + tab buttons — solo Carico e ODP -->
     <div class="infobar" id="infobar">
         <div class="ib-stats">
             <div class="ib-stat">
@@ -338,14 +350,14 @@ td.meta-col { font-size: 11px; color: #5a6a8a; font-weight: 500; }
             </div>
         </div>
         <div class="ib-div"></div>
-        <!-- Solo Carico e ODP — Intestazione rimossa -->
         <div class="ib-tabs">
+            <!-- Tab Carico attivo di default, Intestazione rimossa -->
             <button class="ib-tab active" data-tab="tc" onclick="switchTab('tc')">📦 Carico <span class="badge" id="cnt-tc">0</span></button>
             <button class="ib-tab" data-tab="to" onclick="switchTab('to')">🔢 ODP <span class="badge" id="cnt-to">0</span></button>
         </div>
     </div>
 
-    <!-- ③ SCROLL AREA -->
+    <!-- SCROLL AREA -->
     <div class="scroll-area">
         <div id="content">
             <div class="empty-state">
@@ -365,15 +377,14 @@ td.meta-col { font-size: 11px; color: #5a6a8a; font-weight: 500; }
 ================================================================ */
 var CLIENT_ID   = '256693770433-b1pjdpaglrh7827o6ln2s24802rcnshd.apps.googleusercontent.com';
 var FOLDER_ID   = '1dSm4qSDB2cZ5WhwDf_40TF-K7sjwStg4';
-// Intestazione inclusa nel parse ma NON mostrata come tab
 var SHEET_NAMES = ['Intestazione','Dettagli Carico','Dettagli ODP'];
 
 var TOKEN = null, currentData = null, currentDate = null;
-// activeTab ora inizia su 'tc' (Carico) — 'ti' rimossa
-var activeTab = 'tc';
 
-// Flag: autenticazione richiesta solo per lo Storico
-var authInitiated = false;
+/* ================================================================
+   activeTab: default = 'tc' (Carico), Intestazione rimossa
+================================================================ */
+var activeTab = 'tc';
 
 /* ================================================================
    COLUMN VISIBILITY
@@ -382,13 +393,14 @@ var colVis = {};
 
 function nc(s) { return String(s||'').toLowerCase().replace(/[_\s\-]/g,''); }
 
-// Colonne visibili di default (nomi normalizzati)
-// Carico: aggiunta commessa, AWB (visibile=false), tipo spedizione dal foglio Intestazione
+/* Colonne visibili di default — Intestazione non più tab, rimane
+   come sorgente dati extra per Carico e ODP.
+   Per Carico: aggiunge Commessa, AWB(nascosto), TipoSpedizione da Intestazione.
+   Le colonne toggleabili sono solo quelle di file + le extra. */
 var COL_DEF = {
-    'dettaglicarico': ['__dest__','__commessa__','__tipospedizione__','linenum','imballo','qty','quantity','altezzacm','larghezzacm','profonditacm'],
-    'dettagliodp':    ['__dest__','__commessa__','__tipospedizione__','linenum','odp','numeroodp']
+    'dettaglicarico': ['__dest__','linenum','imballo','qty','quantity','altezzacm','larghezzacm','profonditacm'],
+    'dettagliodp':    ['__dest__','linenum','odp','numeroodp']
 };
-// AWB nascosto di default: non è in COL_DEF, quindi parte off
 
 function initColVis(sheetName, headers, hasDestCol) {
     if (colVis[sheetName]) return;
@@ -396,17 +408,14 @@ function initColVis(sheetName, headers, hasDestCol) {
     var defs = COL_DEF[key] || [];
     var h1 = (headers && headers[1]) ? headers[1] : [];
     var arr = [];
-
-    // Colonne sintetiche da intestazione (Destino, Commessa, Tipo Spedizione, AWB)
-    if (hasDestCol) {
-        arr.push(defs.indexOf('__dest__') >= 0);           // 0 = Destino
-        arr.push(defs.indexOf('__commessa__') >= 0);       // 1 = Commessa
-        arr.push(defs.indexOf('__tipospedizione__') >= 0); // 2 = Tipo Spedizione
-        arr.push(false);                                    // 3 = AWB nascosto di default
-    }
-    h1.forEach(function(h) {
-        arr.push(defs.indexOf(nc(h)) >= 0);
-    });
+    // slot 0 = colonna Destino extra
+    if (hasDestCol) arr.push(defs.indexOf('__dest__') >= 0);
+    // slot 1 = Commessa extra (solo Carico e ODP)
+    arr.push(true);  // Commessa visibile
+    // slot 2 = TipoSpedizione extra
+    arr.push(true);
+    // poi le colonne del file (skippa DocNum che è index 0)
+    h1.forEach(function(h) { arr.push(defs.indexOf(nc(h)) >= 0); });
     colVis[sheetName] = arr;
 }
 
@@ -416,65 +425,91 @@ function toggleCol(sheetName, colIdx) {
     reRenderActive();
 }
 
-// Toggle pannello colonne (click su "...")
-function toggleColPanel(sheetName) {
-    var panelId = 'ctpanel-' + sheetName.replace(/\s/g,'');
-    var btnId   = 'cttrig-'  + sheetName.replace(/\s/g,'');
-    var panel = document.getElementById(panelId);
+/* ================================================================
+   TOGGLE PANNELLO COLONNE
+================================================================ */
+function toggleCtPanel(btnId, panelId) {
     var btn   = document.getElementById(btnId);
-    if (!panel) return;
-    var isOpen = panel.classList.contains('show');
-    // Chiudi tutti gli altri pannelli
-    document.querySelectorAll('.ct-panel').forEach(function(p){ p.classList.remove('show'); });
-    document.querySelectorAll('.ct-trigger').forEach(function(b){ b.classList.remove('open'); });
-    if (!isOpen) {
-        panel.classList.add('show');
-        if (btn) btn.classList.add('open');
-    }
+    var panel = document.getElementById(panelId);
+    if (!btn || !panel) return;
+    var isOpen = panel.classList.contains('open');
+    panel.classList.toggle('open', !isOpen);
+    btn.classList.toggle('open', !isOpen);
+    btn.querySelector('.ct-arrow').textContent = isOpen ? '▾' : '▴';
 }
 
-// Chiudi pannelli colonne cliccando fuori
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.col-toggle-wrap')) {
-        document.querySelectorAll('.ct-panel').forEach(function(p){ p.classList.remove('show'); });
-        document.querySelectorAll('.ct-trigger').forEach(function(b){ b.classList.remove('open'); });
-    }
-});
+/* ================================================================
+   SYNC VISUAL VALUE per select
+================================================================ */
+function syncSelVal(key) {
+    var map = { plant:'fPlant', commessa:'fCommessa', tipo:'fTipo', destino:'fDestino' };
+    var phMap = { plant:'Tutti', commessa:'Tutte', tipo:'Tutti', destino:'Tutti' };
+    var sel = document.getElementById(map[key]);
+    var span = document.getElementById('sv-' + key + '-txt');
+    if (sel && span) span.textContent = sel.value || phMap[key];
+}
 
 /* ================================================================
-   AUTH — lazy: solo quando si accede allo Storico
-   (rimosse dal codice le chiamate all'auth all'avvio)
+   INIT — NON fa login automatico; attende che l'utente interagisca
 ================================================================ */
 window.onload = function () {
-    // Apre direttamente l'app senza richiedere login
-    document.getElementById('appShell').style.display = 'flex';
-    document.getElementById('loginScreen').style.display = 'none';
-    // Carica la lista date (non richiede auth per la topbar filtri)
-    // ma i dati richiedono token → il pulsante Carica resterà disabilitato
-    // finché non si fa login via tab Storico
-    waitGsi(false);
+    /* Mostra subito l'app shell (senza dati), login solo su richiesta.
+       Se c'è una sessione salvata la usiamo per ripristinare l'utente. */
+    var saved = getSaved();
+    if (saved) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appShell').style.display   = 'flex';
+        setUserUI(saved.name, saved.picture);
+    } else {
+        /* Mostra direttamente l'app shell senza login obbligatorio.
+           I pulsanti "Carica" e le funzionalità Drive richiederanno il token. */
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appShell').style.display   = 'flex';
+        document.getElementById('btnCerca').disabled = true; // disabilitato finché non loggato
+    }
+    waitGsi();
 };
 
 var tokenClient;
-function waitGsi(doAuth) {
-    if (typeof google === 'undefined') { setTimeout(function(){ waitGsi(doAuth); }, 150); return; }
+var gsiReady = false;
+
+function waitGsi() {
+    if (typeof google === 'undefined') { setTimeout(waitGsi, 150); return; }
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         callback: onToken
     });
-    if (doAuth) {
-        var saved = getSaved();
-        tokenClient.requestAccessToken({ prompt: '', login_hint: (saved && saved.email) ? saved.email : '' });
+    gsiReady = true;
+    var saved = getSaved();
+    if (saved && saved.email) {
+        /* Rinnova silenziosamente il token se c'era una sessione */
+        tokenClient.requestAccessToken({ prompt: '', login_hint: saved.email });
+    }
+    /* Abilita il bottone Google nella topbar se non ancora loggati */
+    updateLoginBtn();
+}
+
+function updateLoginBtn() {
+    /* Se non c'è token mostra un piccolo bottone "Accedi" nella topbar */
+    if (!TOKEN) {
+        var tb = document.querySelector('.topbar-right');
+        if (tb && !document.getElementById('btn-topbar-login')) {
+            var btn = document.createElement('button');
+            btn.id = 'btn-topbar-login';
+            btn.className = 'btn-cerca';
+            btn.style.background = 'rgba(255,255,255,.25)';
+            btn.innerHTML = '🔑 Accedi';
+            btn.onclick = function() { signIn(); };
+            tb.insertBefore(btn, tb.firstChild);
+        }
     }
 }
 
-// Chiamato solo quando utente clicca "Accedi" nel banner lazy o ha già un token salvato
+/* signIn esplicito — chiamato solo dal bottone utente */
 function signIn() {
-    document.getElementById('loginScreen').style.display = 'none';
-    if (!tokenClient) { waitGsi(true); return; }
-    var saved = getSaved();
-    tokenClient.requestAccessToken({ prompt: 'select_account', login_hint: (saved && saved.email) ? saved.email : '' });
+    if (!gsiReady) { alert('Google Sign-In non ancora pronto, riprova tra un secondo.'); return; }
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
 function signOut() {
@@ -482,20 +517,21 @@ function signOut() {
     TOKEN = null; currentData = null;
     localStorage.removeItem('vdc_storico_session');
     document.getElementById('infobar').classList.remove('show');
-    document.getElementById('userBadge').style.display = 'none';
-    document.getElementById('btnLogout').style.display = 'none';
-    setContent('<div class="empty-state"><span class="empty-icon">🔍</span><div class="empty-title">Nessun dato caricato</div><div class="empty-sub">Seleziona la data e premi Carica</div></div>');
+    /* Svuota i dati ma resta nell'app shell */
+    setContent('<div class="empty-state"><span class="empty-icon">🔐</span><div class="empty-title">Sessione terminata</div><div class="empty-sub">Premi "Accedi" per ricaricare</div></div>');
+    document.getElementById('btnCerca').disabled = true;
+    setUserUI('—', '');
+    updateLoginBtn();
 }
 
 function onToken(resp) {
     if (resp.error) { return; }
     TOKEN = resp.access_token;
-    document.getElementById('userBadge').style.display = 'flex';
-    document.getElementById('btnLogout').style.display = 'block';
+    /* Rimuovi bottone login topbar se presente */
+    var lb = document.getElementById('btn-topbar-login');
+    if (lb) lb.remove();
     loadUserInfo();
     loadDates();
-    // Se l'utente era in attesa della tab Storico, carica i dati automaticamente
-    if (authInitiated) { authInitiated = false; loadData(); }
 }
 
 /* ================================================================
@@ -522,8 +558,6 @@ function setUserUI(name, picture) {
         img.onerror = function () { wrap.innerHTML = makeInitial(name); };
         wrap.appendChild(img);
     } else { wrap.innerHTML = makeInitial(name); }
-    document.getElementById('userBadge').style.display = 'flex';
-    document.getElementById('btnLogout').style.display = 'block';
 }
 function makeInitial(str) { return '<div class="user-avatar-fallback">' + ((str||'?').trim().charAt(0).toUpperCase()) + '</div>'; }
 
@@ -562,24 +596,20 @@ function parseDate(str) {
 }
 
 document.getElementById('fDate').addEventListener('input', function () {
+    if (!TOKEN) { signIn(); return; }
     document.getElementById('btnCerca').disabled = !parseDate(this.value);
 });
 
 /* ================================================================
    CARICA DATI
-   Se non autenticato → mostra banner login lazy
 ================================================================ */
 function loadData() {
-    // Se non abbiamo token, mostra il banner di login lazy
-    if (!TOKEN) {
-        showLazyLogin();
-        return;
-    }
-
+    if (!TOKEN) { signIn(); return; }
     var dateStr = parseDate(document.getElementById('fDate').value);
     if (!dateStr) return;
     currentDate = dateStr; currentData = null;
     colVis = {};
+    activeTab = 'tc'; // reset al tab Carico
 
     document.getElementById('infobar').classList.remove('show');
     setContent(spinHtml('Ricerca file per ' + fmtD(dateStr) + '…'));
@@ -618,23 +648,6 @@ function loadData() {
     });
 }
 
-/* Banner login lazy (appare dentro #content quando si preme Carica senza auth) */
-function showLazyLogin() {
-    setContent(
-        '<div id="lazyLoginBanner" class="show">' +
-        '<span class="lazy-icon">🔐</span>' +
-        '<div class="lazy-title">Accesso richiesto</div>' +
-        '<div class="lazy-sub">Per visualizzare lo storico spedizioni è necessario accedere con Google.</div>' +
-        '<button class="btn-google" style="max-width:280px;margin:0 auto;" onclick="signIn()">' +
-        '<svg viewBox="0 0 24 24" style="width:18px;height:18px;flex-shrink:0"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>' +
-        'Accedi con Google' +
-        '</button>' +
-        '</div>'
-    );
-    // Dopo login riprende il caricamento automaticamente
-    authInitiated = true;
-}
-
 /* ================================================================
    RENDER
 ================================================================ */
@@ -655,12 +668,11 @@ function render() {
         ok[norm(r[0])] = true;
     });
 
-    // Intestazione esclusa dalla vista ma usata per dati ausiliari
+    /* Intestazione non è più un tab ma serve come sorgente filtro */
+    var fInt = currentData['Intestazione'].rows.filter(function (r) { return ok[norm(r[0])]; });
     var fCar = currentData['Dettagli Carico'].rows.filter(function (r) { return ok[norm(r[0])]; });
     var fOdp = currentData['Dettagli ODP'].rows.filter(function (r) { return ok[norm(r[0])]; });
-    var fInt = currentData['Intestazione'].rows.filter(function (r) { return ok[norm(r[0])]; });
 
-    // Aggiorna infobar
     document.getElementById('sDoc').textContent = fInt.length;
     document.getElementById('sCar').textContent = fCar.length;
     document.getElementById('sOdp').textContent = fOdp.length;
@@ -668,27 +680,25 @@ function render() {
     document.getElementById('cnt-to').textContent = fOdp.length;
     document.getElementById('infobar').classList.add('show');
 
-    // Mappa destino, commessa, tipo spedizione, AWB per docnum
+    /* Mappa DocNum → { destino, commessa, tipoSped, awb } da Intestazione */
     var metaMap = {};
     currentData['Intestazione'].rows.forEach(function (r) {
-        var dn = norm(r[0]);
-        metaMap[dn] = {
-            destino:        String(r[8]||'').trim(),
-            commessa:       String(r[7]||'').trim(),
-            tipoSpedizione: String(r[6]||'').trim(),
-            awb:            String(r[3]||'').trim()   // AWB — col indice 3 (U_AWB)
+        metaMap[norm(r[0])] = {
+            destino:   String(r[8]||'').trim(),
+            commessa:  String(r[7]||'').trim(),
+            tipoSped:  String(r[6]||'').trim(),
+            awb:       String(r[3]||'').trim()   // colonna AWB (index 3)
         };
     });
 
-    // Inizializza visibilità colonne
     initColVis('Dettagli Carico', currentData['Dettagli Carico'].headers, true);
     initColVis('Dettagli ODP',    currentData['Dettagli ODP'].headers,    true);
 
     var html = '';
     html += '<div id="panel-tc" class="tab-panel' + (activeTab==='tc'?' on':'') + '">'
-          + buildPanel('Dettagli Carico', currentData['Dettagli Carico'].headers, fCar, false, metaMap, fCar.length) + '</div>';
+          + buildPanel('Dettagli Carico', currentData['Dettagli Carico'].headers, fCar, metaMap, fCar.length) + '</div>';
     html += '<div id="panel-to" class="tab-panel' + (activeTab==='to'?' on':'') + '">'
-          + buildPanel('Dettagli ODP',    currentData['Dettagli ODP'].headers,    fOdp, false, metaMap, fOdp.length) + '</div>';
+          + buildPanel('Dettagli ODP',    currentData['Dettagli ODP'].headers,    fOdp, metaMap, fOdp.length) + '</div>';
 
     setContent(html);
     document.querySelectorAll('.ib-tab').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === activeTab); });
@@ -715,60 +725,55 @@ function reRenderActive() {
         ok[norm(r[0])] = true;
     });
     var rows = currentData[sn].rows.filter(function (r) { return ok[norm(r[0])]; });
-
     var metaMap = {};
     currentData['Intestazione'].rows.forEach(function (r) {
-        var dn = norm(r[0]);
-        metaMap[dn] = {
-            destino:        String(r[8]||'').trim(),
-            commessa:       String(r[7]||'').trim(),
-            tipoSpedizione: String(r[6]||'').trim(),
-            awb:            String(r[3]||'').trim()
+        metaMap[norm(r[0])] = {
+            destino:  String(r[8]||'').trim(),
+            commessa: String(r[7]||'').trim(),
+            tipoSped: String(r[6]||'').trim(),
+            awb:      String(r[3]||'').trim()
         };
     });
-    panel.innerHTML = buildPanel(sn, currentData[sn].headers, rows, false, metaMap, rows.length);
+    panel.innerHTML = buildPanel(sn, currentData[sn].headers, rows, metaMap, rows.length);
 }
 
 /* ================================================================
    BUILD PANEL
-   hasDestCol = true per Carico e ODP
-   metaMap    = { docnum: { destino, commessa, tipoSpedizione, awb } }
-
-   Colonne sintetiche (visIdx 0-3 quando hasDestCol):
-     0 = Destino
-     1 = Commessa
-     2 = Tipo Spedizione
-     3 = AWB (nascosto di default)
-   Poi le colonne del file (visIdx 4+)
+   Extra colonne da Intestazione in Carico e ODP:
+     slot 0 → Destino     (toggleabile, indice 0)
+     slot 1 → Commessa    (toggleabile, indice 1)
+     slot 2 → Tipo Sped.  (toggleabile, indice 2)
+     slot 3+ → colonne file (skippa DocNum = col 0)
 ================================================================ */
-function buildPanel(sheetName, headers, rows, isInt, metaMap, total) {
+function buildPanel(sheetName, headers, rows, metaMap, total) {
     var h1 = (headers && headers[1]) ? headers[1] : [];
-    var hasDestCol = !isInt;
     var vis = colVis[sheetName] || [];
 
-    var snSafe = sheetName.replace(/[\s']/g, '_');
+    /* Nomi univoci per btn e panel toggle */
+    var safeId = sheetName.replace(/\s/g,'_');
+    var btnId   = 'ct-btn-'   + safeId;
+    var panelId = 'ct-panel-' + safeId;
+    var snEsc   = sheetName.replace(/'/g,"\\'");
 
-    // ---- Col toggle trigger + pannello ----
+    /* ---- Col toggle button + panel (chiuso di default) ---- */
     var togHtml = '<div class="col-toggle-wrap">';
-    togHtml += '<button class="ct-trigger" id="cttrig-' + snSafe + '" onclick="toggleColPanel(\'' + snSafe + '\')" title="Mostra/nascondi colonne">⚙️ Colonne <span style="font-size:9px;opacity:.6;">▾</span></button>';
-    togHtml += '<div class="ct-panel" id="ctpanel-' + snSafe + '">';
-    togHtml += '<div class="ct-row"><span class="ct-label">Colonne visibili</span>';
+    togHtml += '<button class="ct-toggle-btn" id="' + btnId + '" onclick="toggleCtPanel(\'' + btnId + '\',\'' + panelId + '\')">'
+             + '☰ Colonne <span class="ct-arrow">▾</span></button>';
+    togHtml += '<div class="ct-panel" id="' + panelId + '"><div class="ct-row"><span class="ct-label">Visibili</span>';
 
-    // Bottoni colonne sintetiche
-    if (hasDestCol) {
-        var labels = ['📍 Destino','📋 Commessa','🚚 Tipo Sped.','✈️ AWB'];
-        for (var si = 0; si < 4; si++) {
-            var isOnS = vis[si] !== false && vis[si] !== undefined ? vis[si] : (si < 3);
-            togHtml += '<button class="ct-btn' + (isOnS?' on':'') + '" onclick="toggleCol(\'' + snSafe + '\',' + si + ')">' + labels[si] + '</button>';
-        }
-    }
-    // Bottoni colonne del file
+    /* Bottoni extra */
+    togHtml += '<button class="ct-btn dest' + (vis[0]!==false?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',0)">📍 Destino</button>';
+    togHtml += '<button class="ct-btn' + (vis[1]!==false?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',1)">🏷 Commessa</button>';
+    togHtml += '<button class="ct-btn' + (vis[2]!==false?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',2)">🚚 Tipo Sped.</button>';
+
+    /* Bottoni colonne file (indice nel vis = 3 + ci) — skippa DocNum (ci=0) */
     h1.forEach(function(hname, ci) {
-        var visIdx = hasDestCol ? ci + 4 : ci;
-        var isOn2 = vis[visIdx] !== false && vis[visIdx] !== undefined ? vis[visIdx] : false;
-        togHtml += '<button class="ct-btn' + (isOn2?' on':'') + '" onclick="toggleCol(\'' + snSafe + '\',' + visIdx + ')">' + esc(String(hname||'')) + '</button>';
+        if (ci === 0) return; // DocNum nascosto
+        var visIdx = 3 + ci;
+        var isOn = vis[visIdx] !== false;
+        togHtml += '<button class="ct-btn' + (isOn?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',' + visIdx + ')">' + esc(String(hname||'')) + '</button>';
     });
-    togHtml += '</div></div></div>'; // ct-row, ct-panel, col-toggle-wrap
+    togHtml += '</div></div></div>'; /* chiude ct-row, ct-panel, col-toggle-wrap */
 
     if (!rows.length) {
         return togHtml + '<div class="empty-state"><span class="empty-icon">📭</span><div class="empty-title">Nessun dato</div><div class="empty-sub">Prova a modificare i filtri</div></div>';
@@ -781,58 +786,42 @@ function buildPanel(sheetName, headers, rows, isInt, metaMap, total) {
 
     var tHtml = '<div class="tbl-card"><div class="tbl-wrap"><table><thead>';
 
-    // Header riga 1 (tecnica)
-    if (h0.length) {
-        tHtml += '<tr>';
-        if (hasDestCol) {
-            var tech = ['DESTINO','COMMESSA','TIPO_SPED','AWB'];
-            for (var ts = 0; ts < 4; ts++) {
-                if (!getVis(vis, ts, ts < 3)) continue;
-                tHtml += '<th>' + tech[ts] + '</th>';
-            }
-        }
-        for (var c = 0; c < nc_cnt; c++) {
-            var vi1 = hasDestCol ? c + 4 : c;
-            if (!getVis(vis, vi1, false)) continue;
-            tHtml += '<th>' + esc(String(h0[c]||'')) + '</th>';
-        }
-        tHtml += '</tr>';
+    /* Header riga 1 (tecnico) */
+    tHtml += '<tr>';
+    if (vis[0] !== false) tHtml += '<th class="hdr-extra">DESTINO</th>';
+    if (vis[1] !== false) tHtml += '<th class="hdr-extra">COMMESSA</th>';
+    if (vis[2] !== false) tHtml += '<th class="hdr-extra">TIPO_SPED</th>';
+    for (var c = 1; c < nc_cnt; c++) { /* salta col 0 = DocNum */
+        var vi1 = 3 + c;
+        if (vis[vi1] === false) continue;
+        tHtml += '<th>' + esc(String(h0[c]||'')) + '</th>';
     }
-    // Header riga 2 (leggibile)
-    if (h1.length) {
-        tHtml += '<tr>';
-        if (hasDestCol) {
-            var readable = ['Destino','Commessa','Tipo Sped.','AWB'];
-            for (var rs = 0; rs < 4; rs++) {
-                if (!getVis(vis, rs, rs < 3)) continue;
-                tHtml += '<th>' + readable[rs] + '</th>';
-            }
-        }
-        for (var c = 0; c < nc_cnt; c++) {
-            var vi2 = hasDestCol ? c + 4 : c;
-            if (!getVis(vis, vi2, false)) continue;
-            tHtml += '<th>' + esc(String(h1[c]||'')) + '</th>';
-        }
-        tHtml += '</tr>';
+    tHtml += '</tr>';
+
+    /* Header riga 2 (leggibile) */
+    tHtml += '<tr>';
+    if (vis[0] !== false) tHtml += '<th class="hdr-extra">Destino</th>';
+    if (vis[1] !== false) tHtml += '<th class="hdr-extra">Commessa</th>';
+    if (vis[2] !== false) tHtml += '<th class="hdr-extra">Tipo Sped.</th>';
+    for (var c = 1; c < nc_cnt; c++) {
+        var vi2 = 3 + c;
+        if (vis[vi2] === false) continue;
+        tHtml += '<th>' + esc(String(h1[c]||'')) + '</th>';
     }
-    tHtml += '</thead><tbody>';
+    tHtml += '</tr></thead><tbody>';
 
     rows.forEach(function (row) {
-        var dn = norm(row[0]);
-        var meta = (metaMap && metaMap[dn]) ? metaMap[dn] : { destino:'', commessa:'', tipoSpedizione:'', awb:'' };
+        var dn   = norm(row[0]);
+        var meta = metaMap[dn] || { destino:'', commessa:'', tipoSped:'', awb:'' };
         tHtml += '<tr>';
-        if (hasDestCol) {
-            var vals = [meta.destino, meta.commessa, meta.tipoSpedizione, meta.awb];
-            for (var ms = 0; ms < 4; ms++) {
-                if (!getVis(vis, ms, ms < 3)) continue;
-                tHtml += '<td class="meta-col">' + esc(vals[ms]) + '</td>';
-            }
-        }
-        for (var c = 0; c < nc_cnt; c++) {
-            var vi3 = hasDestCol ? c + 4 : c;
-            if (!getVis(vis, vi3, false)) continue;
+        if (vis[0] !== false) tHtml += '<td class="dest-col">'    + esc(meta.destino)  + '</td>';
+        if (vis[1] !== false) tHtml += '<td class="hdr-extra">'   + esc(meta.commessa) + '</td>';
+        if (vis[2] !== false) tHtml += '<td class="hdr-extra">'   + esc(meta.tipoSped) + '</td>';
+        for (var c = 1; c < nc_cnt; c++) {
+            var vi3 = 3 + c;
+            if (vis[vi3] === false) continue;
             var v = row[c] !== undefined ? row[c] : '';
-            tHtml += '<td' + (c===0?' class="dn"':'') + '>' + esc(String(v===null||v===undefined?'':v)) + '</td>';
+            tHtml += '<td>' + esc(String(v===null||v===undefined?'':v)) + '</td>';
         }
         tHtml += '</tr>';
     });
@@ -841,14 +830,8 @@ function buildPanel(sheetName, headers, rows, isInt, metaMap, total) {
     return togHtml + infoHtml + tHtml;
 }
 
-// Helper: legge visibilità con fallback
-function getVis(vis, idx, defaultVal) {
-    if (vis[idx] === undefined) return defaultVal;
-    return vis[idx] !== false;
-}
-
 /* ================================================================
-   TABS — solo tc e to
+   TABS
 ================================================================ */
 function switchTab(id) {
     activeTab = id;
@@ -872,9 +855,8 @@ function populateFilters(intRows) {
     fillSel('fCommessa', commesse, 'Tutte');
     fillSel('fTipo',     tipi,     'Tutti');
     fillSel('fDestino',  destini,  'Tutti');
-    ['fPlant','fCommessa','fTipo','fDestino'].forEach(function (id) {
-        document.getElementById(id).onchange = function () { if (currentData) { colVis = {}; render(); } };
-    });
+    /* Sync visivi dopo populate */
+    ['plant','commessa','tipo','destino'].forEach(syncSelVal);
 }
 
 function fillSel(id, obj, ph) {
@@ -890,6 +872,7 @@ function fillSel(id, obj, ph) {
 
 function resetFiltri() {
     ['fPlant','fCommessa','fTipo','fDestino'].forEach(function (id) { document.getElementById(id).value = ''; });
+    ['plant','commessa','tipo','destino'].forEach(syncSelVal);
     if (currentData) { colVis = {}; render(); }
 }
 
