@@ -7,12 +7,15 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+/* ================================================================
+   BASE
+================================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; background: #dfe4ee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #1c1c1e; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
 
 /* ---- LOGIN ---- */
 #loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #dfe4ee; }
-.login-card { background: white; border-radius: 20px; padding: 40px 32px; text-align: center; max-width: 340px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,.12); }
+.login-card { background: white; border-radius: 20px; padding: 40px 32px; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,.12); }
 .login-icon { font-size: 48px; margin-bottom: 10px; display: block; }
 .login-title { font-size: 20px; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
 .login-sub { font-size: 12px; color: #8e8e93; margin-bottom: 28px; }
@@ -25,7 +28,7 @@ html, body { height: 100%; background: #dfe4ee; font-family: -apple-system, Blin
 #appShell { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
 
 /* ================================================================
-   TOPBAR
+   TOPBAR — logo + filtri full-width + utente
 ================================================================ */
 .topbar {
     background: linear-gradient(135deg, #1e3a5f 0%, #2d5986 100%);
@@ -39,11 +42,13 @@ html, body { height: 100%; background: #dfe4ee; font-family: -apple-system, Blin
 }
 .topbar-logo { font-size: 15px; font-weight: 800; color: white; letter-spacing: .2px; flex-shrink: 0; white-space: nowrap; padding: 8px 0; }
 .topbar-logo span { opacity: .6; font-weight: 500; }
+
+/* FILTER BAR — si espande per riempire tutto lo spazio */
 .filter-bar { display: flex; align-items: center; gap: 5px; flex: 1; flex-wrap: wrap; padding: 5px 0; min-width: 0; }
-.fg { display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,.12); border-radius: 7px; padding: 4px 8px; flex: 1; min-width: 80px; transition: background .15s; }
+.fg { display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,.12); border-radius: 7px; padding: 4px 8px; cursor: pointer; transition: background .15s; flex: 1; min-width: 80px; }
 .fg:hover { background: rgba(255,255,255,.2); }
 .fl { font-size: 9px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; }
-.filter-input, .filter-select { border: none; outline: none; font-size: 12px; font-weight: 600; color: white; background: transparent; width: 100%; font-family: inherit; -webkit-appearance: none; padding: 0; cursor: pointer; }
+.filter-input, .filter-select { border: none; outline: none; font-size: 12px; font-weight: 600; color: white; background: transparent; width: 100%; font-family: inherit; -webkit-appearance: none; padding: 0; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .filter-input::placeholder { color: rgba(255,255,255,.35); }
 option { background: #1e3a5f; color: white; }
 .btn-cerca { background: rgba(255,255,255,.2); color: white; border: 1.5px solid rgba(255,255,255,.35); border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0; transition: background .15s; }
@@ -51,6 +56,8 @@ option { background: #1e3a5f; color: white; }
 .btn-cerca:disabled { opacity: .35; cursor: not-allowed; }
 .btn-reset { background: none; color: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.2); border-radius: 7px; padding: 6px 9px; font-size: 12px; cursor: pointer; font-family: inherit; flex-shrink: 0; transition: all .15s; }
 .btn-reset:hover { color: white; border-color: rgba(255,255,255,.4); }
+
+/* Utente */
 .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 5px 0; }
 .user-badge { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border-radius: 20px; padding: 3px 9px 3px 5px; font-size: 11px; color: rgba(255,255,255,.85); }
 .user-avatar { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
@@ -59,10 +66,10 @@ option { background: #1e3a5f; color: white; }
 .btn-logout:hover { background: rgba(255,255,255,.22); color: white; }
 
 /* ================================================================
-   INFOBAR — summary + tabs
+   INFOBAR — summary + tabs in una barra compatta
 ================================================================ */
 .infobar {
-    display: none;
+    display: none; /* mostrata dopo load */
     background: white;
     border-bottom: 1px solid #d1d8e8;
     padding: 0 12px;
@@ -73,12 +80,18 @@ option { background: #1e3a5f; color: white; }
     box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 .infobar.show { display: flex; }
+
+/* Summary numbers */
 .ib-stats { display: flex; gap: 0; flex-shrink: 0; }
 .ib-stat { display: flex; flex-direction: column; align-items: center; padding: 6px 14px 6px 0; margin-right: 14px; border-right: 1px solid #e5e5ea; }
 .ib-stat:last-of-type { border-right: none; margin-right: 0; padding-right: 0; }
 .ib-val { font-size: 16px; font-weight: 800; color: #1e3a5f; line-height: 1; }
 .ib-lbl { font-size: 9px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; margin-top: 1px; }
+
+/* Divider */
 .ib-div { width: 1px; background: #e5e5ea; align-self: stretch; margin: 6px 10px; flex-shrink: 0; }
+
+/* Tab buttons */
 .ib-tabs { display: flex; gap: 2px; flex: 1; }
 .ib-tab { flex: 1; padding: 6px 8px; border: none; background: none; font-size: 12px; font-weight: 600; color: #8e8e93; cursor: pointer; border-bottom: 2.5px solid transparent; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 3px; font-family: inherit; white-space: nowrap; }
 .ib-tab.active { color: #007aff; border-bottom-color: #007aff; }
@@ -90,31 +103,18 @@ option { background: #1e3a5f; color: white; }
 ================================================================ */
 .scroll-area { flex: 1; overflow-y: auto; padding: 8px 10px 16px; -webkit-overflow-scrolling: touch; min-height: 0; }
 
-/* ---- PANEL TOOLBAR — bottone visualizza colonne ---- */
-.panel-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
-.results-info { font-size: 11px; color: #8e8e93; }
-.btn-toggle-cols {
-    background: white; border: 1px solid #d1d8e8; border-radius: 20px;
-    padding: 4px 10px; font-size: 11px; font-weight: 600; color: #636366;
-    cursor: pointer; font-family: inherit; display: flex; align-items: center;
-    gap: 5px; transition: all .15s; white-space: nowrap;
-}
-.btn-toggle-cols:hover { border-color: #007aff; color: #007aff; }
-.btn-toggle-cols .arrow { transition: transform .2s; display: inline-block; }
-.btn-toggle-cols.open .arrow { transform: rotate(180deg); }
-
-/* ---- COL TOGGLE ROW (nascosta di default) ---- */
-.col-toggle-wrap {
-    background: white; border-radius: 10px; border: 1px solid #d1d8e8;
-    padding: 8px 10px; margin-bottom: 6px;
-    display: none; /* nascosta */
-    flex-wrap: wrap; gap: 4px; align-items: center;
-}
-.col-toggle-wrap.show { display: flex; }
-.ct-label { font-size: 10px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; flex-shrink: 0; margin-right: 2px; width: 100%; margin-bottom: 2px; }
-.ct-btn { border: 1px solid #d1d8e8; background: #f4f6fa; border-radius: 20px; padding: 3px 9px; font-size: 11px; font-weight: 600; color: #8e8e93; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+/* ---- COL TOGGLE ROW ---- */
+.col-toggle-wrap { margin-bottom: 6px; }
+.ct-row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.ct-label { font-size: 10px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: .4px; flex-shrink: 0; margin-right: 2px; }
+.ct-btn { border: 1px solid #d1d8e8; background: white; border-radius: 20px; padding: 3px 9px; font-size: 11px; font-weight: 600; color: #8e8e93; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
 .ct-btn:hover { border-color: #007aff; color: #007aff; }
 .ct-btn.on { background: #007aff; border-color: #007aff; color: white; }
+.ct-btn.dest { background: #e8f4ff; border-color: #b3d7ff; color: #007aff; }
+.ct-btn.dest.on { background: #007aff; color: white; }
+
+/* ---- RESULTS INFO ---- */
+.results-info { font-size: 11px; color: #8e8e93; text-align: right; padding: 2px 2px 5px; }
 
 /* ---- TABLE ---- */
 .tab-panel { display: none; }
@@ -128,14 +128,14 @@ thead th:last-child { border-right: none !important; }
 tbody tr { border-bottom: .5px solid #e8ecf2; transition: background .1s; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: rgba(0,122,255,.04); }
-td { padding: 7px 10px; border-right: .5px solid #ebeef4; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #1c1c1e; }
+td { padding: 7px 10px; border-right: .5px solid #ebeef4; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #1c1c1e; }
 td:last-child { border-right: none; }
 td.dn { font-size: 10px; color: #8e8e93; }
-td.dest-col { font-size: 11px; font-weight: 600; color: #1e3a5f; max-width: 150px; }
+td.dest-col { font-size: 11px; font-weight: 600; color: #1e3a5f; max-width: 140px; }
 
 /* ---- STATI ---- */
-.empty-state { text-align: center; padding: 40px 20px; color: #c7c7cc; }
-.empty-icon { font-size: 40px; margin-bottom: 8px; display: block; }
+.empty-state { text-align: center; padding: 36px 20px; color: #c7c7cc; }
+.empty-icon { font-size: 38px; margin-bottom: 8px; display: block; }
 .empty-title { font-weight: 600; color: #8e8e93; margin-bottom: 3px; font-size: 15px; }
 .empty-sub { font-size: 12px; }
 .loading-state { text-align: center; padding: 40px 20px; color: #8e8e93; font-size: 13px; }
@@ -146,18 +146,24 @@ td.dest-col { font-size: 11px; font-weight: 600; color: #1e3a5f; max-width: 150p
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #c1c8d8; border-radius: 2px; }
 
+/* ================================================================
+   RESPONSIVE
+================================================================ */
 @media (min-width: 768px) {
-    .topbar { flex-wrap: nowrap; }
+    .topbar { flex-wrap: nowrap; min-height: 46px; }
     .filter-bar { flex-wrap: nowrap; padding: 0; }
+    .fg { min-width: 0; }
 }
 @media (max-width: 600px) {
-    .fg { min-width: calc(33% - 5px); }
+    .fg { min-width: calc(33% - 4px); }
+    .ib-stat { padding: 5px 10px 5px 0; margin-right: 10px; }
+    .ib-val { font-size: 14px; }
 }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- ===== LOGIN ===== -->
 <div id="loginScreen">
     <div class="login-card">
         <span class="login-icon">📜</span>
@@ -171,9 +177,10 @@ td.dest-col { font-size: 11px; font-weight: 600; color: #1e3a5f; max-width: 150p
     </div>
 </div>
 
-<!-- APP -->
+<!-- ===== APP ===== -->
 <div id="appShell">
 
+    <!-- ① TOPBAR: logo + filtri full-width + utente -->
     <header class="topbar">
         <div class="topbar-logo">Storico <span>Sped.</span></div>
         <div class="filter-bar">
@@ -210,9 +217,13 @@ td.dest-col { font-size: 11px; font-weight: 600; color: #1e3a5f; max-width: 150p
         </div>
     </header>
 
-    <!-- INFOBAR: summary + 2 tab (Carico + ODP) -->
+    <!-- ② INFOBAR: summary + tab buttons (appare dopo load) -->
     <div class="infobar" id="infobar">
         <div class="ib-stats">
+            <div class="ib-stat">
+                <div class="ib-val" id="sDoc">0</div>
+                <div class="ib-lbl">Spedizioni</div>
+            </div>
             <div class="ib-stat">
                 <div class="ib-val" id="sCar">0</div>
                 <div class="ib-lbl">Righe Carico</div>
@@ -224,11 +235,13 @@ td.dest-col { font-size: 11px; font-weight: 600; color: #1e3a5f; max-width: 150p
         </div>
         <div class="ib-div"></div>
         <div class="ib-tabs">
-            <button class="ib-tab active" data-tab="tc" onclick="switchTab('tc')">📦 Dettagli Carico <span class="badge" id="cnt-tc">0</span></button>
-            <button class="ib-tab" data-tab="to" onclick="switchTab('to')">🔢 Dettagli ODP <span class="badge" id="cnt-to">0</span></button>
+            <button class="ib-tab active" data-tab="ti" onclick="switchTab('ti')">📋 Intestazione <span class="badge" id="cnt-ti">0</span></button>
+            <button class="ib-tab" data-tab="tc" onclick="switchTab('tc')">📦 Carico <span class="badge" id="cnt-tc">0</span></button>
+            <button class="ib-tab" data-tab="to" onclick="switchTab('to')">🔢 ODP <span class="badge" id="cnt-to">0</span></button>
         </div>
     </div>
 
+    <!-- ③ SCROLL AREA -->
     <div class="scroll-area">
         <div id="content">
             <div class="empty-state">
@@ -250,94 +263,55 @@ var CLIENT_ID   = '256693770433-b1pjdpaglrh7827o6ln2s24802rcnshd.apps.googleuser
 var FOLDER_ID   = '1dSm4qSDB2cZ5WhwDf_40TF-K7sjwStg4';
 var SHEET_NAMES = ['Intestazione','Dettagli Carico','Dettagli ODP'];
 
-var TOKEN = null, currentData = null, currentDate = null, activeTab = 'tc';
+var TOKEN = null, currentData = null, currentDate = null, activeTab = 'ti';
 
 /* ================================================================
-   COLONNE VISIBILI — definizioni default
-   Per Dettagli Carico aggiungiamo Commessa, TipoSpedizione, AWB come
-   colonne sintetiche (join da Intestazione), AWB nascosta di default
+   COLUMN VISIBILITY
 ================================================================ */
+// colVis[sheetName] = array di bool, un elemento per colonna
+// index 0 = colonna Destino extra (solo per non-int), poi le colonne del file
+var colVis = {};
 
-// Colonne "extra" da Intestazione aggiunte a Dettagli Carico
-// struttura: { key, label0, label1, visDefault }
-var EXTRA_COLS = [
-    { key: 'commessa',       label0: 'U_Commessa',       label1: 'Commessa',       visDefault: true  },
-    { key: 'tipoSped',       label0: 'U_TipoSpedizione', label1: 'Tipo Sped.',     visDefault: true  },
-    { key: 'awb',            label0: 'U_AWB',            label1: 'AWB',            visDefault: false }
-];
+// Normalizza nome colonna per confronto
+function nc(s) { return String(s||'').toLowerCase().replace(/[_\s\-]/g,''); }
 
-// Colonne default visibili per sheet (header row2 normalizzato)
-function nc(s) { return String(s||'').toLowerCase().replace(/[\s_\-]/g,''); }
-
-var COL_DEF_VIS = {
-    'dettaglicarico': ['destino','linenum','imballo','qty','quantity','altezzacm','larghezzacm','profonditacm','commessa','tiposped'],
-    'dettagliodp':    ['destino','linenum','odp','numeroodp']
+// Colonne visibili di default (nomi normalizzati)
+var COL_DEF = {
+    'intestazione':   ['businesspartner','awb','plant','tipospedizione','commessa','destino'],
+    'dettaglicarico': ['__dest__','linenum','imballo','qty','quantity','altezzacm','larghezzacm','profonditacm'],
+    'dettagliodp':    ['__dest__','linenum','odp','numeroodp']
 };
 
-// colVis[sheetId] = array bool
-var colVis = {};
-var colToggleOpen = { tc: false, to: false };
-
-function getColKey(sheetId) { return sheetId === 'tc' ? 'dettaglicarico' : 'dettagliodp'; }
-
-function initColVis(sheetId, headers) {
-    if (colVis[sheetId]) return;
-    var key = getColKey(sheetId);
-    var defs = COL_DEF_VIS[key] || [];
+function initColVis(sheetName, headers, hasDestCol) {
+    if (colVis[sheetName]) return; // già inizializzato
+    var key = nc(sheetName);
+    var defs = COL_DEF[key] || [];
     var h1 = (headers && headers[1]) ? headers[1] : [];
     var arr = [];
-
-    // Prima colonna = Destino extra (sempre presente, visibile per default)
-    arr.push(defs.indexOf('destino') >= 0);
-
-    if (sheetId === 'tc') {
-        // Colonne extra da Intestazione (Commessa, TipoSped, AWB)
-        EXTRA_COLS.forEach(function(ec) {
-            arr.push(defs.indexOf(ec.key) >= 0 && ec.visDefault);
-        });
-    }
-
-    // Colonne normali del file
+    if (hasDestCol) arr.push(defs.indexOf('__dest__') >= 0);
     h1.forEach(function(h) { arr.push(defs.indexOf(nc(h)) >= 0); });
-
-    colVis[sheetId] = arr;
+    colVis[sheetName] = arr;
 }
 
-function toggleColVis(sheetId, idx) {
-    if (!colVis[sheetId]) return;
-    colVis[sheetId][idx] = !colVis[sheetId][idx];
-    reRenderPanel(sheetId);
-}
-
-function toggleColPanel(sheetId) {
-    colToggleOpen[sheetId] = !colToggleOpen[sheetId];
-    var wrap = document.getElementById('ct-wrap-' + sheetId);
-    var btn  = document.getElementById('ct-btn-'  + sheetId);
-    if (wrap) wrap.classList.toggle('show', colToggleOpen[sheetId]);
-    if (btn)  btn.classList.toggle('open',  colToggleOpen[sheetId]);
+function toggleCol(sheetName, colIdx) {
+    if (!colVis[sheetName]) return;
+    colVis[sheetName][colIdx] = !colVis[sheetName][colIdx];
+    reRenderActive();
 }
 
 /* ================================================================
-   INIT — NON parte al load, solo se ?autostart=1
+   INIT / AUTH
 ================================================================ */
 window.onload = function () {
-    var params = new URLSearchParams(window.location.search);
-    if (params.get('autostart') === '1') {
-        initApp();
-    }
-    // altrimenti la pagina rimane sulla schermata login e aspetta il click
-};
-
-function initApp() {
     var saved = getSaved();
     if (saved) {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appShell').style.display   = 'flex';
         setUserUI(saved.name, saved.picture);
-        setContent(spinHtml('Connessione…'));
+        setContent(spinHtml('Connessione in corso…'));
     }
     waitGsi();
-}
+};
 
 var tokenClient;
 function waitGsi() {
@@ -427,7 +401,7 @@ function loadDates() {
         var pick = (dates.indexOf(todayStr) >= 0) ? todayStr : dates[0];
         document.getElementById('fDate').value = pick.substr(6,2) + '/' + pick.substr(4,2) + '/' + pick.substr(0,4);
         document.getElementById('btnCerca').disabled = false;
-        loadData();
+        loadData(); // ← auto-carica
     }).catch(function () {});
 }
 
@@ -450,7 +424,7 @@ function loadData() {
     var dateStr = parseDate(document.getElementById('fDate').value);
     if (!dateStr) return;
     currentDate = dateStr; currentData = null;
-    colVis = {}; colToggleOpen = { tc: false, to: false };
+    colVis = {}; // reset visibilità colonne al cambio data
 
     document.getElementById('infobar').classList.remove('show');
     setContent(spinHtml('Ricerca file per ' + fmtD(dateStr) + '…'));
@@ -490,7 +464,7 @@ function loadData() {
 }
 
 /* ================================================================
-   RENDER
+   RENDER — applica filtri, aggiorna infobar e contenuto
 ================================================================ */
 function render() {
     if (!currentData) return;
@@ -509,142 +483,48 @@ function render() {
         ok[norm(r[0])] = true;
     });
 
+    var fInt = currentData['Intestazione'].rows.filter(function (r) { return ok[norm(r[0])]; });
     var fCar = currentData['Dettagli Carico'].rows.filter(function (r) { return ok[norm(r[0])]; });
     var fOdp = currentData['Dettagli ODP'].rows.filter(function (r) { return ok[norm(r[0])]; });
 
+    // Aggiorna infobar
+    document.getElementById('sDoc').textContent = fInt.length;
     document.getElementById('sCar').textContent = fCar.length;
     document.getElementById('sOdp').textContent = fOdp.length;
+    document.getElementById('cnt-ti').textContent = fInt.length;
     document.getElementById('cnt-tc').textContent = fCar.length;
     document.getElementById('cnt-to').textContent = fOdp.length;
     document.getElementById('infobar').classList.add('show');
 
-    // Mappe da Intestazione per il join
-    var destiMap = {}, commessaMap = {}, tipoMap = {}, awbMap = {};
-    currentData['Intestazione'].rows.forEach(function (r) {
-        var dn = norm(r[0]);
-        destiMap[dn]    = String(r[8]||'').trim();
-        awbMap[dn]      = String(r[3]||'').trim();
-        tipoMap[dn]     = String(r[6]||'').trim();
-        commessaMap[dn] = String(r[7]||'').trim();
-    });
+    // Mappa destino per sheet di dettaglio
+    var destiMap = {};
+    currentData['Intestazione'].rows.forEach(function (r) { destiMap[norm(r[0])] = String(r[8]||'').trim(); });
 
-    initColVis('tc', currentData['Dettagli Carico'].headers);
-    initColVis('to', currentData['Dettagli ODP'].headers);
+    // Inizializza visibilità colonne se non ancora fatto
+    initColVis('Intestazione',    currentData['Intestazione'].headers,    false);
+    initColVis('Dettagli Carico', currentData['Dettagli Carico'].headers, true);
+    initColVis('Dettagli ODP',    currentData['Dettagli ODP'].headers,    true);
 
+    // Render pannelli
     var html = '';
+    html += '<div id="panel-ti" class="tab-panel' + (activeTab==='ti'?' on':'') + '">'
+          + buildPanel('Intestazione',    currentData['Intestazione'].headers,    fInt, true,  null,     fInt.length) + '</div>';
     html += '<div id="panel-tc" class="tab-panel' + (activeTab==='tc'?' on':'') + '">'
-          + buildPanel('tc', currentData['Dettagli Carico'].headers, fCar, destiMap, commessaMap, tipoMap, awbMap) + '</div>';
+          + buildPanel('Dettagli Carico', currentData['Dettagli Carico'].headers, fCar, false, destiMap, fCar.length) + '</div>';
     html += '<div id="panel-to" class="tab-panel' + (activeTab==='to'?' on':'') + '">'
-          + buildPanel('to', currentData['Dettagli ODP'].headers, fOdp, destiMap, null, null, null) + '</div>';
+          + buildPanel('Dettagli ODP',    currentData['Dettagli ODP'].headers,    fOdp, false, destiMap, fOdp.length) + '</div>';
 
     setContent(html);
     document.querySelectorAll('.ib-tab').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === activeTab); });
 }
 
-/* ================================================================
-   BUILD PANEL
-================================================================ */
-function buildPanel(sheetId, headers, rows, destiMap, commessaMap, tipoMap, awbMap) {
-    var isCarico = (sheetId === 'tc');
-    var h1 = (headers && headers[1]) ? headers[1] : [];
-    var h0 = (headers && headers[0]) ? headers[0] : [];
-    var vis = colVis[sheetId] || [];
-    var snEsc = sheetId;
-
-    // ---- Colonne extra per Dettagli Carico ----
-    // layout vis: [0]=Destino, [1]=Commessa, [2]=TipoSped, [3]=AWB, [4..]=colonne file
-    // per ODP: [0]=Destino, [1..]=colonne file
-    var extraOffset = isCarico ? 1 + EXTRA_COLS.length : 1; // quante colonne sintetiche prima delle colonne file
-
-    // ---- Col toggle row (nascosta) ----
-    var isOpen = colToggleOpen[sheetId] || false;
-    var togWrapHtml = '<div class="col-toggle-wrap' + (isOpen ? ' show' : '') + '" id="ct-wrap-' + snEsc + '">';
-    togWrapHtml += '<span class="ct-label">Mostra/Nascondi colonne</span>';
-
-    // Destino
-    togWrapHtml += '<button class="ct-btn' + (vis[0]!==false?' on':'') + '" onclick="toggleColVis(\'' + snEsc + '\',0)">📍 Destino</button>';
-
-    if (isCarico) {
-        EXTRA_COLS.forEach(function(ec, ei) {
-            var vi = 1 + ei;
-            togWrapHtml += '<button class="ct-btn' + (vis[vi]!==false?' on':'') + '" onclick="toggleColVis(\'' + snEsc + '\',' + vi + ')">' + esc(ec.label1) + '</button>';
-        });
-    }
-
-    h1.forEach(function(hname, ci) {
-        var vi = extraOffset + ci;
-        togWrapHtml += '<button class="ct-btn' + (vis[vi]!==false?' on':'') + '" onclick="toggleColVis(\'' + snEsc + '\',' + vi + ')">' + esc(String(hname||'')) + '</button>';
-    });
-    togWrapHtml += '</div>';
-
-    // ---- Toolbar ----
-    var toolbar = '<div class="panel-toolbar">'
-        + '<span class="results-info">' + rows.length + ' riga' + (rows.length!==1?'he':'') + '</span>'
-        + '<button class="btn-toggle-cols' + (isOpen?' open':'') + '" id="ct-btn-' + snEsc + '" onclick="toggleColPanel(\'' + snEsc + '\')">'
-        + '<span>⚙ Colonne</span><span class="arrow">▾</span>'
-        + '</button>'
-        + '</div>';
-
-    if (!rows.length) {
-        return toolbar + togWrapHtml + '<div class="empty-state"><span class="empty-icon">📭</span><div class="empty-title">Nessun dato</div><div class="empty-sub">Prova a modificare i filtri</div></div>';
-    }
-
-    var nc_cnt = Math.max(h1.length, rows[0] ? rows[0].length : 0);
-
-    // ---- Table ----
-    var tHtml = '<div class="tbl-card"><div class="tbl-wrap"><table><thead>';
-
-    // Riga header tecnica (row0)
-    tHtml += '<tr>';
-    if (vis[0] !== false)                     tHtml += '<th>U_DEST</th>';
-    if (isCarico) {
-        EXTRA_COLS.forEach(function(ec, ei) {
-            if (vis[1+ei] !== false) tHtml += '<th>' + esc(ec.label0) + '</th>';
-        });
-    }
-    for (var c = 0; c < nc_cnt; c++) {
-        if (vis[extraOffset + c] !== false) tHtml += '<th>' + esc(String(h0[c]||'')) + '</th>';
-    }
-    tHtml += '</tr>';
-
-    // Riga header leggibile (row1)
-    tHtml += '<tr>';
-    if (vis[0] !== false)                     tHtml += '<th>Destino</th>';
-    if (isCarico) {
-        EXTRA_COLS.forEach(function(ec, ei) {
-            if (vis[1+ei] !== false) tHtml += '<th>' + esc(ec.label1) + '</th>';
-        });
-    }
-    for (var c = 0; c < nc_cnt; c++) {
-        if (vis[extraOffset + c] !== false) tHtml += '<th>' + esc(String(h1[c]||'')) + '</th>';
-    }
-    tHtml += '</tr></thead><tbody>';
-
-    rows.forEach(function (row) {
-        var dn = norm(row[0]);
-        tHtml += '<tr>';
-        if (vis[0] !== false) tHtml += '<td class="dest-col">' + esc(destiMap[dn]||'') + '</td>';
-        if (isCarico) {
-            if (vis[1] !== false) tHtml += '<td>' + esc(commessaMap ? commessaMap[dn]||'' : '') + '</td>';
-            if (vis[2] !== false) tHtml += '<td>' + esc(tipoMap    ? tipoMap[dn]||''    : '') + '</td>';
-            if (vis[3] !== false) tHtml += '<td>' + esc(awbMap     ? awbMap[dn]||''     : '') + '</td>';
-        }
-        for (var c = 0; c < nc_cnt; c++) {
-            if (vis[extraOffset + c] === false) continue;
-            var v = row[c] !== undefined ? row[c] : '';
-            tHtml += '<td' + (c===0?' class="dn"':'') + '>' + esc(String(v===null||v===undefined?'':v)) + '</td>';
-        }
-        tHtml += '</tr>';
-    });
-    tHtml += '</tbody></table></div></div>';
-
-    return toolbar + togWrapHtml + tHtml;
-}
-
-/* re-render solo il pannello attivo senza perdere lo stato */
-function reRenderPanel(sheetId) {
-    var panel = document.getElementById('panel-' + sheetId);
-    if (!panel || !currentData) return;
+// Re-render solo il pannello attivo (usato dal toggle colonne)
+function reRenderActive() {
+    if (!currentData) return;
+    var map = { ti: 'Intestazione', tc: 'Dettagli Carico', to: 'Dettagli ODP' };
+    var sn = map[activeTab];
+    var panel = document.getElementById('panel-' + activeTab);
+    if (!panel) return;
 
     var fPlant    = document.getElementById('fPlant').value.trim();
     var fCommessa = document.getElementById('fCommessa').value.trim();
@@ -658,19 +538,92 @@ function reRenderPanel(sheetId) {
         if (fDestino  && String(r[8]||'').trim() !== fDestino)  return;
         ok[norm(r[0])] = true;
     });
+    var rows = currentData[sn].rows.filter(function (r) { return ok[norm(r[0])]; });
+    var isInt = (sn === 'Intestazione');
+    var destiMap = {};
+    if (!isInt) currentData['Intestazione'].rows.forEach(function (r) { destiMap[norm(r[0])] = String(r[8]||'').trim(); });
+    panel.innerHTML = buildPanel(sn, currentData[sn].headers, rows, isInt, isInt ? null : destiMap, rows.length);
+}
 
-    var destiMap = {}, commessaMap = {}, tipoMap = {}, awbMap = {};
-    currentData['Intestazione'].rows.forEach(function (r) {
-        var dn = norm(r[0]);
-        destiMap[dn]    = String(r[8]||'').trim();
-        awbMap[dn]      = String(r[3]||'').trim();
-        tipoMap[dn]     = String(r[6]||'').trim();
-        commessaMap[dn] = String(r[7]||'').trim();
+/* ================================================================
+   BUILD PANEL = col-toggle row + results info + table
+================================================================ */
+function buildPanel(sheetName, headers, rows, isInt, destiMap, total) {
+    var h1 = (headers && headers[1]) ? headers[1] : [];
+    var hasDestCol = !isInt;
+    var vis = colVis[sheetName] || [];
+
+    // ---- Col toggle row ----
+    var snEsc = sheetName.replace(/'/g, "\\'");
+    var togHtml = '<div class="col-toggle-wrap"><div class="ct-row"><span class="ct-label">Colonne</span>';
+
+    // Bottone per la colonna Destino extra (solo non-int)
+    if (hasDestCol) {
+        var isOn = vis[0] !== false;
+        togHtml += '<button class="ct-btn dest' + (isOn?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',0)">📍 Destino</button>';
+    }
+    // Bottoni per le colonne del file
+    h1.forEach(function (hname, ci) {
+        var visIdx = hasDestCol ? ci + 1 : ci;
+        var isOn2 = vis[visIdx] !== false;
+        togHtml += '<button class="ct-btn' + (isOn2?' on':'') + '" onclick="toggleCol(\'' + snEsc + '\',' + visIdx + ')">' + esc(String(hname||'')) + '</button>';
     });
+    togHtml += '</div></div>';
 
-    var snKey = sheetId === 'tc' ? 'Dettagli Carico' : 'Dettagli ODP';
-    var rows = currentData[snKey].rows.filter(function (r) { return ok[norm(r[0])]; });
-    panel.innerHTML = buildPanel(sheetId, currentData[snKey].headers, rows, destiMap, commessaMap, tipoMap, awbMap);
+    if (!rows.length) {
+        return togHtml + '<div class="empty-state"><span class="empty-icon">📭</span><div class="empty-title">Nessun dato</div><div class="empty-sub">Prova a modificare i filtri</div></div>';
+    }
+
+    // ---- Results info ----
+    var infoHtml = '<div class="results-info">' + total + ' riga' + (total !== 1 ? 'he' : '') + '</div>';
+
+    // ---- Table ----
+    var h0 = (headers && headers[0]) ? headers[0] : [];
+    var nc_cnt = Math.max(h1.length, rows[0] ? rows[0].length : 0);
+
+    var tHtml = '<div class="tbl-card"><div class="tbl-wrap"><table><thead>';
+
+    // Header row 1 (tecnico, nascosto ma usato per dimensioni)
+    if (h0.length) {
+        tHtml += '<tr>';
+        if (hasDestCol && vis[0] !== false) tHtml += '<th>DESTINO</th>';
+        for (var c = 0; c < nc_cnt; c++) {
+            var vi1 = hasDestCol ? c + 1 : c;
+            if (vis[vi1] === false) continue;
+            tHtml += '<th>' + esc(String(h0[c]||'')) + '</th>';
+        }
+        tHtml += '</tr>';
+    }
+    // Header row 2 (leggibile)
+    if (h1.length) {
+        tHtml += '<tr>';
+        if (hasDestCol && vis[0] !== false) tHtml += '<th>Destino</th>';
+        for (var c = 0; c < nc_cnt; c++) {
+            var vi2 = hasDestCol ? c + 1 : c;
+            if (vis[vi2] === false) continue;
+            tHtml += '<th>' + esc(String(h1[c]||'')) + '</th>';
+        }
+        tHtml += '</tr>';
+    }
+    tHtml += '</thead><tbody>';
+
+    rows.forEach(function (row) {
+        var dn = norm(row[0]);
+        tHtml += '<tr>';
+        if (hasDestCol && vis[0] !== false) {
+            tHtml += '<td class="dest-col">' + esc(destiMap[dn]||'') + '</td>';
+        }
+        for (var c = 0; c < nc_cnt; c++) {
+            var vi3 = hasDestCol ? c + 1 : c;
+            if (vis[vi3] === false) continue;
+            var v = row[c] !== undefined ? row[c] : '';
+            tHtml += '<td' + (c===0?' class="dn"':'') + '>' + esc(String(v===null||v===undefined?'':v)) + '</td>';
+        }
+        tHtml += '</tr>';
+    });
+    tHtml += '</tbody></table></div></div>';
+
+    return togHtml + infoHtml + tHtml;
 }
 
 /* ================================================================
@@ -682,10 +635,11 @@ function switchTab(id) {
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('on'); });
     var p = document.getElementById('panel-' + id);
     if (p) p.classList.add('on');
+    document.getElementById('content').parentElement.scrollTop = 0;
 }
 
 /* ================================================================
-   FILTRI
+   FILTRI DINAMICI
 ================================================================ */
 function populateFilters(intRows) {
     var plants={}, commesse={}, tipi={}, destini={};
@@ -698,7 +652,7 @@ function populateFilters(intRows) {
     fillSel('fTipo',     tipi,     'Tutti');
     fillSel('fDestino',  destini,  'Tutti');
     ['fPlant','fCommessa','fTipo','fDestino'].forEach(function (id) {
-        document.getElementById(id).onchange = function () { if (currentData) { colVis={}; colToggleOpen={tc:false,to:false}; render(); } };
+        document.getElementById(id).onchange = function () { if (currentData) { colVis = {}; render(); } };
     });
 }
 
@@ -715,7 +669,7 @@ function fillSel(id, obj, ph) {
 
 function resetFiltri() {
     ['fPlant','fCommessa','fTipo','fDestino'].forEach(function (id) { document.getElementById(id).value = ''; });
-    if (currentData) { colVis={}; colToggleOpen={tc:false,to:false}; render(); }
+    if (currentData) { colVis = {}; render(); }
 }
 
 /* ================================================================
@@ -749,7 +703,7 @@ function parseXlsx(blob) {
 }
 
 /* ================================================================
-   DRIVE API
+   DRIVE API — solo lettura
 ================================================================ */
 function listFiles(q) {
     return gFetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id,name)&pageSize=200')
@@ -769,7 +723,7 @@ function gFetch(url) {
 ================================================================ */
 function setContent(h)  { document.getElementById('content').innerHTML = h; }
 function spinHtml(msg)  { return '<div class="loading-state"><div class="spinner"></div>' + esc(msg) + '</div>'; }
-function norm(v)        { if(v===null||v===undefined) return ''; var s=String(v).trim(); if(/^\d+\.0+$/.test(s)) s=s.replace(/\.0+$/,''); return s; }
+function norm(v)        { if (v===null||v===undefined) return ''; var s=String(v).trim(); if(/^\d+\.0+$/.test(s)) s=s.replace(/\.0+$/,''); return s; }
 function esc(s)         { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(d)     { return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
 function fmtD(s)        { return s.substr(6,2)+'/'+s.substr(4,2)+'/'+s.substr(0,4); }
