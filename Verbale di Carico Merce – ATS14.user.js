@@ -849,16 +849,16 @@ function buildOverlay() {
                 <div class="modal-label">Dimensioni (cm)</div>
                 <div class="row-3cols">
                     <div>
-                        <div class="modal-label" style="font-size:11px; margin-bottom:4px;">Altezza</div>
-                        <input type="number" class="modal-input" id="m-altezza" value="0" min="0" step="1">
-                    </div>
-                    <div>
                         <div class="modal-label" style="font-size:11px; margin-bottom:4px;">Larghezza</div>
                         <input type="number" class="modal-input" id="m-larghezza" value="0" min="0" step="1">
                     </div>
                     <div>
                         <div class="modal-label" style="font-size:11px; margin-bottom:4px;">Profondità</div>
                         <input type="number" class="modal-input" id="m-profondita" value="0" min="0" step="1">
+                    </div>
+                    <div>
+                        <div class="modal-label" style="font-size:11px; margin-bottom:4px;">Altezza</div>
+                        <input type="number" class="modal-input" id="m-altezza" value="0" min="0" step="1">
                     </div>
                 </div>
             </div>
