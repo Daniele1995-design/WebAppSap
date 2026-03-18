@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Verbale di Carico Merce – ATS71
 // @namespace    http://tampermonkey.net/
-// @version      5.1
+// @version      6.6
 // @description  Verbale di Carico – UI identica HTML originale, tutti i fix , per il magazzino 71
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/
@@ -39,22 +39,24 @@ const BUSINESS_PARTNERS = [
     'C000223 – GREENCHEM SOLUTIONS SRL',
     'C000198 – JOYGUM SRL',
     'C000207 – INFRASTRUTTURE WIRELESS ITALIANE SPA',
-
 ];
 
 /* ================================================================
    STATE
 ================================================================ */
 let righeCarico = [];
+// [MODIFICA] odps ora è array di oggetti { id, numero, peso }
+// era: let odps = [];
 let odps = [];
 let destinazioni = {};
 let builtOnce = false;
+// [MODIFICA] editRigaId per modalità modifica riga
+let editRigaId = null;
 
 /* ================================================================
    CREAZIONE DOCNUM UNIVOCO
 ================================================================ */
-
-    function generateDocNum() {
+function generateDocNum() {
     const now = new Date();
     const pad = (n, l) => String(n).padStart(l, '0');
     return (
@@ -67,12 +69,15 @@ let builtOnce = false;
         pad(now.getMilliseconds(), 3)
     );
 }
-    function fmtIt(num, decimali = 3) {
+function fmtIt(num, decimali = 3) {
     return Number(num).toFixed(decimali).replace('.', ',');
 }
 
 /* ================================================================
    CSS — scoped a #vdc-ov, copiato esattamente dall'HTML originale
+   [MODIFICA] aggiunti solo: .btn-edit-row, .row-actions, .odp-peso-badge,
+              .btn-edit-odp, .odp-item-info, .odp-item-actions,
+              .odp-list-modal-item flex update, .btn-splitta
 ================================================================ */
 function injectCSS() {
     if (document.getElementById('vdc-style')) return;
@@ -96,7 +101,6 @@ function injectCSS() {
     box-sizing: border-box;
 }
 #vdc-ov.vdc-show { display: flex; }
-/* box-sizing solo su elementi diretti, NON con font-size ereditato */
 #vdc-ov div, #vdc-ov span, #vdc-ov button, #vdc-ov input,
 #vdc-ov select, #vdc-ov textarea, #vdc-ov a, #vdc-ov img {
     box-sizing: border-box;
@@ -120,7 +124,7 @@ function injectCSS() {
 #vdc-ov .topbar-logo { height: 36px; width: auto; object-fit: contain; flex-shrink: 0; }
 #vdc-ov .topbar-title {
     font-size: 22px; font-weight: 700;
-    position: absolute;          /* ← centrato assoluto */
+    position: absolute;
     left: 50%; transform: translateX(-50%);
     letter-spacing: 0.3px; color: white; margin: 0; padding: 0;
     font-family: inherit;
@@ -134,13 +138,13 @@ function injectCSS() {
     font-size: 20px;
     font-weight: 600;
     cursor: pointer;
-    width: 100px;          /* ← larghezza 60px */
-    height: 50px;         /* ← altezza 30px */
+    width: 100px;
+    height: 50px;
     border-radius: 8px;
     white-space: nowrap;
     flex-shrink: 0;
     font-family: inherit;
-    margin: auto 0 0 0;   /* ← spinto tutto a destra */
+    margin: auto 0 0 0;
     line-height: 1;
     display: flex;
     align-items: center;
@@ -275,7 +279,7 @@ function injectCSS() {
     padding: 0; margin: 0;
 }
 
-/* ---- DESTINO DROPDOWN — fixed per non essere clippato ---- */
+/* ---- DESTINO DROPDOWN ---- */
 #vdc-destino-dd {
     display: none;
     position: fixed;
@@ -331,12 +335,14 @@ function injectCSS() {
 
 /* ---- ROW ITEMS ---- */
 #vdc-ov .row-item {
-    padding: 14px 16px;
+    padding: 12px 12px;
     border-bottom: 0.5px solid #e5e5ea;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     margin: 0;
+    width: 100%;
+    overflow: hidden;
 }
 #vdc-ov .row-item:last-child { border-bottom: none; }
 #vdc-ov .row-num {
@@ -371,16 +377,41 @@ function injectCSS() {
     font-style: italic; padding: 0;
     font-family: inherit;
 }
+/* [MODIFICA] bottoni riga: edit + del affiancati — compatti per stare nella riga */
+#vdc-ov .row-actions { display: flex; gap: 4px; flex-shrink: 0; }
 #vdc-ov .btn-del-row {
     background: #ff3b30;
     color: white;
     border: none;
-    border-radius: 8px;
-    padding: 7px 12px;
-    font-size: 14px;
+    border-radius: 7px;
+    padding: 6px 9px;
+    font-size: 13px;
     cursor: pointer;
     flex-shrink: 0;
-    width: auto;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    margin: 0;
+    line-height: 1;
+}
+/* [MODIFICA] bottone modifica riga */
+#vdc-ov .btn-edit-row {
+    background: #007aff;
+    color: white;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 9px;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-family: inherit;
     margin: 0;
     line-height: 1;
@@ -403,6 +434,26 @@ function injectCSS() {
 #vdc-ov .odp-idx {
     font-size: 13px; color: #8e8e93; margin-left: 8px;
     padding: 0; font-family: inherit;
+}
+/* [MODIFICA] badge peso ODP nella vista principale */
+#vdc-ov .odp-peso-badge {
+    font-size: 12px; color: #34c759; font-weight: 600; margin-left: 8px;
+}
+/* [MODIFICA] info + actions affiancati nel modal ODP */
+#vdc-ov .odp-item-info { display: flex; flex-direction: column; gap: 2px; }
+#vdc-ov .odp-item-peso { font-size: 12px; color: #34c759; font-weight: 600; }
+#vdc-ov .odp-item-actions { display: flex; gap: 6px; align-items: center; }
+#vdc-ov .btn-edit-odp {
+    background: #007aff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    margin: 0;
+    line-height: 1;
 }
 
 /* ---- EMPTY STATE ---- */
@@ -440,6 +491,28 @@ function injectCSS() {
     line-height: 1.4;
 }
 #vdc-ov .btn-add:active { transform: scale(0.98); box-shadow: none; }
+
+/* [MODIFICA] bottone Splitta Peso */
+#vdc-ov .btn-splitta {
+    background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 16px;
+    width: 100%;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 12px;
+    margin-top: 0;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 12px rgba(255,149,0,0.3);
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.4;
+}
+#vdc-ov .btn-splitta:active { transform: scale(0.98); box-shadow: none; }
 
 /* ---- BOTTOM BAR ---- */
 #vdc-ov .bottom-bar {
@@ -601,9 +674,11 @@ function injectCSS() {
 }
 #vdc-ov .btn-ok-m:hover { background: #0066dd; }
 
-/* ODP modal */
+/* ODP modal — [MODIFICA] layout a griglia numero + peso */
 #vdc-ov .odp-add-row { display: flex; gap: 10px; margin-bottom: 12px; }
 #vdc-ov .odp-add-row .modal-input { flex: 1; margin-bottom: 0; }
+#vdc-ov .odp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+#vdc-ov .odp-grid .modal-input { margin-bottom: 0; }
 #vdc-ov .btn-odp-add {
     padding: 13px 18px;
     background: #007aff;
@@ -618,6 +693,8 @@ function injectCSS() {
     font-family: inherit;
     margin: 0;
     line-height: 1;
+    height: 52px;
+    align-self: end;
 }
 #vdc-ov .odp-list-modal {
     max-height: 240px;
@@ -669,6 +746,7 @@ function injectCSS() {
 @media (max-width: 400px) {
     #vdc-ov .row-3cols { grid-template-columns: 1fr 1fr; }
     #vdc-ov .field-label { min-width: 120px; font-size: 14px; }
+    #vdc-ov .odp-grid { grid-template-columns: 1fr; }
 }
 
 /* ---- MENU ENTRY ---- */
@@ -767,7 +845,7 @@ function buildOverlay() {
                 <span class="field-label">Destino</span>
                 <div class="field-value">
                     <input type="text" class="field-input" id="vdc-destino"
-                        placeholder="Seleziona commessa prima…" autocomplete="off">
+                        placeholder="Digita per cercare…" autocomplete="off">
                 </div>
             </div>
         </div>
@@ -804,6 +882,7 @@ function buildOverlay() {
             </div>
         </div>
         <button class="btn-add" id="btn-add-riga">➕&nbsp; AGGIUNGI RIGA</button>
+        <button class="btn-splitta" id="btn-splitta-peso">⚖️&nbsp; SPLITTA PESO DA ODP</button>
     </div>
 
     <!-- ===== TAB ODP ===== -->
@@ -826,11 +905,11 @@ function buildOverlay() {
     </button>
 </div>
 
-<!-- MODAL RIGA -->
+<!-- MODAL RIGA — identico all'originale, aggiunto solo id al modal-header per modifica -->
 <div class="modal-overlay" id="modalRiga">
     <div class="modal-sheet">
         <div class="modal-handle"></div>
-        <div class="modal-header">Aggiungi Riga Carico</div>
+        <div class="modal-header" id="modalRigaHeader">Aggiungi Riga Carico</div>
         <div class="modal-body">
             <div class="modal-field">
                 <div class="modal-label">Imballo *</div>
@@ -849,16 +928,16 @@ function buildOverlay() {
                 <div class="modal-label">Dimensioni (cm)</div>
                 <div class="row-3cols">
                     <div>
-                        <div class="modal-label" style="font-size:11px; margin-bottom:4px;">Altezza</div>
-                        <input type="number" class="modal-input" id="m-altezza" value="0" min="0" step="1">
-                    </div>
-                    <div>
                         <div class="modal-label" style="font-size:11px; margin-bottom:4px;">Larghezza</div>
                         <input type="number" class="modal-input" id="m-larghezza" value="0" min="0" step="1">
                     </div>
                     <div>
                         <div class="modal-label" style="font-size:11px; margin-bottom:4px;">Profondità</div>
                         <input type="number" class="modal-input" id="m-profondita" value="0" min="0" step="1">
+                    </div>
+                    <div>
+                        <div class="modal-label" style="font-size:11px; margin-bottom:4px;">Altezza</div>
+                        <input type="number" class="modal-input" id="m-altezza" value="0" min="0" step="1">
                     </div>
                 </div>
             </div>
@@ -886,18 +965,25 @@ function buildOverlay() {
     </div>
 </div>
 
-<!-- MODAL ODP -->
+<!-- MODAL ODP — [MODIFICA] aggiunto campo Peso accanto al numero -->
 <div class="modal-overlay" id="modalODP">
     <div class="modal-sheet">
         <div class="modal-handle"></div>
-        <div class="modal-header">Gestione ODP</div>
+        <div class="modal-header" id="modalODPHeader">Gestione ODP</div>
         <div class="modal-body">
             <div class="modal-field">
-                <div class="modal-label">Inserisci Numero ODP</div>
-                <div class="odp-add-row">
-                    <input type="text" class="modal-input" id="m-odp-input" placeholder="es. 4700123456">
-                    <button class="btn-odp-add" id="btn-odp-add">+</button>
+                <div class="modal-label">Inserisci ODP e Peso (puoi incollare più valori separati da spazio)</div>
+                <div class="odp-grid">
+                    <div>
+                        <div class="modal-label" style="font-size:11px;margin-bottom:4px;">Numero ODP *</div>
+                        <input type="text" class="modal-input" id="m-odp-input" placeholder="es. 6500001">
+                    </div>
+                    <div>
+                        <div class="modal-label" style="font-size:11px;margin-bottom:4px;">Peso (kg)</div>
+                        <input type="text" class="modal-input" id="m-odp-peso" placeholder="es. 85 200">
+                    </div>
                 </div>
+                <button class="btn-odp-add" id="btn-odp-add" style="width:100%;margin-top:6px;">＋ AGGIUNGI</button>
             </div>
             <div class="modal-label" style="margin-bottom:8px;">
                 ODP Inseriti <span id="odp-count-modal" class="chip">0</span>
@@ -915,7 +1001,7 @@ function buildOverlay() {
 
     document.body.appendChild(ov);
 
-    // dropdown destino fuori dall'overlay (così è sempre sopra tutto)
+    // dropdown destino fuori dall'overlay
     const dd = document.createElement('div');
     dd.id = 'vdc-destino-dd';
     document.body.appendChild(dd);
@@ -924,30 +1010,26 @@ function buildOverlay() {
 }
 
 /* ================================================================
-   BIND EVENTS — tutti addEventListener, zero onclick inline
+   BIND EVENTS
 ================================================================ */
 function bindEvents() {
-    // Back
     q('#vdc-back').addEventListener('click', chiudiOverlay);
 
-    // Tabs
     qa('#vdc-ov .tab-btn').forEach(btn =>
         btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
-    // BP populate
     const bpSel = q('#vdc-bp');
     const opt0 = new Option('Seleziona...', '');
     bpSel.appendChild(opt0);
     BUSINESS_PARTNERS.forEach(bp => bpSel.appendChild(new Option(bp, bp)));
 
-    bpSel.value = ''; //  cambia col valore che vuoi per valore predefinito
-    q('#vdc-plant').value = 'CE71'; //  cambia col plant che vuoi per valore predefinito
-
-    // Data oggi
+    bpSel.value = '';
+    q('#vdc-plant').value = 'CE71';
+    q('#vdc-tipo-spedizione').value = 'Standard';
     q('#vdc-data').value = new Date().toISOString().split('T')[0];
-    q('#vdc-commessa').value = ''; // <- cambia col valore che vuoi
-    caricaDest(''); // <- stesso valore, carica le destinazioni
-    // Commessa
+    q('#vdc-commessa').value = '';
+    caricaDest('');
+
     q('#vdc-commessa').addEventListener('change', () => {
         const c = q('#vdc-commessa').value;
         q('#vdc-destino').value = '';
@@ -955,13 +1037,14 @@ function bindEvents() {
         if (c) caricaDest(c);
     });
 
-    // Destino
+    // Destino — [MODIFICA] aggiunto click + focus per aprire lista
     q('#vdc-destino').addEventListener('input', mostraDD);
     q('#vdc-destino').addEventListener('focus', mostraDD);
+    q('#vdc-destino').addEventListener('click', mostraDD);
     q('#vdc-destino').addEventListener('blur', () => setTimeout(hidDD, 200));
 
-    // Modal riga
-    q('#btn-add-riga').addEventListener('click', apriRiga);
+    // Modal riga — identico all'originale
+    q('#btn-add-riga').addEventListener('click', () => apriRiga(null));
     q('#btn-annulla-riga').addEventListener('click', chiudiRiga);
     q('#btn-salva-riga').addEventListener('click', salvaRiga);
     q('#m-imballo').addEventListener('change', onImballo);
@@ -969,15 +1052,20 @@ function bindEvents() {
         q('#'+id).addEventListener('input', calcolaVolume));
     q('#m-quantita').addEventListener('input', calcolaVolume);
 
+    // [MODIFICA] bottone Splitta Peso
+    q('#btn-splitta-peso').addEventListener('click', () => splittaPeso('manual'));
+
     // Modal ODP
     q('#btn-add-odp').addEventListener('click', apriODP);
     q('#btn-odp-add').addEventListener('click', aggiungiODP);
     q('#m-odp-input').addEventListener('keypress', e => {
+        if (e.key === 'Enter') { e.preventDefault(); q('#m-odp-peso').focus(); }
+    });
+    q('#m-odp-peso').addEventListener('keypress', e => {
         if (e.key === 'Enter') { e.preventDefault(); aggiungiODP(); }
     });
     q('#btn-chiudi-odp').addEventListener('click', chiudiODP);
 
-    // Conferma
     q('#vdc-conferma').addEventListener('click', confermaVerbale);
 }
 
@@ -1024,37 +1112,46 @@ function switchTab(nome) {
 
 /* ================================================================
    DESTINAZIONI
+   [MODIFICA] fuzzy: normalizza trattini/spazi prima del confronto
 ================================================================ */
 function caricaDest(commessa) {
     if (destinazioni[commessa] !== undefined) return;
-    destinazioni[commessa] = null; // loading
+    destinazioni[commessa] = null;
 
     GM_xmlhttpRequest({
         method:  'POST',
         url:     DEST_API_URL,
         headers: { 'Content-Type': 'application/json' },
         data:    JSON.stringify({ mode: 'list', gid: DEST_GID[commessa] }),
-onload:  r => {
-    try { destinazioni[commessa] = JSON.parse(r.responseText).data || []; }
-    catch { destinazioni[commessa] = []; }
-    //  mostra il dropdown SOLO se l'utente sta attivamente usando il campo
-    const dest = q('#vdc-destino');
-    if (q('#vdc-commessa').value === commessa && document.activeElement === dest) {
-        mostraDD();
-    }
-},
+        onload:  r => {
+            try { destinazioni[commessa] = JSON.parse(r.responseText).data || []; }
+            catch { destinazioni[commessa] = []; }
+            const dest = q('#vdc-destino');
+            if (q('#vdc-commessa').value === commessa && document.activeElement === dest) {
+                mostraDD();
+            }
+        },
         onerror: () => { destinazioni[commessa] = []; }
     });
 }
 
+// Normalizza per confronto fuzzy: trattini/slash → spazio, spazi multipli → uno
+function normDest(str) {
+    return str.toLowerCase()
+        .replace(/[-–—\/\\\.]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function mostraDD() {
     const commessa = q('#vdc-commessa').value;
-    const testo = q('#vdc-destino').value.toLowerCase();
+    const testoRaw = (q('#vdc-destino').value || '').trim();
+    const testo = normDest(testoRaw);
     const dd = document.getElementById('vdc-destino-dd');
     const inp = q('#vdc-destino');
     const rect = inp.getBoundingClientRect();
 
-    dd.style.top = (rect.bottom + 4) + 'px';
+    dd.style.top  = (rect.bottom + 4) + 'px';
     dd.style.left = rect.left + 'px';
     dd.style.width = Math.max(rect.width, 240) + 'px';
     dd.innerHTML = '';
@@ -1079,7 +1176,11 @@ function mostraDD() {
     }
     if (!lista || !lista.length) { dd.style.display = 'none'; return; }
 
-    const filt = lista.filter(d => d.destino.toLowerCase().includes(testo));
+    // [MODIFICA] confronto su versioni normalizzate; se testo vuoto mostra tutto
+    const filt = testo
+        ? lista.filter(d => normDest(d.destino).includes(testo))
+        : lista;
+
     if (!filt.length) { dd.style.display = 'none'; return; }
 
     filt.forEach(d => {
@@ -1097,21 +1198,38 @@ function mostraDD() {
 }
 
 /* ================================================================
-   MODAL RIGA
+   MODAL RIGA — uguale all'originale + supporto modifica
 ================================================================ */
-function apriRiga() {
-    q('#m-imballo').value = '';
-    q('#m-quantita').value = 1;
-    q('#m-altezza').value = 0;
-    q('#m-larghezza').value = 0;
-    q('#m-profondita').value= 0;
-    q('#m-volume').value = '0.0000';
-    q('#m-peso').value = 0;
-    q('#m-note').value = '';
+function apriRiga(rigaDaModificare) {
+    editRigaId = rigaDaModificare ? rigaDaModificare.id : null;
+
+    if (rigaDaModificare) {
+        q('#modalRigaHeader').textContent = 'Modifica Riga Carico';
+        q('#m-imballo').value    = rigaDaModificare.imballo;
+        q('#m-quantita').value   = rigaDaModificare.quantita;
+        q('#m-altezza').value    = rigaDaModificare.altezza;
+        q('#m-larghezza').value  = rigaDaModificare.larghezza;
+        q('#m-profondita').value = rigaDaModificare.profondita;
+        q('#m-volume').value     = (rigaDaModificare.volume * rigaDaModificare.quantita).toFixed(4);
+        q('#m-peso').value       = rigaDaModificare.peso;
+        q('#m-note').value       = rigaDaModificare.note;
+    } else {
+        // identico all'originale v5.2
+        q('#modalRigaHeader').textContent = 'Aggiungi Riga Carico';
+        q('#m-imballo').value    = '';
+        q('#m-quantita').value   = 1;
+        q('#m-altezza').value    = 0;
+        q('#m-larghezza').value  = 0;
+        q('#m-profondita').value = 0;
+        q('#m-volume').value     = '0.0000';
+        q('#m-peso').value       = 0;
+        q('#m-note').value       = '';
+    }
     q('#modalRiga').classList.add('show');
 }
 
 function chiudiRiga() {
+    editRigaId = null;
     q('#modalRiga').classList.remove('show');
 }
 
@@ -1124,10 +1242,10 @@ function onImballo() {
 }
 
 function calcolaVolume() {
-    const h = parseFloat(q('#m-altezza').value) || 0;
-    const l = parseFloat(q('#m-larghezza').value) || 0;
-    const p = parseFloat(q('#m-profondita').value) || 0;
-    const qty = parseInt(q('#m-quantita').value) || 1;
+    const h   = parseFloat(q('#m-altezza').value)   || 0;
+    const l   = parseFloat(q('#m-larghezza').value)  || 0;
+    const p   = parseFloat(q('#m-profondita').value) || 0;
+    const qty = parseInt(q('#m-quantita').value)     || 1;
     const volUnit = (h * l * p) / 1_000_000;
     q('#m-volume').value = (volUnit * qty).toFixed(4);
 }
@@ -1136,26 +1254,35 @@ function salvaRiga() {
     const imballo = q('#m-imballo').value;
     if (!imballo) { toast('⚠️ Seleziona il tipo di imballo!'); return; }
 
-    const h = parseFloat(q('#m-altezza').value) || 0;
-    const l = parseFloat(q('#m-larghezza').value) || 0;
-    const p = parseFloat(q('#m-profondita').value) || 0;
-    const qty = parseInt(q('#m-quantita').value) || 1;
-    const volUnit = (h * l * p) / 1_000_000; // ← unitario, NON da m-volume
+    const h   = parseFloat(q('#m-altezza').value)   || 0;
+    const l   = parseFloat(q('#m-larghezza').value)  || 0;
+    const p   = parseFloat(q('#m-profondita').value) || 0;
+    const qty = parseInt(q('#m-quantita').value)     || 1;
+    const volUnit = (h * l * p) / 1_000_000;
 
-    righeCarico.push({
-        id:         Date.now(),
+    const dati = {
         imballo,
         quantita:   qty,
         altezza:    h,
         larghezza:  l,
         profondita: p,
-        volume:     volUnit, // ← salvato come UNITARIO
+        volume:     volUnit,
         peso:       parseFloat(q('#m-peso').value) || 0,
         note:       q('#m-note').value.trim()
-    });
+    };
+
+    if (editRigaId !== null) {
+        const idx = righeCarico.findIndex(r => r.id === editRigaId);
+        if (idx !== -1) { dati.id = editRigaId; righeCarico[idx] = dati; }
+        toast('✏️ Riga aggiornata');
+    } else {
+        dati.id = Date.now();
+        righeCarico.push(dati);
+        toast('✅ Riga aggiunta');
+    }
+
     aggiornaVistaCarico();
     chiudiRiga();
-    toast('✅ Riga aggiunta');
 }
 
 function eliminaRiga(id) {
@@ -1173,19 +1300,19 @@ function aggiornaVistaCarico() {
 
     if (righeCarico.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div>Nessuna riga inserita</div>';
-        q('#sumColli').textContent = '0';
+        q('#sumColli').textContent  = '0';
         q('#sumVolume').textContent = '0.000';
-        q('#sumPeso').textContent = '0';
+        q('#sumPeso').textContent   = '0';
         return;
     }
 
-    const totColli = righeCarico.reduce((s,r) => s + r.quantita, 0);
+    const totColli  = righeCarico.reduce((s,r) => s + r.quantita, 0);
     const totVolume = righeCarico.reduce((s,r) => s + r.volume * r.quantita, 0);
-    const totPeso = righeCarico.reduce((s,r) => s + r.peso, 0);
+    const totPeso   = righeCarico.reduce((s,r) => s + r.peso, 0);
 
-    q('#sumColli').textContent = totColli;
+    q('#sumColli').textContent  = totColli;
     q('#sumVolume').textContent = fmtIt(totVolume, 3);
-    q('#sumPeso').textContent = fmtIt(totPeso, 1);
+    q('#sumPeso').textContent   = fmtIt(totPeso, 1);
 
     container.innerHTML = '';
     righeCarico.forEach((r, idx) => {
@@ -1201,14 +1328,89 @@ function aggiornaVistaCarico() {
                     &nbsp;|&nbsp; ${r.peso} kg
                 </div>
                 ${r.note ? `<div class="row-note">📝 ${r.note}</div>` : ''}
-            </div>`;
-        const btn = document.createElement('button');
-        btn.className = 'btn-del-row';
-        btn.textContent = '✕';
-        btn.addEventListener('click', () => eliminaRiga(r.id));
-        div.appendChild(btn);
+            </div>
+            <div class="row-actions"></div>`;
+
+        const actions = div.querySelector('.row-actions');
+
+        // [MODIFICA] bottone modifica
+        const btnEdit = document.createElement('button');
+        btnEdit.className = 'btn-edit-row';
+        btnEdit.textContent = '✎';
+        btnEdit.title = 'Modifica';
+        btnEdit.addEventListener('click', e => { e.stopPropagation(); apriRiga(r); });
+
+        const btnDel = document.createElement('button');
+        btnDel.className = 'btn-del-row';
+        btnDel.textContent = '✕';
+        btnDel.addEventListener('click', e => { e.stopPropagation(); eliminaRiga(r.id); });
+
+        actions.appendChild(btnEdit);
+        actions.appendChild(btnDel);
         container.appendChild(div);
     });
+}
+
+/* ================================================================
+   SPLITTA PESO DA ODP
+   mode: 'auto'   = silenzioso, alla conferma
+         'manual' = bottone utente, mostra sempre pop-up
+================================================================ */
+
+// Distribuisce pesoDaSplittare proporzionalmente al volume sulle righe passate
+function _distribuisci(righe, pesoDaSplittare) {
+    const volTot = righe.reduce((s, r) => s + r.volume * r.quantita, 0);
+    righe.forEach(r => {
+        const idx = righeCarico.findIndex(x => x.id === r.id);
+        if (idx === -1) return;
+        if (volTot === 0) {
+            righeCarico[idx].peso = Math.round((pesoDaSplittare / righe.length) * 10) / 10;
+        } else {
+            righeCarico[idx].peso = Math.round((r.volume * r.quantita / volTot) * pesoDaSplittare * 10) / 10;
+        }
+    });
+}
+
+function splittaPeso(mode) {
+    // Usa sempre il totale ODP intero — le righe con peso>0 vengono ignorate
+    const totPesoODP     = odps.reduce((s, o) => s + (o.peso || 0), 0);
+    const righeSenzaPeso = righeCarico.filter(r => r.peso === 0);
+
+    if (totPesoODP <= 0) {
+        if (mode === 'manual') toast('\u26a0\ufe0f Nessun peso inserito negli ODP');
+        return false;
+    }
+    if (!righeCarico.length) {
+        if (mode === 'manual') toast('\u26a0\ufe0f Nessuna riga di carico inserita');
+        return false;
+    }
+    if (!righeSenzaPeso.length) {
+        if (mode === 'manual') toast('\u2139\ufe0f Tutte le righe hanno gi\u00e0 un peso assegnato');
+        return false;
+    }
+
+    // AUTOMATICO (alla conferma): silenzioso
+    if (mode === 'auto') {
+        _distribuisci(righeSenzaPeso, totPesoODP);
+        aggiornaVistaCarico();
+        return true;
+    }
+
+    // MANUALE: se righe miste chiedi, se tutte a 0 fai direttamente
+    const righeCon = righeCarico.filter(r => r.peso > 0);
+
+    if (righeCon.length > 0) {
+        // Righe miste → pop-up di conferma
+        const msg = `Distribuisci ${fmtIt(totPesoODP,1)} kg (totale ODP) sulle ${righeSenzaPeso.length} righe con peso = 0?\n\n`
+                  + `Le ${righeCon.length} righe con peso gi\u00e0 impostato NON vengono modificate.`;
+        if (!confirm(msg)) return false;
+    }
+    // Tutte a 0 → nessuna domanda, fai direttamente
+
+    _distribuisci(righeSenzaPeso, totPesoODP);
+    aggiornaVistaCarico();
+    toast(`\u2696\ufe0f ${fmtIt(totPesoODP,1)} kg distribuiti su ${righeSenzaPeso.length} righe`);
+    return true;
 }
 
 /* ================================================================
@@ -1216,6 +1418,9 @@ function aggiornaVistaCarico() {
 ================================================================ */
 function apriODP() {
     q('#m-odp-input').value = '';
+    q('#m-odp-peso').value  = '';
+    q('#modalODPHeader').textContent = 'Gestione ODP';
+    q('#btn-odp-add').textContent = '＋ AGGIUNGI';
     renderODPModal();
     q('#modalODP').classList.add('show');
     setTimeout(() => q('#m-odp-input').focus(), 320);
@@ -1227,41 +1432,66 @@ function chiudiODP() {
 }
 
 function aggiungiODP() {
-    const raw = q('#m-odp-input').value.trim();
-    if (!raw) return;
+    const rawNum  = q('#m-odp-input').value.trim();
+    const rawPeso = q('#m-odp-peso').value.trim();
+    if (!rawNum) { toast('⚠️ Inserisci il numero ODP'); return; }
 
-    // Split su spazi, tab, newline, punto e virgola, virgola
-    const valori = raw.split(/[\s\t\n\r;,]+/).map(v => v.trim()).filter(v => v.length > 0);
+    // Split numeri su qualsiasi separatore (spazio, tab, virgola, punto e virgola, newline)
+    const numeri = rawNum.split(/[\s\t\n\r;,]+/).map(v => v.trim()).filter(v => v);
 
-    let aggiunti = 0;
-    let duplicati = 0;
+    // Split pesi sullo stesso separatore — accetta sia punto che virgola decimale
+    const pesi = rawPeso
+        ? rawPeso.split(/[\s\t\n\r;,]+/)
+            .map(v => parseFloat(v.replace(',', '.')))
+            .filter(v => !isNaN(v) && v >= 0)
+        : [];
 
-    valori.forEach(val => {
-        if (odps.includes(val)) {
+    // Funzione per ottenere il peso per posizione i:
+    // - se pesi ha un solo valore → usato per tutti
+    // - se pesi ha tanti valori quanto numeri → abbinamento posizionale
+    // - altrimenti → 0
+    const getPeso = i => {
+        if (pesi.length === 0)       return 0;
+        if (pesi.length === 1)       return pesi[0];
+        return pesi[i] !== undefined ? pesi[i] : 0;
+    };
+
+    let aggiunti = 0, duplicati = 0;
+    numeri.forEach((num, i) => {
+        if (odps.find(o => o.numero === num)) {
             duplicati++;
         } else {
-            odps.push(val);
+            odps.push({ id: Date.now() + Math.random(), numero: num, peso: getPeso(i) });
             aggiunti++;
         }
     });
 
     q('#m-odp-input').value = '';
+    q('#m-odp-peso').value  = '';
     renderODPModal();
     q('#m-odp-input').focus();
 
-    if (duplicati > 0 && aggiunti === 0) {
+    if (duplicati > 0 && aggiunti === 0)
         toast(`⚠️ Tutti gli ODP erano già presenti!`);
-    } else if (duplicati > 0) {
-        toast(`✅ ${aggiunti} ODP aggiunt${aggiunti > 1 ? 'i' : 'o'}, ${duplicati} già present${duplicati > 1 ? 'i' : 'e'}`);
-    } else if (aggiunti > 1) {
+    else if (duplicati > 0)
+        toast(`✅ ${aggiunti} aggiunt${aggiunti>1?'i':'o'}, ${duplicati} già present${duplicati>1?'i':'e'}`);
+    else if (aggiunti > 1)
         toast(`✅ ${aggiunti} ODP aggiunti`);
-    } else {
+    else
         toast(`✅ ODP aggiunto`);
-    }
 }
 
-function eliminaODPModal(val) {
-    odps = odps.filter(o => o !== val);
+function modificaODPModal(odp) {
+    q('#m-odp-input').value = odp.numero;
+    q('#m-odp-peso').value  = odp.peso > 0 ? odp.peso : '';
+    // rimuovo e sostituisco con un id temporaneo per evitare duplicato
+    odps = odps.filter(o => o.id !== odp.id);
+    q('#m-odp-input').focus();
+    renderODPModal();
+}
+
+function eliminaODPModal(id) {
+    odps = odps.filter(o => o.id !== id);
     renderODPModal();
 }
 
@@ -1277,14 +1507,32 @@ function renderODPModal() {
     odps.forEach((odp, i) => {
         const div = document.createElement('div');
         div.className = 'odp-list-modal-item';
-        const sp = document.createElement('span');
-        sp.innerHTML = `<span style="color:#8e8e93; font-size:12px;">#${i+1}&nbsp;</span>${odp}`;
-        const btn = document.createElement('button');
-        btn.className = 'btn-del-row';
-        btn.textContent = '✕';
-        btn.addEventListener('click', () => eliminaODPModal(odp));
-        div.appendChild(sp);
-        div.appendChild(btn);
+
+        const info = document.createElement('div');
+        info.className = 'odp-item-info';
+        info.innerHTML = `
+            <span><span style="color:#8e8e93;font-size:12px;">#${i+1}&nbsp;</span><strong>${odp.numero}</strong></span>
+            ${odp.peso > 0
+                ? `<span class="odp-item-peso">⚖️ ${fmtIt(odp.peso,1)} kg</span>`
+                : `<span style="font-size:11px;color:#c7c7cc;">peso non impostato</span>`}`;
+
+        const acts = document.createElement('div');
+        acts.className = 'odp-item-actions';
+
+        const btnEdit = document.createElement('button');
+        btnEdit.className = 'btn-edit-odp';
+        btnEdit.textContent = '✎';
+        btnEdit.addEventListener('click', () => modificaODPModal(odp));
+
+        const btnDel = document.createElement('button');
+        btnDel.className = 'btn-del-row';
+        btnDel.textContent = '✕';
+        btnDel.addEventListener('click', () => eliminaODPModal(odp.id));
+
+        acts.appendChild(btnEdit);
+        acts.appendChild(btnDel);
+        div.appendChild(info);
+        div.appendChild(acts);
         el.appendChild(div);
     });
 }
@@ -1304,19 +1552,36 @@ function aggiornaVistaODP() {
     odps.forEach((odp, i) => {
         const div = document.createElement('div');
         div.className = 'odp-item';
+
         const sp = document.createElement('span');
-        sp.innerHTML = `<span class="odp-number">${odp}</span><span class="odp-idx">#${i+1}</span>`;
-        const btn = document.createElement('button');
-        btn.className = 'btn-del-row';
-        btn.textContent = '✕';
-        btn.addEventListener('click', () => {
+        sp.innerHTML = `<span class="odp-number">${odp.numero}</span><span class="odp-idx">#${i+1}</span>`
+            + (odp.peso > 0 ? `<span class="odp-peso-badge">⚖️ ${fmtIt(odp.peso,1)} kg</span>` : '');
+
+        const acts = document.createElement('div');
+        acts.style.cssText = 'display:flex;gap:6px;';
+
+        const btnEdit = document.createElement('button');
+        btnEdit.className = 'btn-edit-odp';
+        btnEdit.textContent = '✎';
+        btnEdit.addEventListener('click', () => {
+            apriODP();
+            // piccolo delay per assicurarsi che il modal sia aperto
+            setTimeout(() => { q('#m-odp-input').value = odp.numero; q('#m-odp-peso').value = odp.peso > 0 ? odp.peso : ''; odps = odps.filter(o => o.id !== odp.id); renderODPModal(); }, 50);
+        });
+
+        const btnDel = document.createElement('button');
+        btnDel.className = 'btn-del-row';
+        btnDel.textContent = '✕';
+        btnDel.addEventListener('click', () => {
             if (!confirm('Eliminare questo ODP?')) return;
-            odps = odps.filter(o => o !== odp);
-            renderODPModal();
+            odps = odps.filter(o => o.id !== odp.id);
             aggiornaVistaODP();
         });
+
+        acts.appendChild(btnEdit);
+        acts.appendChild(btnDel);
         div.appendChild(sp);
-        div.appendChild(btn);
+        div.appendChild(acts);
         container.appendChild(div);
     });
 }
@@ -1333,31 +1598,36 @@ function toast(msg, ms = 2200) {
 }
 
 /* ================================================================
-   CONFERMA VERBALE — Excel + GAS + torna alla pagina principale
+   CONFERMA VERBALE
 ================================================================ */
 async function confermaVerbale() {
-    const bp = q('#vdc-bp').value;
-    const data = q('#vdc-data').value;
+    const bp      = q('#vdc-bp').value;
+    const data    = q('#vdc-data').value;
     const destino = (q('#vdc-destino').value || '').trim();
 
-    if (!bp) { toast('⚠️ Seleziona il Business Partner'); switchTab('intestazione'); return; }
+    if (!bp)   { toast('⚠️ Seleziona il Business Partner'); switchTab('intestazione'); return; }
     if (!data) { toast('⚠️ Inserisci la data del verbale'); switchTab('intestazione'); return; }
 
-    // ✅ BLOCCO se nessun ODP inserito
     if (!odps.length) {
         toast('⚠️ Inserisci almeno un ODP prima di confermare!');
         switchTab('odp');
         return;
     }
 
-    // ✅ AVVISO se nessuna riga carico
     if (!righeCarico.length && !confirm('Non hai inserito righe di carico. Confermare ugualmente?')) return;
+
+    // [MODIFICA] se ci sono righe con peso=0 e ODP con peso → splitta automaticamente
+    const righeSenzaPeso = righeCarico.filter(r => r.peso === 0);
+    const totPesoODP = odps.reduce((s, o) => s + (o.peso || 0), 0);
+    if (righeSenzaPeso.length > 0 && totPesoODP > 0) {
+        splittaPeso('auto'); // silenzioso
+    }
+
     const docNum = generateDocNum();
 
-    // ✅ POP-UP conferma finale
-    const totColli = righeCarico.reduce((s,r) => s + r.quantita, 0);
-    const totVolume = righeCarico.reduce((s,r) => s + r.volume * r.quantita, 0);
-    const totPeso = righeCarico.reduce((s,r) => s + r.peso, 0);
+    const totColli       = righeCarico.reduce((s,r) => s + r.quantita, 0);
+    const totVolume      = righeCarico.reduce((s,r) => s + r.volume * r.quantita, 0);
+    const totPeso        = righeCarico.reduce((s,r) => s + r.peso, 0);
     const tipoSpedizione = q('#vdc-tipo-spedizione').value || '';
 
     const riepilogo = `Sei sicuro di voler confermare il verbale?\n\n`
@@ -1376,122 +1646,87 @@ async function confermaVerbale() {
     btnEl.textContent = '⏳ Elaborazione...';
 
     try {
-        const dataFmt = data.split('-').reverse().join('/');
-        const commessa = q('#vdc-commessa').value || '';
-        const plant = q('#vdc-plant').value || '';
-        const note = q('#vdc-note').value || '';
+        const dataFmt   = data.split('-').reverse().join('/');
+        const commessa  = q('#vdc-commessa').value || '';
+        const plant     = q('#vdc-plant').value || '';
+        const note      = q('#vdc-note').value || '';
         const dataExcel = data.replace(/-/g, '');
-
 
         const wb = XLSX.utils.book_new();
 
-/* --- SHEET 1: INTESTAZIONE (tutto su una riga) --- */
-        const codeBP = bp.split('–')[0].trim(); //  estrae es. "F000002" da "F000002 – VODAFONE..."
+        /* --- SHEET 1: INTESTAZIONE --- */
+        const codeBP  = bp.split('–')[0].trim();
         const namesBP = bp.split('–')[1].trim();
 
-const hdrInt = [
-    'DocNum','U_CodeBP','U_NameBP','U_AWB','U_Data','U_Plant','U_TipoSpedizione','U_Commessa','U_Destino',
-    'U_Note','U_TotColli','U_VolumeTot','U_PesoTot'
-];
-const rowInt = [
-    docNum, codeBP, namesBP, '',
-    dataExcel, plant, tipoSpedizione, commessa, destino,
-    note, totColli, totVolume.toFixed(3).replace('.',','), totPeso.toFixed(1).replace('.',',')
-];
-const hdrInt2 = [
-    'DocNum','Code_BP','Business_Partner','AWB','Data','Plant','Tipo_Spedizione','Commessa','Destino',
-    'Note','Totale_Colli','Volume_Totale_MC','Peso_Totale_Kg'
-];
+        const hdrInt  = ['DocNum','U_CodeBP','U_NameBP','U_AWB','U_Data','U_Plant','U_TipoSpedizione','U_Commessa','U_Destino','U_Note','U_TotColli','U_VolumeTot','U_PesoTot'];
+        const hdrInt2 = ['DocNum','Code_BP','Business_Partner','AWB','Data','Plant','Tipo_Spedizione','Commessa','Destino','Note','Totale_Colli','Volume_Totale_MC','Peso_Totale_Kg'];
+        const rowInt  = [docNum, codeBP, namesBP, '', dataExcel, plant, tipoSpedizione, commessa, destino, note, totColli, totVolume.toFixed(3).replace('.',','), totPeso.toFixed(1).replace('.',',')];
 
-const ws1 = XLSX.utils.aoa_to_sheet([hdrInt, hdrInt2, rowInt]);
-ws1['!cols'] = [5,10,28,12,12,8,18,30,30,12,18,16].map(w => ({wch:w}));
+        const ws1 = XLSX.utils.aoa_to_sheet([hdrInt, hdrInt2, rowInt]);
+        ws1['!cols'] = [5,10,28,12,12,8,18,30,30,12,18,16].map(w => ({wch:w}));
         ws1['!rows'] = [{ hidden: true }, {}, {}];
-XLSX.utils.book_append_sheet(wb, ws1, 'Intestazione');
+        XLSX.utils.book_append_sheet(wb, ws1, 'Intestazione');
 
         /* --- SHEET 2: DETTAGLI CARICO --- */
-        const hdrCar =['DocNum','LineNum','U_TipoImballo','U_Qta','U_Altezza','U_Larghezza',
-                         'U_Profondita','U_VolumeU','U_VolumeTotR','U_TotPesoR','U_NoteR'
-                        ];
+        const hdrCar  = ['DocNum','LineNum','U_TipoImballo','U_Qta','U_Altezza','U_Larghezza','U_Profondita','U_VolumeU','U_VolumeTotR','U_TotPesoR','U_NoteR'];
+        const hdrCar2 = ['DocNum','LineNum','Imballo','Quantity','Altezza_Cm','Larghezza_Cm','Profondita_Cm','Volume_Unitario_Mc','Volume_Totale_Riga_Mc','Peso_Totale_Riga_Kg','Note'];
         const rowsCar = righeCarico.map((r,i) => [
-             docNum,i, r.imballo, r.quantita,
+            docNum, i, r.imballo, r.quantita,
             r.altezza, r.larghezza, r.profondita,
-            r.volume.toFixed(4).replace('.',','), (r.volume * r.quantita).toFixed(4).replace('.',','),
-            r.peso.toFixed(1).replace('.',','), r.note || ''
+            r.volume.toFixed(4).replace('.',','),
+            (r.volume * r.quantita).toFixed(4).replace('.',','),
+            r.peso.toFixed(1).replace('.',','),
+            r.note || ''
         ]);
-        //rowsCar.push([
-          //  'TOTALE','', totColli,
-           // '','','','', totVolume.toFixed(4).replace('.',','),
-            //totPeso.toFixed(1).replace('.',','), ''
-        //]);
-        const hdrCar2 = [
-            'DocNum','LineNum','Imballo','Quantity',
-            'Altezza_Cm','Larghezza_Cm','Profondita_Cm',
-            'Volume_Unitario_Mc','Volume_Totale_Riga_Mc',
-            'Peso_Totale_Riga_Kg','Note'
-        ];
         const ws2 = XLSX.utils.aoa_to_sheet([hdrCar, hdrCar2, ...rowsCar]);
         ws2['!cols'] = [5,22,10,14,14,14,20,22,20,30].map(w => ({wch:w}));
         ws2['!rows'] = [{ hidden: true }, {}, ...rowsCar.map(() => ({}))];
         XLSX.utils.book_append_sheet(wb, ws2, 'Dettagli Carico');
 
-/* --- SHEET 3: ODP --- */
-const rowsODP = odps.map((o,i) => [ docNum,i, o]);
-const ws3 = XLSX.utils.aoa_to_sheet([
-    ['DocNum','LineNum','U_ODP'],
-    ['DocNum','LineNum','Numero_ODP'],
-    ...rowsODP //  spread
-]);
-ws3['!cols'] = [{wch:5},{wch:25}];
-ws3['!rows'] = [{ hidden: true }, {}, ...rowsODP.map(() => ({}))];
-XLSX.utils.book_append_sheet(wb, ws3, 'Dettagli ODP');
+        /* --- SHEET 3: ODP — [MODIFICA] aggiunta colonna Peso --- */
+        const hdrODP  = ['DocNum','LineNum','U_ODP','U_PesoODP'];
+        const hdrODP2 = ['DocNum','LineNum','Numero_ODP','Peso_ODP_Kg'];
+        const rowsODP = odps.map((o,i) => [
+            docNum, i, o.numero,
+            (o.peso || 0).toFixed(1).replace('.',',')
+        ]);
+        const ws3 = XLSX.utils.aoa_to_sheet([hdrODP, hdrODP2, ...rowsODP]);
+        ws3['!cols'] = [{wch:5},{wch:8},{wch:25},{wch:14}];
+        ws3['!rows'] = [{ hidden: true }, {}, ...rowsODP.map(() => ({}))];
+        XLSX.utils.book_append_sheet(wb, ws3, 'Dettagli ODP');
 
-/* --- NOME FILE: contiene commessa + destino --- */
-const commessaShort = commessa
-    ? commessa.replace(/[^a-zA-Z0-9\-]/g,'_')
-    : 'NoCommessa';
-const destShort = destino
-    ? destino.substring(0,25).replace(/[^a-zA-Z0-9]/g,'_')
-    : 'NoDestino';
-const dataStr  = data.replace(/-/g,'');
-const fileName = `VDC_${commessaShort}_${destShort}_${dataStr}.xlsx`;
+        /* --- NOME FILE --- */
+        const commessaShort = commessa ? commessa.replace(/[^a-zA-Z0-9\-]/g,'_') : 'NoCommessa';
+        const destShort     = destino  ? destino.substring(0,25).replace(/[^a-zA-Z0-9]/g,'_') : 'NoDestino';
+        const dataStr       = data.replace(/-/g,'');
+        const fileName      = `VDC_${commessaShort}_${destShort}_${dataStr}.xlsx`;
 
-        /* --- DOWNLOAD LOCALE --- */
         XLSX.writeFile(wb, fileName);
 
-        /* --- INVIO GAS (Drive + Mail) --- */
-        const wbArr = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+        /* --- INVIO GAS --- */
+        const wbArr  = XLSX.write(wb, { bookType:'xlsx', type:'array' });
         const base64 = btoa(String.fromCharCode(...new Uint8Array(wbArr)));
 
         const soggetto = `Verbale di Carico – ${destino || commessa} –${commessa} – ${dataFmt}`;
-        const corpo = `Verbale di Carico del ${dataFmt}\n`
-                       + `Business Partner: ${bp}\n`
-                       + `Destino: ${destino}\n`
-                       + `Commessa: ${commessa}\n\n`
+        const corpo    = `Verbale di Carico del ${dataFmt}\n`
+                       + `Business Partner: ${bp}\nDestino: ${destino}\nCommessa: ${commessa}\n\n`
                        + `Colli: ${totColli} | Volume: ${totVolume.toFixed(3).replace('.',',')} m³ | Peso: ${totPeso.toFixed(1).replace('.',',')} kg\n\n`
                        + `File allegato: ${fileName}`;
-
 
         GM_xmlhttpRequest({
             method:  'POST',
             url:     GAS_URL,
             headers: { 'Content-Type': 'application/json' },
-            data:    JSON.stringify({
-                fileName, content: base64,
-                emailTo: EMAIL_TO,
-                subject: soggetto,
-                body:    corpo
-            }),
+            data:    JSON.stringify({ fileName, content: base64, emailTo: EMAIL_TO, subject: soggetto, body: corpo }),
             onload:  r => console.log('VDC GAS:', r.responseText.slice(0,100)),
             onerror: e => console.warn('VDC GAS err:', e)
         });
 
         toast(`✅ Verbale confermato! Email → ${EMAIL_TO}`, 3000);
 
-        /* --- Torna alla pagina principale dopo 1.5 s --- */
         setTimeout(() => {
-            // reset stato
             righeCarico = [];
-            odps = [];
+            odps        = [];
             aggiornaVistaCarico();
             aggiornaVistaODP();
             chiudiOverlay();
@@ -1541,15 +1776,13 @@ function injectMenuBtn() {
    BOOTSTRAP
 ================================================================ */
 injectCSS();
-buildOverlay(); // costruisce in background subito
+buildOverlay();
 
-// Retry ogni 500ms fino a 30 secondi
 let n = 0;
 const ti = setInterval(() => {
     if (injectMenuBtn() || ++n > 60) clearInterval(ti);
 }, 500);
 
-// Observer per SPA Framework7
 new MutationObserver(injectMenuBtn)
     .observe(document.body, { childList: true, subtree: false });
 
