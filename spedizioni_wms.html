@@ -168,7 +168,7 @@ select.fc option{background:var(--card)}
 #copyToast{position:fixed;bottom:28px;right:28px;background:var(--green);color:#021a10;font-family:var(--ff-mono);font-size:12px;font-weight:700;padding:9px 18px;border-radius:6px;opacity:0;transform:translateY(10px);transition:opacity .18s,transform .18s;pointer-events:none;z-index:9999;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #copyToast.show{opacity:1;transform:translateY(0)}
 .fixed-area{flex-shrink:0;padding:16px 24px 0;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
-.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 24px 20px;display:flex;flex-direction:column}
+.scroll-area{flex:1;overflow-y:auto;overflow-x:auto;padding:0 24px 20px;display:flex;flex-direction:column}
 .stats{padding-top:4px;padding-bottom:6px}
 .stats{display:flex;gap:12px;flex-wrap:wrap}
 .stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;min-width:120px}
@@ -186,44 +186,21 @@ select.fc option{background:var(--card)}
 .tcnt{display:inline-block;background:var(--border);color:var(--muted);font-family:var(--ff-mono);font-size:10px;padding:1px 6px;border-radius:8px;margin-left:5px;vertical-align:middle}
 .tab.on .tcnt{background:var(--amber-dim);color:var(--amber)}
 .tab-panel{display:none}.tab-panel.on{display:block}
-.tbl-wrap{border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:0;overflow:auto;}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-thead th{
-  position:sticky;
-  top:0;
-  z-index:10;
-  background:var(--card);
-  font-family:var(--ff-cond);
-  font-size:12px;
-  font-weight:600;
-  letter-spacing:.5px;
-  text-transform:uppercase;
-  color:var(--subtle);
-  padding:8px 11px;
-  border-right:1px solid var(--border);
-  border-bottom:2px solid var(--border);
-  white-space:nowrap;
-  user-select:none;
-}
-thead th:last-child{border-right:none!important}
-tbody tr{border-bottom:1px solid rgba(36,48,72,.7);transition:background .1s}
-tbody tr:hover{background:rgba(255,255,255,.025)}
-tbody tr:last-child{border-bottom:none}
-td{padding:8px 11px;border-right:1px solid rgba(36,48,72,.5);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;user-select:text;cursor:default}
-td:last-child{border-right:none}
-td.dn{font-family:var(--ff-mono);font-size:11px;color:var(--subtle)}
-td.awb-val{font-family:var(--ff-mono);font-size:11px;font-weight:500;color:var(--amber)}
-td.awb-empty{color:var(--border);font-size:18px;text-align:center;user-select:none}
-body.copy-mode td:not(.awb-empty){cursor:pointer;transition:background .1s,color .1s}
-body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var(--amber)}
-.state{padding:60px 24px;text-align:center;color:var(--muted);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px}
-.state-ico{font-size:42px;opacity:.4}
-.state-title{font-weight:600;color:var(--subtle);font-size:15px}
-.spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.prog-wrap{width:200px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
-.prog-bar{height:100%;background:var(--amber);border-radius:2px;transition:width .4s}
-::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.tbl-wrap{border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:0}
+.tbl-inner{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead tr:first-child{display:none}
+thead th{background:var(--card)}
+.tbl-wrap{border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:8px;overflow-x:auto}
+.tbl-wrap table{border-collapse:collapse;width:100%}
+thead tr:first-child{display:none}
+thead th{position:sticky;top:0;z-index:10;background:var(--card);box-shadow:0 2px 0 var(--border)}
+/* thead fisso separato */
+.tbl-outer{margin-top:8px;border-radius:8px;border:1px solid var(--border)}
+.tbl-outer table{border-collapse:collapse;white-space:nowrap;width:max-content;min-width:100%}
+thead tr:first-child{display:none}
+thead th{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:2px solid var(--border);padding:6px 11px;font-family:var(--ff-cond);font-size:14px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--subtle);white-space:nowrap;border-right:1px solid var(--border)}
+thead th:last-child{border-right:none}
 /* ── COLUMN MANAGER ── */
 .col-mgr-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0;gap:8px}
 .col-mgr-btn{background:none;border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:11px;font-family:var(--ff-cond);font-weight:700;letter-spacing:.5px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
@@ -248,6 +225,29 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
 .col-mgr-close:hover{background:#2563eb}
 .col-mgr-hidden-note{font-size:10px;color:var(--muted);font-family:var(--ff-mono)}
 th.col-hidden,td.col-hidden{display:none}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+thead tr{background:var(--card);border-bottom:1px solid var(--border)}
+thead tr:first-child th{font-family:var(--ff-mono);font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:7px 11px 3px;border-right:1px solid var(--border);white-space:nowrap;user-select:none}
+thead tr:last-child th{font-family:var(--ff-cond);font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--subtle);padding:3px 11px 8px;border-right:1px solid var(--border);white-space:nowrap;user-select:none}
+thead th:last-child{border-right:none!important}
+tbody tr{border-bottom:1px solid rgba(36,48,72,.7);transition:background .1s}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+tbody tr:last-child{border-bottom:none}
+td{padding:8px 11px;border-right:1px solid rgba(36,48,72,.5);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;user-select:text;cursor:default;font-size:14.5px}
+td:last-child{border-right:none}
+td.dn{font-family:var(--ff-mono);font-size:11px;color:var(--subtle)}
+td.awb-val{font-family:var(--ff-mono);font-size:11px;font-weight:500;color:var(--amber)}
+td.awb-empty{color:var(--border);font-size:18px;text-align:center;user-select:none}
+body.copy-mode td:not(.awb-empty){cursor:pointer;transition:background .1s,color .1s}
+body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var(--amber)}
+.state{padding:60px 24px;text-align:center;color:var(--muted);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.state-ico{font-size:42px;opacity:.4}
+.state-title{font-weight:600;color:var(--subtle);font-size:15px}
+.spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.prog-wrap{width:200px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-bar{height:100%;background:var(--amber);border-radius:2px;transition:width .4s}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .btn-print{background:none;border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-family:var(--ff-cond);font-size:13px;font-weight:700;letter-spacing:1px;color:var(--subtle);cursor:pointer;transition:all .2s;align-self:flex-end}
 .btn-print:hover{border-color:#a855f7;color:#a855f7}
 .btn-print:disabled{opacity:.3;cursor:not-allowed}
@@ -305,6 +305,7 @@ th.col-hidden,td.col-hidden{display:none}
   </div>
 
   <div class="filters">
+    <!-- DATA DA con dropdown elenco date -->
     <div class="fg">
       <div class="fl">Data</div>
       <div class="date-input-wrap" id="dateFromWrap">
@@ -314,6 +315,7 @@ th.col-hidden,td.col-hidden{display:none}
         <div class="date-dropdown" id="ddFrom"></div>
       </div>
     </div>
+    <!-- DATA A con dropdown elenco date -->
     <div class="fg">
       <div class="fl">A Data</div>
       <div class="date-input-wrap" id="dateToWrap">
@@ -333,6 +335,7 @@ th.col-hidden,td.col-hidden{display:none}
     <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" disabled title="Ricarica dal file">↻ Aggiorna</button>
     <button class="btn-download" id="btnDownload" onclick="downloadFiltered()" disabled title="Scarica Excel filtrato">⬇ Scarica Excel</button>
     <button class="btn-print" id="btnPrint" onclick="printFiltered()" disabled title="Stampa spedizioni">🖨 Stampa</button>
+    <!-- TASTO ODP SMART COPY -->
     <button class="btn-odp-copy" id="btnOdpCopy" onclick="openOdpModal()" disabled title="Copia ODP in modo intelligente">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="1" width="9" height="11" rx="1.5"/><rect x="2" y="4" width="9" height="11" rx="1.5" fill="var(--surface)" stroke-width="1.5"/></svg>
       ODP
@@ -356,7 +359,7 @@ th.col-hidden,td.col-hidden{display:none}
     </div>
     <div id="tabBar"></div>
   </div>
-  <!-- Area scrollabile: corpo tabella -->
+  <!-- Area scrollabile: solo corpo tabella -->
   <div class="scroll-area">
     <div id="content">
       <div class="state"><div class="state-ico">📦</div><div class="state-title">Nessun dato caricato</div><div>Seleziona una data e premi <strong>Carica Dati</strong></div></div>
@@ -450,6 +453,7 @@ window.onload=function(){
     setUserUI(saved.name,saved.email,saved.picture);
   }
   waitGsi();
+  // Chiudi dropdown date cliccando fuori
   document.addEventListener('click',function(e){
     if(!e.target.closest('.date-input-wrap')) closeDateDropdowns();
   });
@@ -1186,6 +1190,7 @@ function parseXlsx(blob){
 }
 
 // ── CALCOLA TOTALI COLLI E PESO ───────────────
+// Colli = Intestazione r[10] (col K), Peso = Intestazione r[12] (col M)
 var COL_INT_COLLI=10, COL_INT_PESO=12;
 
 function calcTotals(intRows){
@@ -1212,6 +1217,7 @@ function renderAll(sheets){
   var odp=sheets['Dettagli ODP']||{headers:[],rows:[]};
   var awbCnt=int.rows.filter(function(r){ var dn=norm(r[0]); return AWB_MAP[dn]||(String(r[3]||'').trim()!==''); }).length;
 
+  // Calcola totali da Intestazione (col K=colli, col M=peso)
   var totals=calcTotals(int.rows);
 
   document.getElementById('sDoc').textContent=int.rows.length;
@@ -1230,6 +1236,7 @@ function renderAll(sheets){
     : currentDate.substr(6,2)+'/'+currentDate.substr(4,2)+'/'+currentDate.substr(0,4)+' → '+dateTo.substr(6,2)+'/'+dateTo.substr(4,2)+'/'+dateTo.substr(0,4);
   document.getElementById('fInfo').textContent=rangeLabel+' · '+int.rows.length+' spedizioni';
 
+  // Tabs fissi nel tabBar
   var tabs='<div class="tabs">';
   tabs+=tabBtn('ti','Intestazione',int.rows.length,true);
   tabs+=tabBtn('tc','Dettagli Carico',car.rows.length,false);
@@ -1237,12 +1244,16 @@ function renderAll(sheets){
   tabs+='</div>';
   document.getElementById('tabBar').innerHTML=tabs;
 
-  var h='<div id="ti" class="tab-panel on">'+renderTable(int,true,'Intestazione')+'</div>';
-  h+='<div id="tc" class="tab-panel">'+renderTable(car,false,'Dettagli Carico')+'</div>';
-  h+='<div id="to" class="tab-panel">'+renderTable(odp,false,'Dettagli ODP')+'</div>';
+  // Render tabelle — restituisce {thead, body}
+  // Render tabelle (ritorna stringa HTML)
+  var ri=renderTable(int,true,'Intestazione');
+  var rc=renderTable(car,false,'Dettagli Carico');
+  var ro=renderTable(odp,false,'Dettagli ODP');
+  var h='<div id="ti" class="tab-panel on">'+ri+'</div>';
+  h+='<div id="tc" class="tab-panel">'+rc+'</div>';
+  h+='<div id="to" class="tab-panel">'+ro+'</div>';
   setContent(h);
 }
-
 function tabBtn(id,label,cnt,on){
   var sn={ti:'Intestazione',tc:'Dettagli Carico',to:'Dettagli ODP'}[id];
   var hid=getHiddenCols(sn);
@@ -1250,19 +1261,22 @@ function tabBtn(id,label,cnt,on){
   return '<button class="tab'+(on?' on':'')+'" onclick="switchTab(\''+id+'\')">'+label+'<span class="tcnt">'+cnt+'</span>'+gear+'</button>'
     +'<button class="col-mgr-btn'+(hid.length?' has-hidden':'')+'" onclick="openColMgr(\''+sn+'\')" title="Gestisci colonne">⚙</button>';
 }
-
 function switchTab(id){
-  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
+  document.querySelectorAll('#tabBar .tab').forEach(function(b){b.classList.remove('on');});
+  var tabIdx={ti:0,tc:1,to:2}[id];
+  var tabBtns=document.querySelectorAll('#tabBar .tab');
+  if(tabBtns[tabIdx]) tabBtns[tabIdx].classList.add('on');
   document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('on');});
-  document.getElementById(id).classList.add('on');
-  document.querySelectorAll('#tabBar .tab')[{ti:0,tc:1,to:2}[id]].classList.add('on');
+  var panel=document.getElementById(id);
+  if(panel) panel.classList.add('on');
   var sa=document.querySelector('.scroll-area');
   if(sa) sa.scrollTop=0;
 }
 
+
 function renderTable(sd,isInt,sheetName){
   var hdr=sd.headers||[],rows=sd.rows||[];
-  if(!rows.length) return '<div class="state"><div class="state-ico">🔍</div><div class="state-title">Nessun dato</div><div>Nessuna riga trovata con i filtri selezionati.</div></div>';
+  if(!rows.length)return '<div class="state"><div class="state-ico">🔍</div><div class="state-title">Nessun dato</div><div>Nessuna riga trovata con i filtri selezionati.</div></div>';
   var nc=Math.max(hdr.length>0?hdr[0].length:0,rows.length>0?rows[0].length:0);
   var destiMap={};
   if(!isInt&&currentData&&currentData['Intestazione']){
@@ -1274,17 +1288,24 @@ function renderTable(sd,isInt,sheetName){
   function hcls(c){ return hiddenSet[c]?' col-hidden':''; }
   var destHidden=showDest&&(hiddenSet[-1]||false);
 
-  var hdrRow=hdr[1]||hdr[0]||[];
-
-  var h='<div class="tbl-wrap"><table>';
-  // THEAD — unico, sticky via CSS
-  h+='<thead><tr>';
-  if(adminMode) h+='<th></th>';
-  if(showDest) h+='<th'+(destHidden?' class="col-hidden"':'')+' style="color:var(--amber)">DESTINO</th>';
-  for(var c=0;c<nc;c++) h+='<th'+(hcls(c)?' class="col-hidden"':'')+'>'+esc(hdrRow[c]||'')+'</th>';
-  h+='</tr></thead>';
-
-  h+='<tbody>';
+  var h='<div class="tbl-outer"><table><thead>';
+  // Riga 1 nascosta via CSS (thead tr:first-child{display:none})
+  if(hdr[0]){
+    h+='<tr>';
+    if(adminMode) h+='<th></th>';
+    if(showDest) h+='<th'+(destHidden?' class="col-hidden"':'')+'>U_DEST</th>';
+    for(var c=0;c<nc;c++) h+='<th'+(hcls(c)?' class="col-hidden"':'')+'>'+esc(hdr[0][c]||'')+'</th>';
+    h+='</tr>';
+  }
+  // Riga 2 — quella visibile sticky
+  if(hdr[1]){
+    h+='<tr>';
+    if(adminMode) h+='<th></th>';
+    if(showDest) h+='<th'+(destHidden?' class="col-hidden"':'')+' style="color:var(--amber)">DESTINO</th>';
+    for(var c=0;c<nc;c++) h+='<th'+(hcls(c)?' class="col-hidden"':'')+'>'+esc(hdr[1][c]||'')+'</th>';
+    h+='</tr>';
+  }
+  h+='</thead><tbody>';
   rows.forEach(function(row,ri){
     var dn=norm(row[0]); h+='<tr>';
     if(adminMode){
@@ -1330,6 +1351,7 @@ function renderTable(sd,isInt,sheetName){
   h+='</tbody></table></div>';
   return h;
 }
+
 
 // ── AWB ───────────────────────────────────────
 function applyAwb(){
@@ -1401,15 +1423,22 @@ function getOdpColIdx(){
   return 2;
 }
 
+// ── RAGGRUPPA ODP PER CHIAVE (Destino+Tipo+Data+AWB) ──
+// Restituisce array di gruppi:
+// [ { key, label, odps:[] }, ... ]
 function groupOdpByQuad(){
   if(!currentData) return [];
   var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
   var intRows=(currentData['Intestazione']||{rows:[]}).rows;
   var col=getOdpColIdx();
+
+  // Mappa DOCNUM → riga intestazione
   var intMap={};
   intRows.forEach(function(r){ intMap[norm(r[0])]=r; });
-  var groups=[];
-  var groupMap={};
+
+  var groups=[];   // ordine di inserimento
+  var groupMap={}; // key → index in groups
+
   odpRows.forEach(function(r){
     var odp=String(r[col]===null||r[col]===undefined?'':r[col]).trim();
     if(!odp) return;
@@ -1419,22 +1448,33 @@ function groupOdpByQuad(){
     var tipo   =String(ir[6]||'').trim();
     var data   =String(ir[1]||'').trim();
     var awb    =String(ir[3]||'').trim();
+
+    // Formatta data YYYYMMDD → GG/MM/AAAA se 8 cifre
     var dataFmt=data;
     if(/^\d{8}$/.test(data)) dataFmt=data.substr(6,2)+'/'+data.substr(4,2)+'/'+data.substr(0,4);
+
     var key=[destino,tipo,data,awb].join('|');
     if(groupMap[key]===undefined){
       groupMap[key]=groups.length;
-      groups.push({key:key,destino:destino,tipo:tipo,dataFmt:dataFmt,awb:awb,odps:[]});
+      groups.push({
+        key:key,
+        destino:destino, tipo:tipo, dataFmt:dataFmt, awb:awb,
+        odps:[]
+      });
     }
+    // Evita duplicati ODP nello stesso gruppo
     var g=groups[groupMap[key]];
     if(g.odps.indexOf(odp)===-1) g.odps.push(odp);
   });
+
   return groups;
 }
 
+// ── COMPRESSIONE INTELLIGENTE ─────────────────
+// Prefisso minimo 2 char, separatore senza spazi per massimizzare i char utili
 var ODP_MIN_PREFIX=2;
-var ODP_SEP=';';
-var ODP_INNER='+';
+var ODP_SEP=';'; // separatore tra gruppi
+var ODP_INNER='+'; // separatore dentro gruppo
 
 function commonPrefix(a,b){
   var i=0; while(i<a.length&&i<b.length&&a[i]===b[i])i++; return a.substring(0,i);
@@ -1453,6 +1493,7 @@ function groupByPrefix(list){
   }
   groups.push(cur); return groups;
 }
+// Formato: prefix+suffix1+suffix2+... senza parentesi, gruppi separati da ;
 function compressGroup(group){
   if(group.length===1) return group[0];
   var prefix=groupPrefix(group);
@@ -1461,7 +1502,9 @@ function compressGroup(group){
   if(!nonEmpty.length) return prefix;
   return prefix+ODP_INNER+nonEmpty.join(ODP_INNER);
 }
+// Se un singolo token supera max, spezza sui suffissi riusando il prefisso
 function breakLargeToken(tok,maxChars){
+  // tok formato: prefix+s1+s2+s3
   var parts=tok.split(ODP_INNER);
   if(parts.length<=1) return [tok];
   var base=parts[0];
@@ -1495,15 +1538,19 @@ function compressOdpList(list){
   return pgroups.map(function(g){ return compressGroup(g); });
 }
 
+// ── RENDER CHUNKS ─────────────────────────────
 function renderChunks(){
   var container=document.getElementById('odpChunks');
   container.innerHTML='';
+
   if(!currentData){
     container.innerHTML='<div style="font-size:12px;color:var(--muted);padding:10px">Nessun dato caricato.</div>';
     document.getElementById('odpStats').textContent='';
     return;
   }
+
   var quadGroups=groupOdpByQuad();
+
   if(!quadGroups.length){
     var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
     if(odpRows.length>0){
@@ -1523,18 +1570,30 @@ function renderChunks(){
     }
     return;
   }
+
+  // Conta ODP totali unici
   var totalOdp=0;
   quadGroups.forEach(function(g){ totalOdp+=g.odps.length; });
   var totalChunks=0;
+
   quadGroups.forEach(function(g,gi){
-    if(gi>0){ var sep=document.createElement('div'); sep.className='odp-chunk-sep'; container.appendChild(sep); }
+    // Separatore tra gruppi
+    if(gi>0){
+      var sep=document.createElement('div');
+      sep.className='odp-chunk-sep';
+      container.appendChild(sep);
+    }
+
+    // Intestazione gruppo
     var header=document.createElement('div');
     header.style.cssText='padding:6px 10px 3px;display:flex;flex-wrap:wrap;gap:6px;align-items:center';
     function badge(val,color){
       if(!val) return '';
       var sp=document.createElement('span');
-      sp.style.cssText='font-family:var(--ff-cond);font-size:11px;font-weight:700;letter-spacing:.5px;padding:2px 8px;border-radius:4px;background:'+color+';color:#fff;white-space:nowrap';
-      sp.textContent=val; return sp;
+      sp.style.cssText='font-family:var(--ff-cond);font-size:11px;font-weight:700;letter-spacing:.5px;'+
+        'padding:2px 8px;border-radius:4px;background:'+color+';color:#fff;white-space:nowrap';
+      sp.textContent=val;
+      return sp;
     }
     var b1=badge(g.destino,'rgba(245,158,11,.25)');
     var b2=badge(g.tipo,'rgba(59,130,246,.25)');
@@ -1544,26 +1603,48 @@ function renderChunks(){
     if(b2) header.appendChild(b2);
     if(b3) header.appendChild(b3);
     if(b4) header.appendChild(b4);
+    // Contatore ODP nel gruppo
     var cnt=document.createElement('span');
     cnt.style.cssText='font-family:var(--ff-mono);font-size:10px;color:var(--muted);margin-left:auto';
     cnt.textContent=g.odps.length+' ODP';
     header.appendChild(cnt);
     container.appendChild(header);
-    var tokens=odpMode==='compact'?compressOdpList(g.odps):g.odps;
-    var chunks=splitIntoChunks(tokens,ODP_MAX_CHARS);
+
+    // Comprimi e spezza in chunk ≤30 char
+    var tokens= odpMode==='compact' ? compressOdpList(g.odps) : g.odps;
+    var chunks=splitIntoChunks(tokens, ODP_MAX_CHARS);
     totalChunks+=chunks.length;
+
     chunks.forEach(function(chunk,ci){
-      var row=document.createElement('div'); row.className='odp-chunk';
-      var num=document.createElement('span'); num.className='odp-chunk-num'; num.textContent=(ci+1)+'.'; row.appendChild(num);
-      var txt=document.createElement('span'); txt.className='odp-chunk-text'; txt.textContent=chunk; row.appendChild(txt);
-      var len=document.createElement('span'); len.className='odp-chunk-len'; len.textContent=chunk.length+' ch';
+      var row=document.createElement('div');
+      row.className='odp-chunk';
+
+      var num=document.createElement('span');
+      num.className='odp-chunk-num';
+      num.textContent=(ci+1)+'.';
+      row.appendChild(num);
+
+      var txt=document.createElement('span');
+      txt.className='odp-chunk-text';
+      txt.textContent=chunk;
+      row.appendChild(txt);
+
+      var len=document.createElement('span');
+      len.className='odp-chunk-len';
+      len.textContent=chunk.length+' ch';
       if(chunk.length>ODP_MAX_CHARS) len.style.color='var(--red)';
       row.appendChild(len);
-      var btn=document.createElement('button'); btn.className='odp-chunk-copy'; btn.textContent='Copia';
+
+      var btn=document.createElement('button');
+      btn.className='odp-chunk-copy';
+      btn.textContent='Copia';
       (function(c,b){
         b.addEventListener('click',function(){
           if(navigator.clipboard&&navigator.clipboard.writeText){
-            navigator.clipboard.writeText(c).then(function(){ b.textContent='✓'; b.classList.add('copied'); setTimeout(function(){ b.textContent='Copia'; b.classList.remove('copied'); },1500); }).catch(function(){ legacyCopy(c,b); });
+            navigator.clipboard.writeText(c).then(function(){
+              b.textContent='✓'; b.classList.add('copied');
+              setTimeout(function(){ b.textContent='Copia'; b.classList.remove('copied'); },1500);
+            }).catch(function(){ legacyCopy(c,b); });
           } else { legacyCopy(c,b); }
         });
       })(chunk,btn);
@@ -1571,7 +1652,9 @@ function renderChunks(){
       container.appendChild(row);
     });
   });
-  document.getElementById('odpStats').textContent=totalOdp+' ODP unici · '+quadGroups.length+' gruppi · '+totalChunks+' scaglioni (max '+ODP_MAX_CHARS+' ch)';
+
+  document.getElementById('odpStats').textContent=
+    totalOdp+' ODP unici · '+quadGroups.length+' gruppi · '+totalChunks+' scaglioni (max '+ODP_MAX_CHARS+' ch)';
 }
 
 function legacyCopy(text,btn){
@@ -1594,7 +1677,8 @@ function copyAllChunks(){
   var all=chunks.join('\n');
   if(!all) return;
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(all).then(function(){ showToast('Tutti gli scaglioni copiati!'); closeOdpModal(); }).catch(function(){ fallbackCopy(all); closeOdpModal(); });
+    navigator.clipboard.writeText(all).then(function(){ showToast('Tutti gli scaglioni copiati!'); closeOdpModal(); })
+    .catch(function(){ fallbackCopy(all); closeOdpModal(); });
   } else { fallbackCopy(all); closeOdpModal(); }
 }
 function openOdpModal(){
@@ -1609,15 +1693,17 @@ function closeOdpModal(){
 }
 
 // ── COLUMN MANAGER ───────────────────────────
-var COL_MGR_KEY='wms_hidden_cols';
+var COL_MGR_KEY='wms_hidden_cols'; // localStorage key
 var colMgrCurrentSheet=null;
 
+// Legge colonne nascoste da localStorage → oggetto {sheetName: [colIdx, ...]}
 function loadHiddenCols(){
   try{ var s=localStorage.getItem(COL_MGR_KEY); return s?JSON.parse(s):{}; }catch(e){ return {}; }
 }
 function saveHiddenCols(obj){
   try{ localStorage.setItem(COL_MGR_KEY,JSON.stringify(obj)); }catch(e){}
 }
+// Restituisce array di indici colonna nascosti per la sheet
 function getHiddenCols(sheetName){
   var obj=loadHiddenCols();
   return obj[sheetName]||[];
@@ -1631,16 +1717,24 @@ function openColMgr(sheetName){
   var hidden=getHiddenCols(sheetName);
   var hidSet={};
   hidden.forEach(function(i){ hidSet[i]=true; });
+
   document.getElementById('colMgrSheetLabel').textContent=sheetName;
   var list=document.getElementById('colMgrList');
   list.innerHTML='';
+
+  // Colonna speciale DESTINO (solo sheet non-Intestazione)
   if(sheetName!=='Intestazione'){
-    list.appendChild(makeColItem(-1,'DESTINO (extra)',!hidSet[-1]));
+    var destVisible=!hidSet[-1];
+    var item=makeColItem(-1,'DESTINO (extra)',destVisible);
+    list.appendChild(item);
   }
+
   for(var c=0;c<nc;c++){
     var name=String(hdr[c]||'col '+c).trim()||'col '+c;
-    list.appendChild(makeColItem(c, name, !hidSet[c]));
+    var visible=!hidSet[c];
+    list.appendChild(makeColItem(c, name, visible));
   }
+
   updateColMgrNote(sheetName);
   document.getElementById('colMgrOverlay').classList.remove('hide');
 }
@@ -1654,8 +1748,12 @@ function makeColItem(colIdx, label, visible){
   cb.addEventListener('change', function(){
     toggleColVisibility(colMgrCurrentSheet, parseInt(this.dataset.col), this.checked);
   });
-  var lbl=document.createElement('span'); lbl.className='col-mgr-item-label'; lbl.textContent=label;
-  var idx=document.createElement('span'); idx.className='col-mgr-item-idx'; idx.textContent=colIdx>=0?'col '+colIdx:'';
+  var lbl=document.createElement('span');
+  lbl.className='col-mgr-item-label';
+  lbl.textContent=label;
+  var idx=document.createElement('span');
+  idx.className='col-mgr-item-idx';
+  idx.textContent=colIdx>=0?'col '+colIdx:'';
   item.appendChild(cb); item.appendChild(lbl); item.appendChild(idx);
   return item;
 }
@@ -1670,19 +1768,37 @@ function toggleColVisibility(sheetName, colIdx, visible){
   }
   if(!obj[sheetName].length) delete obj[sheetName];
   saveHiddenCols(obj);
-  // Re-render il panel interessato (una sola tabella ora, tutto aggiornato)
-  var panelId={Intestazione:'ti','Dettagli Carico':'tc','Dettagli ODP':'to'}[sheetName];
-  if(panelId&&currentData&&currentData[sheetName]){
-    var isInt=sheetName==='Intestazione';
-    document.getElementById(panelId).innerHTML=renderTable(currentData[sheetName],isInt,sheetName);
-  }
+  // Applica immediatamente senza re-render completo
+  applyHiddenColsToDOM(sheetName, obj[sheetName]||[]);
   updateColMgrNote(sheetName);
+  // Aggiorna badge tab
   if(currentData) updateTabBadges();
+}
+
+// Applica hide/show alle celle DOM senza re-render
+function applyHiddenColsToDOM(sheetName, hiddenArr){
+  var panelId={Intestazione:'ti','Dettagli Carico':'tc','Dettagli ODP':'to'}[sheetName];
+  if(!panelId) return;
+  var panel=document.getElementById(panelId);
+  if(!panel) return;
+  var nc=0;
+  var sd=currentData&&currentData[sheetName];
+  if(sd) nc=Math.max(sd.headers[0]?sd.headers[0].length:0, sd.rows.length?sd.rows[0].length:0);
+  var hidSet={};
+  hiddenArr.forEach(function(i){ hidSet[i]=true; });
+  // Per ogni colonna indice 0..nc-1, trova th e td per posizione
+  // Le th/td hanno data-col oppure usiamo nth-child
+  // Più semplice: toggle classe col-hidden su tutti gli elementi con data-colidx
+  // Usiamo l'approccio di cercare per class col-hidden o aggiungere data attr
+  // Rifare via re-render della sola tabella è più semplice e affidabile
+  var isInt=sheetName==='Intestazione';
+  panel.innerHTML=renderTable(sd, isInt, sheetName);
 }
 
 function updateColMgrNote(sheetName){
   var h=getHiddenCols(sheetName);
-  document.getElementById('colMgrNote').textContent=h.length?h.length+' nascoste':'Tutte visibili';
+  var note=document.getElementById('colMgrNote');
+  note.textContent=h.length?h.length+' nascoste':'Tutte visibili';
 }
 
 function resetColsForSheet(){
@@ -1690,11 +1806,14 @@ function resetColsForSheet(){
   var obj=loadHiddenCols();
   delete obj[colMgrCurrentSheet];
   saveHiddenCols(obj);
+  // Re-render
+  var sd=currentData&&currentData[colMgrCurrentSheet];
   var panelId={Intestazione:'ti','Dettagli Carico':'tc','Dettagli ODP':'to'}[colMgrCurrentSheet];
-  if(currentData&&currentData[colMgrCurrentSheet]&&panelId){
+  if(sd&&panelId){
     var isInt=colMgrCurrentSheet==='Intestazione';
-    document.getElementById(panelId).innerHTML=renderTable(currentData[colMgrCurrentSheet],isInt,colMgrCurrentSheet);
+    document.getElementById(panelId).innerHTML=renderTable(sd,isInt,colMgrCurrentSheet);
   }
+  // Reset checkboxes
   document.querySelectorAll('#colMgrList input[type=checkbox]').forEach(function(cb){ cb.checked=true; });
   updateColMgrNote(colMgrCurrentSheet);
   updateTabBadges();
@@ -1706,16 +1825,20 @@ function closeColMgr(){
   updateTabBadges();
 }
 
+// Aggiorna i badge ⚙N sui tab senza re-render completo
 function updateTabBadges(){
   if(!currentData) return;
   var map={ti:'Intestazione',tc:'Dettagli Carico',to:'Dettagli ODP'};
   document.querySelectorAll('#tabBar .tab').forEach(function(btn){
+    // Trova id del panel corrispondente
     var onclick=btn.getAttribute('onclick')||'';
     var m=onclick.match(/switchTab\('(\w+)'\)/);
     if(!m) return;
-    var sn=map[m[1]];
+    var panelId=m[1];
+    var sn=map[panelId];
     if(!sn) return;
     var hid=getHiddenCols(sn);
+    // Rimuovi gear esistente
     var gear=btn.querySelector('.tab-gear');
     if(gear) gear.remove();
     if(hid.length){
@@ -1726,15 +1849,19 @@ function updateTabBadges(){
       sp.textContent='⚙'+hid.length;
       btn.appendChild(sp);
     }
+    // Aggiorna btn-mgr accanto al tab
   });
+  // Aggiorna anche i col-mgr-btn
   document.querySelectorAll('.col-mgr-btn').forEach(function(btn){
     var onclick=btn.getAttribute('onclick')||'';
     var m=onclick.match(/openColMgr\('([^']+)'\)/);
     if(!m) return;
-    btn.classList.toggle('has-hidden', getHiddenCols(m[1]).length>0);
+    var hid=getHiddenCols(m[1]);
+    btn.classList.toggle('has-hidden', hid.length>0);
   });
 }
 
+// Click overlay chiude
 document.addEventListener('click',function(e){
   if(e.target.id==='colMgrOverlay') closeColMgr();
 });
@@ -1747,28 +1874,50 @@ function printFiltered(){
   var odpRows=currentData['Dettagli ODP'].rows||[];
   var carHdr=(currentData['Dettagli Carico'].headers||[])[1]||(currentData['Dettagli Carico'].headers||[])[0]||[];
   var odpHdr=(currentData['Dettagli ODP'].headers||[])[1]||(currentData['Dettagli ODP'].headers||[])[0]||[];
+
+  // Mappa DocNum → dati intestazione
   var intMap={};
   intRows.forEach(function(r){ intMap[norm(r[0])]=r; });
+
+  // Raggruppa Dettagli Carico per DocNum
   var carByDoc={};
-  carRows.forEach(function(r){ var dn=norm(r[0]); if(!carByDoc[dn]) carByDoc[dn]=[]; carByDoc[dn].push(r); });
+  carRows.forEach(function(r){
+    var dn=norm(r[0]);
+    if(!carByDoc[dn]) carByDoc[dn]=[];
+    carByDoc[dn].push(r);
+  });
+
+  // Raggruppa Dettagli ODP per DocNum
   var odpByDoc={};
-  odpRows.forEach(function(r){ var dn=norm(r[0]); if(!odpByDoc[dn]) odpByDoc[dn]=[]; odpByDoc[dn].push(r); });
+  odpRows.forEach(function(r){
+    var dn=norm(r[0]);
+    if(!odpByDoc[dn]) odpByDoc[dn]=[];
+    odpByDoc[dn].push(r);
+  });
+
+  // Colonne da mostrare per Det.Carico (escludi DocNum col0, LineNum col1)
   var carCols=[];
   for(var i=2;i<carHdr.length;i++) if(carHdr[i]) carCols.push(i);
+
+  // Colonne da mostrare per Det.ODP (escludi DocNum col0, LineNum col1)
   var odpCols=[];
   for(var i=2;i<odpHdr.length;i++) if(odpHdr[i]) odpCols.push(i);
+
   var html='<style>body{font-family:Arial,sans-serif;font-size:10px;color:#000}'+
     '.print-section{margin-bottom:16px;border:1px solid #ccc;border-radius:4px;overflow:hidden}'+
     '.print-header{background:#1a2236;color:#fff;padding:6px 10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}'+
     '.print-header span{font-size:10px}.print-header strong{font-size:11px;color:#f59e0b}'+
     '.print-header .awb-val{color:#10b981;font-weight:700}'+
-    '.print-sub{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:#e8edf5;padding:3px 10px;border-bottom:1px solid #ccc}'+
+    '.print-sub{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;'+
+    'background:#e8edf5;padding:3px 10px;border-bottom:1px solid #ccc}'+
     'table{width:100%;border-collapse:collapse;font-size:9px}'+
     'th{background:#eef2f7;padding:3px 6px;text-align:left;border:1px solid #ccc;font-weight:600}'+
     'td{padding:3px 6px;border:1px solid #e0e0e0}'+
     'tr:nth-child(even) td{background:#f7f9fc}'+
     '.no-data{padding:6px 10px;color:#999;font-style:italic;font-size:9px}'+
     '@media print{@page{margin:10mm}}</style>';
+
+  // Una sezione per ogni DocNum
   intRows.forEach(function(ir){
     var dn=norm(ir[0]);
     var awb=String(ir[3]||'').trim();
@@ -1777,7 +1926,9 @@ function printFiltered(){
     var data=String(ir[1]||'').trim();
     var bp=String(ir[2]||'').trim();
     if(/^\d{8}$/.test(data)) data=data.substr(6,2)+'/'+data.substr(4,2)+'/'+data.substr(0,4);
+
     html+='<div class="print-section">';
+    // Header spedizione
     html+='<div class="print-header">';
     html+='<strong>'+esc(dn)+'</strong>';
     html+='<span>'+esc(bp)+'</span>';
@@ -1786,6 +1937,8 @@ function printFiltered(){
     html+='<span>'+esc(destino)+'</span>';
     html+='<span class="awb-val">'+(awb?awb:'— no AWB —')+'</span>';
     html+='</div>';
+
+    // Dettagli Carico
     var cars=carByDoc[dn]||[];
     if(cars.length){
       html+='<div class="print-sub">Dettagli Carico ('+cars.length+')</div>';
@@ -1799,6 +1952,8 @@ function printFiltered(){
       });
       html+='</table>';
     }
+
+    // Dettagli ODP
     var odps=odpByDoc[dn]||[];
     if(odps.length){
       html+='<div class="print-sub">Dettagli ODP ('+odps.length+')</div>';
@@ -1812,11 +1967,15 @@ function printFiltered(){
       });
       html+='</table>';
     }
+
     if(!cars.length&&!odps.length) html+='<div class="no-data">Nessun dettaglio disponibile</div>';
     html+='</div>';
   });
+
+  // Apri in finestra popup e stampa
   var win=window.open('','_blank','width=900,height=700');
-  win.document.write('<!DOCTYPE html><html><head><title>Spedizioni '+(currentDate?currentDate.substr(6,2)+'/'+currentDate.substr(4,2)+'/'+currentDate.substr(0,4):'')+
+  win.document.write('<!DOCTYPE html><html><head><title>Spedizioni '+
+    (currentDate?currentDate.substr(6,2)+'/'+currentDate.substr(4,2)+'/'+currentDate.substr(0,4):'')+
     '</title></head><body>'+html+'</body></html>');
   win.document.close();
   win.focus();
@@ -1841,7 +2000,9 @@ function gFetch(url){
 }
 
 // ── UTILITY ───────────────────────────────────
-function setContent(h){ document.getElementById('content').innerHTML=h; }
+function setContent(h){
+  document.getElementById('content').innerHTML=h;
+}
 function setAwbSt(type,msg){var el=document.getElementById('awbStatus');el.className='awb-status'+(type?' '+type:'');el.textContent=msg;}
 function spinnerHtml(msg,pct){return '<div class="state"><div class="spinner"></div><div class="state-title">'+esc(msg)+'</div><div class="prog-wrap"><div class="prog-bar" style="width:'+(pct||10)+'%"></div></div></div>';}
 function norm(v){if(v===null||v===undefined)return'';var s=String(v).trim();if(/^\d+\.0+$/.test(s))s=s.replace(/\.0+$/,'');return s;}
