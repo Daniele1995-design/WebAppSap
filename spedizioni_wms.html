@@ -1291,7 +1291,7 @@ function getOdpList(){
   var seen={};
   var list=[];
   odpRows.forEach(function(r){
-    var v=String(r[COL_ODP]||'').trim();
+    var v=String(r[2]===null||r[2]===undefined?'':r[2]).trim();
     if(v&&!seen[v]){ seen[v]=true; list.push(v); }
   });
   return list;
@@ -1390,22 +1390,25 @@ function openOdpModal(){
   document.getElementById('odpModalSub').textContent='ODP da '+odpRows.length+' righe filtrate';
   document.getElementById('odpModal').classList.remove('hide');
   var list=getOdpList();
-  if(!list.length && odpRows.length>0){
-    // Debug: mostra struttura reale delle prime righe
+  if(!list.length){
+    // Debug completo: mostra TUTTE le colonne di ogni riga
     var lines=[];
-    odpRows.slice(0,4).forEach(function(r,i){
-      var vals=[];
-      for(var c=0;c<Math.min(r.length,7);c++){
-        var v=r[c]; if(v!==''&&v!==null&&v!==undefined) vals.push('col'+c+'='+JSON.stringify(String(v).substring(0,20)));
-      }
-      lines.push('Riga '+i+': '+vals.join('  '));
-    });
+    if(odpRows.length===0){
+      lines.push('⚠ odpRows è vuoto — nessuna riga in Dettagli ODP');
+    } else {
+      odpRows.slice(0,5).forEach(function(r,i){
+        var vals=[];
+        for(var c=0;c<Math.min(r.length,10);c++){
+          vals.push('['+c+']="'+String(r[c]===null||r[c]===undefined?'':r[c]).substring(0,15)+'"');
+        }
+        lines.push('R'+i+': '+vals.join('  '));
+      });
+    }
     document.getElementById('odpResultBox').style.whiteSpace='pre';
     document.getElementById('odpResultBox').textContent=
-      '⚠ Nessun valore trovato in colonna 2 (r[2]).\n\n'+
-      'Struttura reale delle prime righe:\n'+lines.join('\n')+
-      '\n\n→ Dimmi quale col contiene NUMERO_ODP';
-    document.getElementById('odpStats').textContent='0 ODP trovati — vedi debug sopra';
+      '⚠ Nessun ODP trovato in r[2].\n\n'+lines.join('\n')+
+      '\n\n→ Dimmi quale indice [ ] contiene NUMERO_ODP';
+    document.getElementById('odpStats').textContent='0 ODP — '+odpRows.length+' righe totali in Dettagli ODP';
   } else {
     refreshOdpResult();
   }
