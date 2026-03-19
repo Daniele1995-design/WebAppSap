@@ -242,6 +242,21 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
 .prog-wrap{width:200px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
 .prog-bar{height:100%;background:var(--amber);border-radius:2px;transition:width .4s}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.btn-print{background:none;border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-family:var(--ff-cond);font-size:13px;font-weight:700;letter-spacing:1px;color:var(--subtle);cursor:pointer;transition:all .2s;align-self:flex-end}
+.btn-print:hover{border-color:#a855f7;color:#a855f7}
+.btn-print:disabled{opacity:.3;cursor:not-allowed}
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{position:fixed;top:0;left:0;width:100%;background:#fff;color:#000}
+  .print-section{margin-bottom:20px;page-break-inside:avoid}
+  .print-title{font-size:13px;font-weight:700;margin-bottom:6px;padding:4px 8px;background:#f0f0f0;border-radius:4px}
+  .print-table{width:100%;border-collapse:collapse;font-size:10px}
+  .print-table th{background:#e8e8e8;padding:4px 6px;text-align:left;border:1px solid #ccc;font-weight:600;font-size:9px}
+  .print-table td{padding:3px 6px;border:1px solid #ddd}
+  .print-table tr:nth-child(even) td{background:#f9f9f9}
+  .print-group-header{background:#d0e8ff;font-weight:600;font-size:9px;padding:3px 6px}
+}
 </style>
 </head>
 <body>
@@ -313,6 +328,7 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
     <button class="btn-load" id="btnLoad" onclick="loadData()" disabled>Carica Dati</button>
     <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" disabled title="Ricarica dal file">↻ Aggiorna</button>
     <button class="btn-download" id="btnDownload" onclick="downloadFiltered()" disabled title="Scarica Excel filtrato">⬇ Scarica Excel</button>
+    <button class="btn-print" id="btnPrint" onclick="printFiltered()" disabled title="Stampa spedizioni">🖨 Stampa</button>
     <!-- TASTO ODP SMART COPY -->
     <button class="btn-odp-copy" id="btnOdpCopy" onclick="openOdpModal()" disabled title="Copia ODP in modo intelligente">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="1" width="9" height="11" rx="1.5"/><rect x="2" y="4" width="9" height="11" rx="1.5" fill="var(--surface)" stroke-width="1.5"/></svg>
@@ -412,6 +428,7 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
 </div>
 
 <div id="copyToast">✓ Copiato!</div>
+<div id="printArea" style="display:none"></div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
@@ -1226,9 +1243,7 @@ function renderAll(sheets){
   var ro=renderTable(odp,false,'Dettagli ODP');
 
   // thead fisso nel theadBar (mostra solo quello del tab attivo)
-  var isRi=typeof ri==='object', isRc=typeof rc==='object', isRo=typeof ro==='object';
-  document.getElementById('theadBar').innerHTML=
-    (isRi?ri.thead:'')+(isRc?rc.thead:'')+(isRo?ro.thead:'');
+  document.getElementById('theadBar').innerHTML=ri.thead+rc.thead+ro.thead;
   // Mostra solo thead-0 (Intestazione attivo di default)
   [0,1,2].forEach(function(idx){
     var el=document.getElementById('thead-'+idx);
@@ -1236,9 +1251,9 @@ function renderAll(sheets){
   });
 
   // Corpo scrollabile
-  var h='<div id="ti" class="tab-panel on">'+(isRi?ri.body:ri)+'</div>';
-  h+='<div id="tc" class="tab-panel">'+(isRc?rc.body:rc)+'</div>';
-  h+='<div id="to" class="tab-panel">'+(isRo?ro.body:ro)+'</div>';
+  var h='<div id="ti" class="tab-panel on">'+ri.body+'</div>';
+  h+='<div id="tc" class="tab-panel">'+rc.body+'</div>';
+  h+='<div id="to" class="tab-panel">'+ro.body+'</div>';
   setContent(h);
   syncTableScroll();
 }
@@ -1282,7 +1297,7 @@ function syncTableScroll(){
 }
 function renderTable(sd,isInt,sheetName){
   var hdr=sd.headers||[],rows=sd.rows||[];
-  if(!rows.length)return '<div class="state"><div class="state-ico">🔍</div><div class="state-title">Nessun dato</div><div>Nessuna riga trovata con i filtri selezionati.</div></div>';
+  if(!rows.length)return {thead:'',body:'<div class="state"><div class="state-ico">🔍</div><div class="state-title">Nessun dato</div><div>Nessuna riga trovata con i filtri selezionati.</div></div>'};
   var nc=Math.max(hdr.length>0?hdr[0].length:0,rows.length>0?rows[0].length:0);
   var destiMap={};
   if(!isInt&&currentData&&currentData['Intestazione']){
@@ -1883,6 +1898,122 @@ function updateTabBadges(){
 document.addEventListener('click',function(e){
   if(e.target.id==='colMgrOverlay') closeColMgr();
 });
+
+// ── STAMPA ───────────────────────────────────
+function printFiltered(){
+  if(!currentData) return;
+  var intRows=currentData['Intestazione'].rows||[];
+  var carRows=currentData['Dettagli Carico'].rows||[];
+  var odpRows=currentData['Dettagli ODP'].rows||[];
+  var carHdr=(currentData['Dettagli Carico'].headers||[])[1]||(currentData['Dettagli Carico'].headers||[])[0]||[];
+  var odpHdr=(currentData['Dettagli ODP'].headers||[])[1]||(currentData['Dettagli ODP'].headers||[])[0]||[];
+
+  // Mappa DocNum → dati intestazione
+  var intMap={};
+  intRows.forEach(function(r){ intMap[norm(r[0])]=r; });
+
+  // Raggruppa Dettagli Carico per DocNum
+  var carByDoc={};
+  carRows.forEach(function(r){
+    var dn=norm(r[0]);
+    if(!carByDoc[dn]) carByDoc[dn]=[];
+    carByDoc[dn].push(r);
+  });
+
+  // Raggruppa Dettagli ODP per DocNum
+  var odpByDoc={};
+  odpRows.forEach(function(r){
+    var dn=norm(r[0]);
+    if(!odpByDoc[dn]) odpByDoc[dn]=[];
+    odpByDoc[dn].push(r);
+  });
+
+  // Colonne da mostrare per Det.Carico (escludi DocNum col0, LineNum col1)
+  var carCols=[];
+  for(var i=2;i<carHdr.length;i++) if(carHdr[i]) carCols.push(i);
+
+  // Colonne da mostrare per Det.ODP (escludi DocNum col0, LineNum col1)
+  var odpCols=[];
+  for(var i=2;i<odpHdr.length;i++) if(odpHdr[i]) odpCols.push(i);
+
+  var html='<style>body{font-family:Arial,sans-serif;font-size:10px;color:#000}'+
+    '.print-section{margin-bottom:16px;border:1px solid #ccc;border-radius:4px;overflow:hidden}'+
+    '.print-header{background:#1a2236;color:#fff;padding:6px 10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}'+
+    '.print-header span{font-size:10px}.print-header strong{font-size:11px;color:#f59e0b}'+
+    '.print-header .awb-val{color:#10b981;font-weight:700}'+
+    '.print-sub{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;'+
+    'background:#e8edf5;padding:3px 10px;border-bottom:1px solid #ccc}'+
+    'table{width:100%;border-collapse:collapse;font-size:9px}'+
+    'th{background:#eef2f7;padding:3px 6px;text-align:left;border:1px solid #ccc;font-weight:600}'+
+    'td{padding:3px 6px;border:1px solid #e0e0e0}'+
+    'tr:nth-child(even) td{background:#f7f9fc}'+
+    '.no-data{padding:6px 10px;color:#999;font-style:italic;font-size:9px}'+
+    '@media print{@page{margin:10mm}}</style>';
+
+  // Una sezione per ogni DocNum
+  intRows.forEach(function(ir){
+    var dn=norm(ir[0]);
+    var awb=String(ir[3]||'').trim();
+    var destino=String(ir[8]||'').trim();
+    var tipo=String(ir[6]||'').trim();
+    var data=String(ir[1]||'').trim();
+    var bp=String(ir[2]||'').trim();
+    if(/^\d{8}$/.test(data)) data=data.substr(6,2)+'/'+data.substr(4,2)+'/'+data.substr(0,4);
+
+    html+='<div class="print-section">';
+    // Header spedizione
+    html+='<div class="print-header">';
+    html+='<strong>'+esc(dn)+'</strong>';
+    html+='<span>'+esc(bp)+'</span>';
+    html+='<span>'+esc(data)+'</span>';
+    html+='<span>'+esc(tipo)+'</span>';
+    html+='<span>'+esc(destino)+'</span>';
+    html+='<span class="awb-val">'+(awb?awb:'— no AWB —')+'</span>';
+    html+='</div>';
+
+    // Dettagli Carico
+    var cars=carByDoc[dn]||[];
+    if(cars.length){
+      html+='<div class="print-sub">Dettagli Carico ('+cars.length+')</div>';
+      html+='<table><tr>';
+      carCols.forEach(function(ci){ html+='<th>'+esc(carHdr[ci]||'')+'</th>'; });
+      html+='</tr>';
+      cars.forEach(function(row){
+        html+='<tr>';
+        carCols.forEach(function(ci){ html+='<td>'+esc(String(row[ci]===null||row[ci]===undefined?'':row[ci]))+'</td>'; });
+        html+='</tr>';
+      });
+      html+='</table>';
+    }
+
+    // Dettagli ODP
+    var odps=odpByDoc[dn]||[];
+    if(odps.length){
+      html+='<div class="print-sub">Dettagli ODP ('+odps.length+')</div>';
+      html+='<table><tr>';
+      odpCols.forEach(function(ci){ html+='<th>'+esc(odpHdr[ci]||'')+'</th>'; });
+      html+='</tr>';
+      odps.forEach(function(row){
+        html+='<tr>';
+        odpCols.forEach(function(ci){ html+='<td>'+esc(String(row[ci]===null||row[ci]===undefined?'':row[ci]))+'</td>'; });
+        html+='</tr>';
+      });
+      html+='</table>';
+    }
+
+    if(!cars.length&&!odps.length) html+='<div class="no-data">Nessun dettaglio disponibile</div>';
+    html+='</div>';
+  });
+
+  // Apri in finestra popup e stampa
+  var win=window.open('','_blank','width=900,height=700');
+  win.document.write('<!DOCTYPE html><html><head><title>Spedizioni '+
+    (currentDate?currentDate.substr(6,2)+'/'+currentDate.substr(4,2)+'/'+currentDate.substr(0,4):'')+
+    '</title></head><body>'+html+'</body></html>');
+  win.document.close();
+  win.focus();
+  setTimeout(function(){ win.print(); },600);
+}
 
 // ── DRIVE API ─────────────────────────────────
 function listFiles(q){ return gFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)&pageSize=200').then(function(r){return r.files||[];}); }
