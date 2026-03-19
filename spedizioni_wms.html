@@ -107,7 +107,7 @@ input[type=date].fc{min-width:130px;color-scheme:dark}
 /* ── ODP MODAL ── */
 .odp-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .odp-modal-overlay.hide{display:none}
-.odp-modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:560px;max-width:95vw;display:flex;flex-direction:column;gap:16px}
+.odp-modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:620px;max-width:96vw;display:flex;flex-direction:column;gap:14px}
 .odp-modal-title{font-family:var(--ff-cond);font-size:18px;font-weight:700;color:var(--text);letter-spacing:1px;display:flex;align-items:center;gap:8px}
 .odp-modal-sub{font-size:11px;color:var(--muted);margin-top:-8px}
 .odp-options{display:flex;gap:10px;flex-wrap:wrap}
@@ -119,7 +119,7 @@ input[type=date].fc{min-width:130px;color-scheme:dark}
 .odp-close-btn{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:9px 18px;font-family:var(--ff-cond);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .2s}
 .odp-close-btn:hover{color:var(--text)}
 /* Chunks */
-.odp-chunks{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto}
+.odp-chunks{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto}
 .odp-chunk{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px}
 .odp-chunk-num{font-size:10px;font-weight:700;color:var(--muted);font-family:var(--ff-cond);min-width:20px;flex-shrink:0}
 .odp-chunk-text{font-family:var(--ff-mono);font-size:12px;color:var(--amber);flex:1;letter-spacing:.3px;word-break:break-all}
@@ -1363,161 +1363,137 @@ function getOdpColIdx(){
   return 2;
 }
 
-function getOdpList(){
+// ── RAGGRUPPA ODP PER CHIAVE (Destino+Tipo+Data+AWB) ──
+// Restituisce array di gruppi:
+// [ { key, label, odps:[] }, ... ]
+function groupOdpByQuad(){
   if(!currentData) return [];
   var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
+  var intRows=(currentData['Intestazione']||{rows:[]}).rows;
   var col=getOdpColIdx();
-  var seen={};
-  var list=[];
+
+  // Mappa DOCNUM → riga intestazione
+  var intMap={};
+  intRows.forEach(function(r){ intMap[norm(r[0])]=r; });
+
+  var groups=[];   // ordine di inserimento
+  var groupMap={}; // key → index in groups
+
   odpRows.forEach(function(r){
-    var raw=r[col];
-    var v=String(raw===null||raw===undefined?'':raw).trim();
-    if(v&&!seen[v]){ seen[v]=true; list.push(v); }
-  });
-  return list;
-}
+    var odp=String(r[col]===null||r[col]===undefined?'':r[col]).trim();
+    if(!odp) return;
+    var dn=norm(r[0]);
+    var ir=intMap[dn]||[];
+    var destino=String(ir[8]||'').trim();
+    var tipo   =String(ir[6]||'').trim();
+    var data   =String(ir[1]||'').trim();
+    var awb    =String(ir[3]||'').trim();
 
-// ── PREFISSO COMUNE ───────────────────────────
-// Trova il prefisso comune più lungo tra due stringhe
-function commonPrefix(a, b){
-  var i=0;
-  while(i<a.length && i<b.length && a[i]===b[i]) i++;
-  return a.substring(0,i);
-}
+    // Formatta data YYYYMMDD → GG/MM/AAAA se 8 cifre
+    var dataFmt=data;
+    if(/^\d{8}$/.test(data)) dataFmt=data.substr(6,2)+'/'+data.substr(4,2)+'/'+data.substr(0,4);
 
-// Trova il prefisso comune di un array di stringhe
-function groupPrefix(arr){
-  if(!arr.length) return '';
-  var p=arr[0];
-  for(var i=1;i<arr.length;i++) p=commonPrefix(p,arr[i]);
-  return p;
-}
-
-// ── RAGGRUPPA ODP PER PREFISSO ────────────────
-// Raggruppa ODP che condividono almeno MIN_PREFIX caratteri in comune
-// Gruppi con prefisso troppo corto vengono tenuti separati → leggibilità
-var ODP_MIN_PREFIX=3;
-function groupByPrefix(list){
-  if(!list.length) return [];
-  var groups=[];
-  var cur=[list[0]];
-  for(var i=1;i<list.length;i++){
-    var candidate=cur.concat([list[i]]);
-    var p=groupPrefix(candidate);
-    if(p.length>=ODP_MIN_PREFIX){
-      cur=candidate;
-    } else {
-      groups.push(cur);
-      cur=[list[i]];
+    var key=[destino,tipo,data,awb].join('|');
+    if(groupMap[key]===undefined){
+      groupMap[key]=groups.length;
+      groups.push({
+        key:key,
+        destino:destino, tipo:tipo, dataFmt:dataFmt, awb:awb,
+        odps:[]
+      });
     }
-  }
-  groups.push(cur);
+    // Evita duplicati ODP nello stesso gruppo
+    var g=groups[groupMap[key]];
+    if(g.odps.indexOf(odp)===-1) g.odps.push(odp);
+  });
+
   return groups;
 }
 
-// ── COMPRIMI UN GRUPPO IN STRINGA ─────────────
-// Dato un gruppo con prefisso comune, produce "base(+s1+s2+...)"
-// oppure se c'è un solo elemento, solo "base"
+// ── COMPRESSIONE INTELLIGENTE ─────────────────
+function commonPrefix(a,b){
+  var i=0; while(i<a.length&&i<b.length&&a[i]===b[i])i++; return a.substring(0,i);
+}
+function groupPrefix(arr){
+  if(!arr.length) return '';
+  var p=arr[0]; for(var i=1;i<arr.length;i++) p=commonPrefix(p,arr[i]); return p;
+}
+var ODP_MIN_PREFIX=3;
+function groupByPrefix(list){
+  if(!list.length) return [];
+  var groups=[],cur=[list[0]];
+  for(var i=1;i<list.length;i++){
+    var candidate=cur.concat([list[i]]);
+    if(groupPrefix(candidate).length>=ODP_MIN_PREFIX){ cur=candidate; }
+    else { groups.push(cur); cur=[list[i]]; }
+  }
+  groups.push(cur); return groups;
+}
 function compressGroup(group){
   if(group.length===1) return group[0];
   var prefix=groupPrefix(group);
-  // suffissi = parte dopo il prefisso
   var suffixes=group.map(function(v){ return v.substring(prefix.length); });
-  // Il primo elemento: se il prefisso è già l'intera stringa, suffisso = ''
-  // Formato: prefix(+s1+s2+...) oppure prefix se tutti i suffissi sono vuoti
   var nonEmpty=suffixes.filter(function(s){return s!=='';});
-  if(!nonEmpty.length) return prefix; // tutti identici
-  // Se il primo ODP è uguale al prefisso (nessun suffisso), non aggiungerlo
-  var parts=suffixes.filter(function(s){ return s!==''; });
-  return prefix+'(+'+parts.join('+') + ')';
+  if(!nonEmpty.length) return prefix;
+  return prefix+'(+'+nonEmpty.join('+')+')';
 }
-
-// ── SPEZZA IN SCAGLIONI ≤ MAX CHARS ──────────
-// tokens = array di stringhe già compresse per gruppo
-// Se un token supera da solo il limite → lo spezza ulteriormente
-// togliendo un suffisso alla volta finché non sta
-function splitIntoChunks(tokens, maxChars){
-  var chunks=[];
-  var cur='';
-  var SEP=' + ';
-
-  tokens.forEach(function(tok){
-    if(!tok) return;
-    var candidate=cur ? cur+SEP+tok : tok;
-    if(candidate.length<=maxChars){
-      cur=candidate;
-    } else {
-      if(cur) chunks.push(cur);
-      // Il token singolo è già troppo lungo?
-      // Prova a spezzare il gruppo interno in sub-blocchi
-      if(tok.length>maxChars){
-        var subChunks=breakLargeToken(tok, maxChars);
-        subChunks.forEach(function(sc,si){
-          if(si<subChunks.length-1) chunks.push(sc);
-          else cur=sc;
-        });
-      } else {
-        cur=tok;
-      }
-    }
-  });
-  if(cur) chunks.push(cur);
-  return chunks;
-}
-
-// Spezza un token "base(+s1+s2+...)" in più blocchi ≤ maxChars
-function breakLargeToken(tok, maxChars){
-  // Prova a parsare come base(+s1+s2+...)
+function breakLargeToken(tok,maxChars){
   var m=tok.match(/^(.*?)\(\+(.+)\)$/);
-  if(!m) return [tok]; // non parsabile, lascia così
-
-  var base=m[1];
-  var parts=m[2].split('+');
-  var chunks=[];
-  var cur=base+'(+'+parts[0];
+  if(!m) return [tok];
+  var base=m[1],parts=m[2].split('+'),chunks=[],cur=base+'(+'+parts[0];
   for(var i=1;i<parts.length;i++){
     var candidate=cur+'+'+parts[i];
-    if((candidate+')').length<=maxChars){
-      cur=candidate;
-    } else {
-      chunks.push(cur+')');
-      cur=base+'(+'+parts[i];
-    }
+    if((candidate+')').length<=maxChars){ cur=candidate; }
+    else { chunks.push(cur+')'); cur=base+'(+'+parts[i]; }
   }
-  chunks.push(cur+')');
-  return chunks;
+  chunks.push(cur+')'); return chunks;
 }
-
-// ── ENTRY POINT COMPRESSIONE ──────────────────
-function buildChunks(list, mode){
-  if(mode==='full'){
-    // Nessuna compressione: ogni ODP è un token, poi spezza a 30 char
-    return splitIntoChunks(list, ODP_MAX_CHARS);
-  }
-  // Mode compact: raggruppa per prefisso, comprimi, poi spezza
-  var groups=groupByPrefix(list);
-  var tokens=groups.map(function(g){ return compressGroup(g); });
-  return splitIntoChunks(tokens, ODP_MAX_CHARS);
+function splitIntoChunks(tokens,maxChars){
+  var chunks=[],cur='';
+  tokens.forEach(function(tok){
+    if(!tok) return;
+    var candidate=cur?cur+' + '+tok:tok;
+    if(candidate.length<=maxChars){ cur=candidate; }
+    else {
+      if(cur) chunks.push(cur);
+      if(tok.length>maxChars){
+        var sub=breakLargeToken(tok,maxChars);
+        sub.forEach(function(sc,si){ if(si<sub.length-1) chunks.push(sc); else cur=sc; });
+      } else { cur=tok; }
+    }
+  });
+  if(cur) chunks.push(cur); return chunks;
+}
+function compressOdpList(list){
+  var pgroups=groupByPrefix(list);
+  return pgroups.map(function(g){ return compressGroup(g); });
 }
 
 // ── RENDER CHUNKS ─────────────────────────────
 function renderChunks(){
-  var list=getOdpList();
   var container=document.getElementById('odpChunks');
   container.innerHTML='';
 
-  if(!list.length){
+  if(!currentData){
+    container.innerHTML='<div style="font-size:12px;color:var(--muted);padding:10px">Nessun dato caricato.</div>';
+    document.getElementById('odpStats').textContent='';
+    return;
+  }
+
+  var quadGroups=groupOdpByQuad();
+
+  if(!quadGroups.length){
     var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
     if(odpRows.length>0){
       var lines=[];
       odpRows.slice(0,4).forEach(function(r,i){
         var vals=[];
-        for(var c=0;c<Math.min(r.length,8);c++){
+        for(var c=0;c<Math.min(r.length,8);c++)
           vals.push('['+c+']="'+String(r[c]===null||r[c]===undefined?'':r[c]).substring(0,12)+'"');
-        }
         lines.push('R'+i+': '+vals.join('  '));
       });
-      container.innerHTML='<div style="font-family:var(--ff-mono);font-size:11px;color:var(--red);white-space:pre;padding:10px">⚠ Nessun ODP in r['+getOdpColIdx()+'].\n\n'+lines.join('\n')+'\n\n→ Dimmi quale indice contiene NUMERO_ODP</div>';
+      container.innerHTML='<div style="font-family:var(--ff-mono);font-size:11px;color:var(--red);white-space:pre;padding:10px">'+
+        '⚠ Nessun ODP in r['+getOdpColIdx()+'].\n\n'+lines.join('\n')+'\n\n→ Dimmi quale indice contiene NUMERO_ODP</div>';
       document.getElementById('odpStats').textContent='0 ODP — '+odpRows.length+' righe';
     } else {
       container.innerHTML='<div style="font-size:12px;color:var(--muted);padding:10px">Nessuna riga ODP nelle selezioni correnti.</div>';
@@ -1526,74 +1502,116 @@ function renderChunks(){
     return;
   }
 
-  var chunks=buildChunks(list, odpMode);
+  // Conta ODP totali unici
+  var totalOdp=0;
+  quadGroups.forEach(function(g){ totalOdp+=g.odps.length; });
+  var totalChunks=0;
+
+  quadGroups.forEach(function(g,gi){
+    // Separatore tra gruppi
+    if(gi>0){
+      var sep=document.createElement('div');
+      sep.className='odp-chunk-sep';
+      container.appendChild(sep);
+    }
+
+    // Intestazione gruppo
+    var header=document.createElement('div');
+    header.style.cssText='padding:6px 10px 3px;display:flex;flex-wrap:wrap;gap:6px;align-items:center';
+    function badge(val,color){
+      if(!val) return '';
+      var sp=document.createElement('span');
+      sp.style.cssText='font-family:var(--ff-cond);font-size:11px;font-weight:700;letter-spacing:.5px;'+
+        'padding:2px 8px;border-radius:4px;background:'+color+';color:#fff;white-space:nowrap';
+      sp.textContent=val;
+      return sp;
+    }
+    var b1=badge(g.destino,'rgba(245,158,11,.25)');
+    var b2=badge(g.tipo,'rgba(59,130,246,.25)');
+    var b3=badge(g.dataFmt,'rgba(100,116,139,.25)');
+    var b4=badge(g.awb||'— no AWB —',g.awb?'rgba(16,185,129,.25)':'rgba(239,68,68,.2)');
+    if(b1) header.appendChild(b1);
+    if(b2) header.appendChild(b2);
+    if(b3) header.appendChild(b3);
+    if(b4) header.appendChild(b4);
+    // Contatore ODP nel gruppo
+    var cnt=document.createElement('span');
+    cnt.style.cssText='font-family:var(--ff-mono);font-size:10px;color:var(--muted);margin-left:auto';
+    cnt.textContent=g.odps.length+' ODP';
+    header.appendChild(cnt);
+    container.appendChild(header);
+
+    // Comprimi e spezza in chunk ≤30 char
+    var tokens= odpMode==='compact' ? compressOdpList(g.odps) : g.odps;
+    var chunks=splitIntoChunks(tokens, ODP_MAX_CHARS);
+    totalChunks+=chunks.length;
+
+    chunks.forEach(function(chunk,ci){
+      var row=document.createElement('div');
+      row.className='odp-chunk';
+
+      var num=document.createElement('span');
+      num.className='odp-chunk-num';
+      num.textContent=(ci+1)+'.';
+      row.appendChild(num);
+
+      var txt=document.createElement('span');
+      txt.className='odp-chunk-text';
+      txt.textContent=chunk;
+      row.appendChild(txt);
+
+      var len=document.createElement('span');
+      len.className='odp-chunk-len';
+      len.textContent=chunk.length+' ch';
+      if(chunk.length>ODP_MAX_CHARS) len.style.color='var(--red)';
+      row.appendChild(len);
+
+      var btn=document.createElement('button');
+      btn.className='odp-chunk-copy';
+      btn.textContent='Copia';
+      (function(c,b){
+        b.addEventListener('click',function(){
+          if(navigator.clipboard&&navigator.clipboard.writeText){
+            navigator.clipboard.writeText(c).then(function(){
+              b.textContent='✓'; b.classList.add('copied');
+              setTimeout(function(){ b.textContent='Copia'; b.classList.remove('copied'); },1500);
+            }).catch(function(){ legacyCopy(c,b); });
+          } else { legacyCopy(c,b); }
+        });
+      })(chunk,btn);
+      row.appendChild(btn);
+      container.appendChild(row);
+    });
+  });
 
   document.getElementById('odpStats').textContent=
-    list.length+' ODP unici → '+chunks.length+' scaglioni (max '+ODP_MAX_CHARS+' char)';
-
-  chunks.forEach(function(chunk, idx){
-    var row=document.createElement('div');
-    row.className='odp-chunk';
-
-    var num=document.createElement('span');
-    num.className='odp-chunk-num';
-    num.textContent=(idx+1)+'.';
-    row.appendChild(num);
-
-    var txt=document.createElement('span');
-    txt.className='odp-chunk-text';
-    txt.textContent=chunk;
-    row.appendChild(txt);
-
-    var len=document.createElement('span');
-    len.className='odp-chunk-len';
-    len.textContent=chunk.length+' ch';
-    if(chunk.length>ODP_MAX_CHARS) len.style.color='var(--red)';
-    row.appendChild(len);
-
-    var btn=document.createElement('button');
-    btn.className='odp-chunk-copy';
-    btn.textContent='Copia';
-    (function(c,b){
-      b.addEventListener('click',function(){
-        if(navigator.clipboard&&navigator.clipboard.writeText){
-          navigator.clipboard.writeText(c).then(function(){
-            b.textContent='✓'; b.classList.add('copied');
-            setTimeout(function(){ b.textContent='Copia'; b.classList.remove('copied'); },1500);
-          }).catch(function(){ legacyCopy(c,b); });
-        } else { legacyCopy(c,b); }
-      });
-    })(chunk, btn);
-    row.appendChild(btn);
-    container.appendChild(row);
-  });
+    totalOdp+' ODP unici · '+quadGroups.length+' gruppi · '+totalChunks+' scaglioni (max '+ODP_MAX_CHARS+' ch)';
 }
 
-function legacyCopy(text, btn){
+function legacyCopy(text,btn){
   var ta=document.createElement('textarea');
   ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0';
   document.body.appendChild(ta); ta.select();
-  try{ document.execCommand('copy'); btn.textContent='✓'; btn.classList.add('copied'); setTimeout(function(){btn.textContent='Copia';btn.classList.remove('copied');},1500); }catch(e){}
+  try{ document.execCommand('copy'); btn.textContent='✓'; btn.classList.add('copied');
+    setTimeout(function(){btn.textContent='Copia';btn.classList.remove('copied');},1500); }catch(e){}
   document.body.removeChild(ta);
 }
-
 function setOdpMode(mode){
   odpMode=mode;
   document.querySelectorAll('.odp-opt-btn').forEach(function(b){ b.classList.remove('sel'); });
   document.getElementById(mode==='compact'?'optCompact':'optFull').classList.add('sel');
   renderChunks();
 }
-
 function copyAllChunks(){
   var chunks=[];
   document.querySelectorAll('.odp-chunk-text').forEach(function(el){ chunks.push(el.textContent); });
   var all=chunks.join('\n');
   if(!all) return;
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(all).then(function(){ showToast('Tutti gli scaglioni copiati!'); closeOdpModal(); }).catch(function(){ fallbackCopy(all); closeOdpModal(); });
+    navigator.clipboard.writeText(all).then(function(){ showToast('Tutti gli scaglioni copiati!'); closeOdpModal(); })
+    .catch(function(){ fallbackCopy(all); closeOdpModal(); });
   } else { fallbackCopy(all); closeOdpModal(); }
 }
-
 function openOdpModal(){
   if(!currentData) return;
   var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
@@ -1601,7 +1619,6 @@ function openOdpModal(){
   document.getElementById('odpModal').classList.remove('hide');
   renderChunks();
 }
-
 function closeOdpModal(){
   document.getElementById('odpModal').classList.add('hide');
 }
