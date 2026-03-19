@@ -189,16 +189,19 @@ select.fc option{background:var(--card)}
 .tbl-wrap{border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:0}
 .tbl-inner{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-.tbl-wrap thead tr:first-child{display:none}
+thead tr:first-child{display:none}
 thead th{background:var(--card)}
+.tbl-wrap{border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:8px;overflow-x:auto}
+.tbl-wrap table{border-collapse:collapse;width:100%}
+thead tr:first-child{display:none}
+thead th{position:sticky;top:0;z-index:10;background:var(--card);box-shadow:0 2px 0 var(--border)}
 /* thead fisso separato */
-.thead-fixed{overflow:hidden;background:var(--card);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:8px 8px 0 0;flex-shrink:0;display:block}
-.thead-fixed .tbl-inner{overflow-x:hidden}
+.thead-fixed{overflow:hidden;background:var(--card);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:8px 8px 0 0;flex-shrink:0;display:block;width:100%}
+.thead-fixed .tbl-inner{overflow-x:hidden;width:100%}
 .thead-fixed table{border-collapse:collapse;width:100%}
 .thead-fixed th{font-family:var(--ff-cond);font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--subtle);padding:6px 11px;border-right:1px solid var(--border);white-space:nowrap}
 .thead-fixed th:last-child{border-right:none}
-.tbl-wrap{border-radius:0 0 8px 8px;border-top:none}
-.tbl-wrap .tbl-inner{overflow-x:auto}
+.tbl-wrap{border-top:none;overflow-x:auto}
 .tbl-wrap table{border-collapse:collapse;width:100%}
 /* ── COLUMN MANAGER ── */
 .col-mgr-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0;gap:8px}
@@ -353,11 +356,10 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
       <div class="stat"><div class="sl">Det. Carico</div><div class="sv" id="sCar">—</div></div>
       <div class="stat"><div class="sl">Righe ODP</div><div class="sv" id="sOdp">—</div></div>
       <div class="stat"><div class="sl">Con AWB</div><div class="sv amber" id="sAwb">—</div></div>
-      <div class="stat"><div class="sl">Tot.Colli</div><div class="sv" id="sColli">—</div></div>
-      <div class="stat"><div class="sl">Tot.Peso (kg)</div><div class="sv" id="sPeso">—</div></div>
+      <div class="stat"><div class="sl">Totale Colli</div><div class="sv small" id="sColli">—</div></div>
+      <div class="stat"><div class="sl">Totale Peso (kg)</div><div class="sv small" id="sPeso">—</div></div>
     </div>
     <div id="tabBar"></div>
-    <div id="theadBar"></div>
   </div>
   <!-- Area scrollabile: solo corpo tabella -->
   <div class="scroll-area">
@@ -1251,10 +1253,13 @@ function renderAll(sheets){
 
   // thead fisso nel theadBar (mostra solo quello del tab attivo)
   var theadContent=ri.thead+rc.thead+ro.thead;
+  console.log('[THEAD DEBUG] content length:', theadContent.length, theadContent.substring(0,200));
   document.getElementById('theadBar').innerHTML=theadContent;
+  console.log('[THEAD DEBUG] theadBar children:', document.getElementById('theadBar').children.length);
   // Mostra solo thead-0 (Intestazione attivo di default)
   [0,1,2].forEach(function(idx){
     var el=document.getElementById('thead-'+idx);
+    console.log('[THEAD DEBUG] thead-'+idx+':', el ? 'found, display='+el.style.display : 'NOT FOUND');
     if(el){ el.style.display=idx===0?'block':'none'; }
   });
 
@@ -1338,7 +1343,7 @@ function renderTable(sd,isInt,sheetName){
 
   // ── TBODY scrollabile ──
   var h='<div class="tbl-wrap"><div class="tbl-inner"><table>';
-  h+='<thead style="visibility:hidden;pointer-events:none;line-height:0;font-size:0">';
+  h+='<thead style="visibility:hidden;pointer-events:none">';
   h+=buildThRow();
   h+='</thead>';
   h+='<tbody>';
@@ -1827,13 +1832,15 @@ function applyHiddenColsToDOM(sheetName, hiddenArr){
   // Più semplice: toggle classe col-hidden su tutti gli elementi con data-colidx
   // Usiamo l'approccio di cercare per class col-hidden o aggiungere data attr
   // Rifare via re-render della sola tabella è più semplice e affidabile
-  var tableDiv=panel.querySelector('.tbl-wrap');
-  if(!tableDiv) return;
-  // Re-render solo la tabella interna
   var isInt=sheetName==='Intestazione';
-  tableDiv.outerHTML=renderTable(sd, isInt, sheetName).match(/<div class="tbl-wrap">[\s\S]*/)?renderTable(sd,isInt,sheetName):'';
-  // Più diretto: replace panel innerHTML
-  panel.innerHTML=renderTable(sd, isInt, sheetName);
+  var result=renderTable(sd, isInt, sheetName);
+  // Aggiorna thead fisso
+  var snIdx={'Intestazione':0,'Dettagli Carico':1,'Dettagli ODP':2}[sheetName]||0;
+  var theadEl=document.getElementById('thead-'+snIdx);
+  if(theadEl) theadEl.outerHTML=result.thead;
+  // Aggiorna body
+  panel.innerHTML=result.body;
+  syncTableScroll();
 }
 
 function updateColMgrNote(sheetName){
@@ -1852,7 +1859,12 @@ function resetColsForSheet(){
   var panelId={Intestazione:'ti','Dettagli Carico':'tc','Dettagli ODP':'to'}[colMgrCurrentSheet];
   if(sd&&panelId){
     var isInt=colMgrCurrentSheet==='Intestazione';
-    document.getElementById(panelId).innerHTML=renderTable(sd,isInt,colMgrCurrentSheet);
+    var result2=renderTable(sd,isInt,colMgrCurrentSheet);
+    var snIdx2={'Intestazione':0,'Dettagli Carico':1,'Dettagli ODP':2}[colMgrCurrentSheet]||0;
+    var theadEl2=document.getElementById('thead-'+snIdx2);
+    if(theadEl2) theadEl2.outerHTML=result2.thead;
+    document.getElementById(panelId).innerHTML=result2.body;
+    syncTableScroll();
   }
   // Reset checkboxes
   document.querySelectorAll('#colMgrList input[type=checkbox]').forEach(function(cb){ cb.checked=true; });
