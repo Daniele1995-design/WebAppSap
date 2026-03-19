@@ -167,7 +167,7 @@ select.fc option{background:var(--card)}
 .filter-info{margin-left:auto;font-size:11px;color:var(--muted);align-self:flex-end;font-family:var(--ff-mono)}
 #copyToast{position:fixed;bottom:28px;right:28px;background:var(--green);color:#021a10;font-family:var(--ff-mono);font-size:12px;font-weight:700;padding:9px 18px;border-radius:6px;opacity:0;transform:translateY(10px);transition:opacity .18s,transform .18s;pointer-events:none;z-index:9999;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #copyToast.show{opacity:1;transform:translateY(0)}
-.fixed-area{flex-shrink:0;padding:16px 24px 0;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.fixed-area{flex-shrink:0;padding:16px 24px 0;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
 .scroll-area{flex:1;overflow-y:auto;overflow-x:auto;padding:0 24px 20px;display:flex;flex-direction:column}
 .stats{padding-top:4px;padding-bottom:6px}
 .stats{display:flex;gap:12px;flex-wrap:wrap}
@@ -192,9 +192,14 @@ table{width:100%;border-collapse:collapse}
 thead tr:first-child{display:none}
 thead th{background:var(--card)}
 /* thead fisso separato */
-.thead-fixed{overflow:hidden;background:var(--card);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:8px 8px 0 0;flex-shrink:0}
-.thead-fixed table{border-collapse:collapse;width:100%;table-layout:fixed}
+.thead-fixed{overflow:hidden;background:var(--card);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:8px 8px 0 0;flex-shrink:0;display:block}
+.thead-fixed .tbl-inner{overflow-x:hidden}
+.thead-fixed table{border-collapse:collapse;width:100%}
+.thead-fixed th{font-family:var(--ff-cond);font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--subtle);padding:6px 11px;border-right:1px solid var(--border);white-space:nowrap}
+.thead-fixed th:last-child{border-right:none}
 .tbl-wrap{border-radius:0 0 8px 8px;border-top:none}
+.tbl-wrap .tbl-inner{overflow-x:auto}
+.tbl-wrap table{border-collapse:collapse;width:100%}
 /* ── COLUMN MANAGER ── */
 .col-mgr-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0;gap:8px}
 .col-mgr-btn{background:none;border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:11px;font-family:var(--ff-cond);font-weight:700;letter-spacing:.5px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
@@ -1029,6 +1034,7 @@ function loadData(){
     document.getElementById('btnRefresh').disabled=false;
     document.getElementById('btnDownload').disabled=false;
     document.getElementById('btnOdpCopy').disabled=false;
+    document.getElementById('btnPrint').disabled=false;
   })
   .catch(function(e){ setContent('<div class="state"><div class="state-ico">⚠️</div><div class="state-title">Errore</div><div>'+esc(e.message)+'</div></div>'); });
 }
@@ -1222,6 +1228,7 @@ function renderAll(sheets){
   document.getElementById('sPeso').textContent=fmtNum(totals.peso);
   document.getElementById('statsBar').style.display='flex';
   document.getElementById('btnOdpCopy').disabled=false;
+  document.getElementById('btnPrint').disabled=false;
 
   var dateTo=document.getElementById('fDateTo').value||currentDate;
   var rangeLabel=currentDate===dateTo
@@ -1243,11 +1250,12 @@ function renderAll(sheets){
   var ro=renderTable(odp,false,'Dettagli ODP');
 
   // thead fisso nel theadBar (mostra solo quello del tab attivo)
-  document.getElementById('theadBar').innerHTML=ri.thead+rc.thead+ro.thead;
+  var theadContent=ri.thead+rc.thead+ro.thead;
+  document.getElementById('theadBar').innerHTML=theadContent;
   // Mostra solo thead-0 (Intestazione attivo di default)
   [0,1,2].forEach(function(idx){
     var el=document.getElementById('thead-'+idx);
-    if(el) el.style.display=idx===0?'':'none';
+    if(el){ el.style.display=idx===0?'block':'none'; }
   });
 
   // Corpo scrollabile
