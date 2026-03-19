@@ -110,17 +110,26 @@ input[type=date].fc{min-width:130px;color-scheme:dark}
 .odp-modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:560px;max-width:95vw;display:flex;flex-direction:column;gap:16px}
 .odp-modal-title{font-family:var(--ff-cond);font-size:18px;font-weight:700;color:var(--text);letter-spacing:1px;display:flex;align-items:center;gap:8px}
 .odp-modal-sub{font-size:11px;color:var(--muted);margin-top:-8px}
-.odp-result-box{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--ff-mono);font-size:12px;color:var(--amber);line-height:1.8;min-height:60px;max-height:200px;overflow-y:auto;word-break:break-all;white-space:pre-wrap;user-select:all}
 .odp-options{display:flex;gap:10px;flex-wrap:wrap}
 .odp-opt-btn{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-family:var(--ff-cond);font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--subtle);cursor:pointer;transition:all .15s}
 .odp-opt-btn:hover{border-color:var(--blue);color:var(--blue)}
 .odp-opt-btn.sel{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
 .odp-stats{font-size:11px;color:var(--muted);font-family:var(--ff-mono)}
 .odp-modal-btns{display:flex;gap:10px;justify-content:flex-end}
-.odp-copy-btn{background:var(--green);color:#021a10;border:none;border-radius:6px;padding:9px 22px;font-family:var(--ff-cond);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px}
-.odp-copy-btn:hover{background:#0d9668}
 .odp-close-btn{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:9px 18px;font-family:var(--ff-cond);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .2s}
 .odp-close-btn:hover{color:var(--text)}
+/* Chunks */
+.odp-chunks{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto}
+.odp-chunk{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px}
+.odp-chunk-num{font-size:10px;font-weight:700;color:var(--muted);font-family:var(--ff-cond);min-width:20px;flex-shrink:0}
+.odp-chunk-text{font-family:var(--ff-mono);font-size:12px;color:var(--amber);flex:1;letter-spacing:.3px;word-break:break-all}
+.odp-chunk-len{font-size:10px;color:var(--muted);font-family:var(--ff-mono);flex-shrink:0;min-width:36px;text-align:right}
+.odp-chunk-copy{background:none;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-family:var(--ff-cond);font-size:11px;font-weight:700;color:var(--subtle);cursor:pointer;transition:all .15s;flex-shrink:0}
+.odp-chunk-copy:hover{border-color:var(--green);color:var(--green);background:rgba(16,185,129,.08)}
+.odp-chunk-copy.copied{border-color:var(--green);color:var(--green);background:rgba(16,185,129,.15)}
+.odp-chunk-sep{height:1px;background:var(--border);margin:2px 0}
+.odp-copyall-btn{background:var(--green);color:#021a10;border:none;border-radius:6px;padding:9px 22px;font-family:var(--ff-cond);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.odp-copyall-btn:hover{background:#0d9668}
 
 .awb-panel{background:linear-gradient(135deg,#160f00 0%,#1a1500 50%,#0d1117 100%);border-bottom:2px solid var(--amber-dim);padding:16px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;flex-shrink:0}
 .awb-label{font-family:var(--ff-cond);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--amber);flex-shrink:0;display:flex;align-items:center;gap:8px}
@@ -285,8 +294,8 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
       <div class="stat"><div class="sl">Det. Carico</div><div class="sv" id="sCar">—</div></div>
       <div class="stat"><div class="sl">Righe ODP</div><div class="sv" id="sOdp">—</div></div>
       <div class="stat"><div class="sl">Con AWB</div><div class="sv amber" id="sAwb">—</div></div>
-      <div class="stat"><div class="sl">Totale Colli</div><div class="sv small" id="sColli">—</div></div>
-      <div class="stat"><div class="sl">Totale Peso (kg)</div><div class="sv small" id="sPeso">—</div></div>
+      <div class="stat"><div class="sl">Tot.Colli</div><div class="sv small" id="sColli">—</div></div>
+      <div class="stat"><div class="sl">Tot.Peso(kg)</div><div class="sv small" id="sPeso">—</div></div>
     </div>
     <div id="content">
       <div class="state"><div class="state-ico">📦</div><div class="state-title">Nessun dato caricato</div><div>Seleziona una data e premi <strong>Carica Dati</strong></div></div>
@@ -329,15 +338,14 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
     </div>
     <div class="odp-modal-sub" id="odpModalSub">ODP dalle righe filtrate</div>
     <div class="odp-options">
-      <button class="odp-opt-btn sel" id="optCompact"  onclick="setOdpMode('compact')">Compatto (range + suffissi)</button>
-      <button class="odp-opt-btn"     id="optFull"     onclick="setOdpMode('full')">Solo + (tutti separati)</button>
-      <button class="odp-opt-btn"     id="optList"     onclick="setOdpMode('list')">Lista (uno per riga)</button>
+      <button class="odp-opt-btn sel" id="optCompact" onclick="setOdpMode('compact')">Compatto (→ range)</button>
+      <button class="odp-opt-btn"    id="optFull"    onclick="setOdpMode('full')">Solo + (tutti)</button>
     </div>
-    <div class="odp-result-box" id="odpResultBox"></div>
     <div class="odp-stats" id="odpStats"></div>
+    <div class="odp-chunks" id="odpChunks"></div>
     <div class="odp-modal-btns">
       <button class="odp-close-btn" onclick="closeOdpModal()">Chiudi</button>
-      <button class="odp-copy-btn" onclick="copyOdpResult()">📋 Copia negli appunti</button>
+      <button class="odp-copyall-btn" onclick="copyAllChunks()">📋 Copia tutto</button>
     </div>
   </div>
 </div>
@@ -352,7 +360,6 @@ var SHEET_NAMES = ['Intestazione','Dettagli Carico','Dettagli ODP'];
 var TOKEN=null, currentData=null, currentDate=null, AWB_MAP={};
 var currentFileIds={};
 var copyModeOn=false, toastTimer=null;
-var odpMode='compact';
 
 // ── INIT ──────────────────────────────────────
 window.onload=function(){
@@ -1285,103 +1292,185 @@ function modifyAwb(blob,docNums,awbValue){
 }
 
 // ── ODP SMART COPY ────────────────────────────
+var odpMode='compact';
+var ODP_MAX_CHARS=30;
+
+// Trova indice colonna NUMERO_ODP cercando per nome header, fallback a indice 2 (col C)
+function getOdpColIdx(){
+  var sd=currentData['Dettagli ODP']||{headers:[],rows:[]};
+  var hdr=(sd.headers[1]||sd.headers[0]||[]);
+  for(var i=0;i<hdr.length;i++){
+    var h=String(hdr[i]||'').trim().toUpperCase();
+    if(h==='NUMERO_ODP'||h==='U_ODP'||h.indexOf('ODP')!==-1) return i;
+  }
+  return 2;
+}
+
 function getOdpList(){
   if(!currentData) return [];
   var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
+  var col=getOdpColIdx();
   var seen={};
   var list=[];
   odpRows.forEach(function(r){
-    var v=String(r[2]===null||r[2]===undefined?'':r[2]).trim();
+    var raw=r[col];
+    var v=String(raw===null||raw===undefined?'':raw).trim();
     if(v&&!seen[v]){ seen[v]=true; list.push(v); }
   });
   return list;
 }
 
-// Tenta di estrarre un numero intero dalla stringa ODP (prende solo cifre)
-function odpToNum(s){
-  var m=s.match(/(\d+)/); return m?parseInt(m[1],10):null;
-}
-
-// Comprimi lista ODP in formato intelligente
-// Es: [1001,1002,1003,1010,1011] → "1001→1003 + 1010→1011"
-// Se suffissi condividono prefisso: "WH-1001→WH-1003" o solo numeri consecutivi
+// ── COMPRESSIONE INTELLIGENTE ─────────────────
+// Raggruppa ODP con stesso prefisso+suffisso in range consecutivi
+// Es: ["300001","300002","300003","300010"] → ["300001→300003","300010"]
 function compressOdpList(list){
-  if(!list.length) return '';
-
-  // Prova a capire se tutti gli ODP hanno la stessa struttura (prefisso + numero)
-  // Raggruppa per prefisso
+  if(!list.length) return [];
   var prefixGroups={};
   list.forEach(function(v){
     var m=v.match(/^([A-Za-z\-_]*)(\d+)([A-Za-z\-_]*)$/);
     if(m){
-      var prefix=m[1], num=parseInt(m[2],10), suffix=m[3];
-      var key=prefix+'|'+suffix;
-      if(!prefixGroups[key]) prefixGroups[key]={prefix:prefix,suffix:suffix,nums:[],raws:[]};
-      prefixGroups[key].nums.push(num);
-      prefixGroups[key].raws.push(v);
+      var key=m[1]+'|'+m[3];
+      if(!prefixGroups[key]) prefixGroups[key]={prefix:m[1],suffix:m[3],nums:[],raws:[]};
+      prefixGroups[key].nums.push(parseInt(m[2],10));
     } else {
-      // Non parsabile come numero → metti in gruppo speciale
       if(!prefixGroups['__raw__']) prefixGroups['__raw__']={prefix:'',suffix:'',nums:[],raws:[]};
       prefixGroups['__raw__'].raws.push(v);
     }
   });
-
-  var parts=[];
-
+  var tokens=[];
   Object.keys(prefixGroups).forEach(function(key){
     var g=prefixGroups[key];
-    if(key==='__raw__'){
-      g.raws.forEach(function(r){ parts.push(r); });
-      return;
-    }
-    // Ordina i numeri
+    if(key==='__raw__'){ g.raws.forEach(function(r){ tokens.push(r); }); return; }
     g.nums.sort(function(a,b){return a-b;});
-    // Raggruppa consecutivi
-    var ranges=[];
     var start=g.nums[0], end=g.nums[0];
     for(var i=1;i<g.nums.length;i++){
       if(g.nums[i]===end+1){ end=g.nums[i]; }
-      else { ranges.push([start,end]); start=g.nums[i]; end=g.nums[i]; }
+      else {
+        tokens.push(end>start ? g.prefix+start+g.suffix+'→'+g.prefix+end+g.suffix : g.prefix+start+g.suffix);
+        start=g.nums[i]; end=g.nums[i];
+      }
     }
-    ranges.push([start,end]);
-    ranges.forEach(function(rng){
-      var s=g.prefix+rng[0]+g.suffix;
-      var e2=g.prefix+rng[1]+g.suffix;
-      if(rng[0]===rng[1]) parts.push(s);
-      else parts.push(s+'→'+e2);
-    });
+    tokens.push(end>start ? g.prefix+start+g.suffix+'→'+g.prefix+end+g.suffix : g.prefix+start+g.suffix);
   });
-
-  return parts.join(' + ');
+  return tokens; // array di token già compressi
 }
 
-// Solo "+" separato, tutti i valori
-function flatOdpList(list){ return list.join(' + '); }
+// ── SPEZZATURA IN SCAGLIONI ≤ MAX_CHARS ───────
+// Prende array di token e li assembla in blocchi di max N char
+// separati da ' + ', rispettando il limite
+function splitIntoChunks(tokens, maxChars, sep){
+  sep=sep||' + ';
+  if(!tokens.length) return [];
+  var chunks=[];
+  var cur='';
+  tokens.forEach(function(tok){
+    var candidate=cur ? cur+sep+tok : tok;
+    if(candidate.length<=maxChars){
+      cur=candidate;
+    } else {
+      // Il singolo token supera il limite? Lo aggiungiamo da solo (non possiamo fare meglio)
+      if(cur) chunks.push(cur);
+      cur=tok;
+    }
+  });
+  if(cur) chunks.push(cur);
+  return chunks;
+}
 
-// Una per riga
-function lineOdpList(list){ return list.join('\n'); }
-
-function buildOdpResult(mode){
+// ── RENDER CHUNKS ─────────────────────────────
+function renderChunks(){
   var list=getOdpList();
-  if(!list.length) return { text:'Nessun ODP nelle righe filtrate.', count:0 };
-  var text='';
-  if(mode==='compact') text=compressOdpList(list);
-  else if(mode==='full') text=flatOdpList(list);
-  else text=lineOdpList(list);
-  return { text:text, count:list.length };
+  var container=document.getElementById('odpChunks');
+  container.innerHTML='';
+
+  if(!list.length){
+    var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
+    if(odpRows.length>0){
+      // debug
+      var lines=[];
+      odpRows.slice(0,4).forEach(function(r,i){
+        var vals=[];
+        for(var c=0;c<Math.min(r.length,8);c++){
+          vals.push('['+c+']="'+String(r[c]===null||r[c]===undefined?'':r[c]).substring(0,12)+'"');
+        }
+        lines.push('R'+i+': '+vals.join('  '));
+      });
+      container.innerHTML='<div style="font-family:var(--ff-mono);font-size:11px;color:var(--red);white-space:pre;padding:10px">⚠ Nessun ODP in r['+getOdpColIdx()+'].\n\n'+lines.join('\n')+'\n\n→ Dimmi quale indice contiene NUMERO_ODP</div>';
+      document.getElementById('odpStats').textContent='0 ODP — '+odpRows.length+' righe';
+    } else {
+      container.innerHTML='<div style="font-size:12px;color:var(--muted);padding:10px">Nessuna riga ODP nelle selezioni correnti.</div>';
+      document.getElementById('odpStats').textContent='0 ODP';
+    }
+    return;
+  }
+
+  var tokens= odpMode==='compact' ? compressOdpList(list) : list;
+  var chunks=splitIntoChunks(tokens, ODP_MAX_CHARS);
+
+  document.getElementById('odpStats').textContent=
+    list.length+' ODP unici → '+tokens.length+' token → '+chunks.length+' scaglioni (max '+ODP_MAX_CHARS+' char)';
+
+  chunks.forEach(function(chunk, idx){
+    var row=document.createElement('div');
+    row.className='odp-chunk';
+
+    var num=document.createElement('span');
+    num.className='odp-chunk-num';
+    num.textContent=(idx+1)+'.';
+    row.appendChild(num);
+
+    var txt=document.createElement('span');
+    txt.className='odp-chunk-text';
+    txt.textContent=chunk;
+    row.appendChild(txt);
+
+    var len=document.createElement('span');
+    len.className='odp-chunk-len';
+    len.textContent=chunk.length+' ch';
+    // Colora in rosso se supera il limite (token singolo troppo lungo)
+    if(chunk.length>ODP_MAX_CHARS) len.style.color='var(--red)';
+    row.appendChild(len);
+
+    var btn=document.createElement('button');
+    btn.className='odp-chunk-copy';
+    btn.textContent='Copia';
+    btn.addEventListener('click',function(){
+      var b=btn;
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(chunk).then(function(){
+          b.textContent='✓'; b.classList.add('copied');
+          setTimeout(function(){ b.textContent='Copia'; b.classList.remove('copied'); },1500);
+        }).catch(function(){ legacyCopy(chunk,b); });
+      } else { legacyCopy(chunk,b); }
+    });
+    row.appendChild(btn);
+    container.appendChild(row);
+  });
+}
+
+function legacyCopy(text, btn){
+  var ta=document.createElement('textarea');
+  ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); btn.textContent='✓'; btn.classList.add('copied'); setTimeout(function(){btn.textContent='Copia';btn.classList.remove('copied');},1500); }catch(e){}
+  document.body.removeChild(ta);
 }
 
 function setOdpMode(mode){
   odpMode=mode;
   document.querySelectorAll('.odp-opt-btn').forEach(function(b){ b.classList.remove('sel'); });
-  document.getElementById(mode==='compact'?'optCompact':mode==='full'?'optFull':'optList').classList.add('sel');
-  refreshOdpResult();
+  document.getElementById(mode==='compact'?'optCompact':'optFull').classList.add('sel');
+  renderChunks();
 }
 
-function refreshOdpResult(){
-  var r=buildOdpResult(odpMode);
-  document.getElementById('odpResultBox').textContent=r.text;
-  document.getElementById('odpStats').textContent=r.count+' ODP unici · '+r.text.length+' caratteri';
+function copyAllChunks(){
+  var chunks=[];
+  document.querySelectorAll('.odp-chunk-text').forEach(function(el){ chunks.push(el.textContent); });
+  var all=chunks.join('\n');
+  if(!all) return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(all).then(function(){ showToast('Tutti gli scaglioni copiati!'); closeOdpModal(); }).catch(function(){ fallbackCopy(all); closeOdpModal(); });
+  } else { fallbackCopy(all); closeOdpModal(); }
 }
 
 function openOdpModal(){
@@ -1389,44 +1478,11 @@ function openOdpModal(){
   var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
   document.getElementById('odpModalSub').textContent='ODP da '+odpRows.length+' righe filtrate';
   document.getElementById('odpModal').classList.remove('hide');
-  var list=getOdpList();
-  if(!list.length){
-    // Debug completo: mostra TUTTE le colonne di ogni riga
-    var lines=[];
-    if(odpRows.length===0){
-      lines.push('⚠ odpRows è vuoto — nessuna riga in Dettagli ODP');
-    } else {
-      odpRows.slice(0,5).forEach(function(r,i){
-        var vals=[];
-        for(var c=0;c<Math.min(r.length,10);c++){
-          vals.push('['+c+']="'+String(r[c]===null||r[c]===undefined?'':r[c]).substring(0,15)+'"');
-        }
-        lines.push('R'+i+': '+vals.join('  '));
-      });
-    }
-    document.getElementById('odpResultBox').style.whiteSpace='pre';
-    document.getElementById('odpResultBox').textContent=
-      '⚠ Nessun ODP trovato in r[2].\n\n'+lines.join('\n')+
-      '\n\n→ Dimmi quale indice [ ] contiene NUMERO_ODP';
-    document.getElementById('odpStats').textContent='0 ODP — '+odpRows.length+' righe totali in Dettagli ODP';
-  } else {
-    refreshOdpResult();
-  }
+  renderChunks();
 }
 
 function closeOdpModal(){
   document.getElementById('odpModal').classList.add('hide');
-}
-
-function copyOdpResult(){
-  var text=document.getElementById('odpResultBox').textContent;
-  if(!text) return;
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){
-      showToast('ODP copiati!');
-      closeOdpModal();
-    }).catch(function(){ fallbackCopy(text); closeOdpModal(); });
-  } else { fallbackCopy(text); closeOdpModal(); }
 }
 
 // ── DRIVE API ─────────────────────────────────
