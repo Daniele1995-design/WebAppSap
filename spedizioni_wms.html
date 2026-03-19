@@ -1229,9 +1229,9 @@ function renderAll(sheets){
   var isRi=typeof ri==='object', isRc=typeof rc==='object', isRo=typeof ro==='object';
   document.getElementById('theadBar').innerHTML=
     (isRi?ri.thead:'')+(isRc?rc.thead:'')+(isRo?ro.thead:'');
-  // Mostra solo thead del tab attivo
-  ['Intestazione','Dettagli-Carico','Dettagli-ODP'].forEach(function(sn,idx){
-    var el=document.getElementById('thead-'+sn);
+  // Mostra solo thead-0 (Intestazione attivo di default)
+  [0,1,2].forEach(function(idx){
+    var el=document.getElementById('thead-'+idx);
     if(el) el.style.display=idx===0?'':'none';
   });
 
@@ -1255,10 +1255,10 @@ function switchTab(id){
   document.getElementById(id).classList.add('on');
   document.querySelectorAll('#tabBar .tab')[{ti:0,tc:1,to:2}[id]].classList.add('on');
   // Mostra thead corretto
-  var snMap={ti:'Intestazione',tc:'Dettagli-Carico',to:'Dettagli-ODP'};
-  ['Intestazione','Dettagli-Carico','Dettagli-ODP'].forEach(function(sn){
-    var el=document.getElementById('thead-'+sn);
-    if(el) el.style.display=(sn===snMap[id])?'':'none';
+  var idxMap={ti:0,tc:1,to:2};
+  [0,1,2].forEach(function(idx){
+    var el=document.getElementById('thead-'+idx);
+    if(el) el.style.display=(idx===idxMap[id])?'':'none';
   });
   // Sincronizza scroll orizzontale
   syncTableScroll();
@@ -1271,8 +1271,8 @@ function switchTab(id){
 function syncTableScroll(){
   document.querySelectorAll('.tab-panel.on .tbl-inner').forEach(function(bodyScroll){
     var sn=bodyScroll.closest('.tab-panel').id;
-    var snName={ti:'Intestazione',tc:'Dettagli-Carico',to:'Dettagli-ODP'}[sn];
-    var headScroll=document.querySelector('#thead-'+snName+' .tbl-inner');
+    var snIdx={ti:0,tc:1,to:2}[sn];
+    var headScroll=document.querySelector('#thead-'+snIdx+' .tbl-inner');
     if(!headScroll) return;
     // Rimuovi vecchi listener rimpiazzando il nodo
     var fresh=bodyScroll.cloneNode(true);
@@ -1294,10 +1294,12 @@ function renderTable(sd,isInt,sheetName){
   function hcls(c){ return hiddenSet[c]?' col-hidden':''; }
   var destHidden=showDest&&(hiddenSet[-1]||false);
 
-  // Costruisce le righe th (solo riga 2 — riga 1 nascosta)
-  function buildThRow(hdrRow, isFirst){
-    if(!hdrRow) return '';
-    if(isFirst) return ''; // prima riga sempre nascosta
+  // Indice sheet per ID
+  var snIdx={'Intestazione':0,'Dettagli Carico':1,'Dettagli ODP':2}[sheetName]||0;
+
+  // Costruisce riga th (solo riga 2 — riga 1 nascosta)
+  function buildThRow(){
+    var hdrRow=hdr[1]||hdr[0]||[];
     var r='<tr>';
     if(adminMode) r+='<th></th>';
     if(showDest) r+='<th'+(destHidden?' class="col-hidden"':'')+' style="color:var(--amber);font-size:11px;font-weight:600">DESTINO</th>';
@@ -1307,15 +1309,14 @@ function renderTable(sd,isInt,sheetName){
   }
 
   // ── THEAD fisso (va nel theadBar) ──
-  var thead='<div class="thead-fixed" id="thead-'+sheetName.replace(/ /g,'-')+'"><div class="tbl-inner"><table><thead>';
-  thead+=buildThRow(hdr[1],false);
+  var thead='<div class="thead-fixed" id="thead-'+snIdx+'"><div class="tbl-inner"><table><thead>';
+  thead+=buildThRow();
   thead+='</thead></table></div></div>';
 
   // ── TBODY scrollabile ──
   var h='<div class="tbl-wrap"><div class="tbl-inner"><table>';
-  // thead invisibile per mantenere larghezze colonne (display:none ma occupa spazio con visibility:hidden)
-  h+='<thead style="visibility:hidden;pointer-events:none">';
-  h+=buildThRow(hdr[1],false);
+  h+='<thead style="visibility:hidden;pointer-events:none;line-height:0;font-size:0">';
+  h+=buildThRow();
   h+='</thead>';
   h+='<tbody>';
   rows.forEach(function(row,ri){
