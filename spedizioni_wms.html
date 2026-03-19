@@ -168,7 +168,7 @@ select.fc option{background:var(--card)}
 #copyToast{position:fixed;bottom:28px;right:28px;background:var(--green);color:#021a10;font-family:var(--ff-mono);font-size:12px;font-weight:700;padding:9px 18px;border-radius:6px;opacity:0;transform:translateY(10px);transition:opacity .18s,transform .18s;pointer-events:none;z-index:9999;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #copyToast.show{opacity:1;transform:translateY(0)}
 .fixed-area{flex-shrink:0;padding:16px 24px 0;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
-.scroll-area{flex:1;overflow-y:auto;overflow-x:auto;padding:0 24px 20px;display:flex;flex-direction:column}
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 24px 20px;display:flex;flex-direction:column}
 .stats{padding-top:4px;padding-bottom:6px}
 .stats{display:flex;gap:12px;flex-wrap:wrap}
 .stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;min-width:120px}
@@ -196,13 +196,14 @@ thead th{background:var(--card)}
 thead tr:first-child{display:none}
 thead th{position:sticky;top:0;z-index:10;background:var(--card);box-shadow:0 2px 0 var(--border)}
 /* thead fisso separato */
-.thead-fixed{overflow:hidden;background:var(--card);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:8px 8px 0 0;flex-shrink:0;display:block;width:100%}
-.thead-fixed .tbl-inner{overflow-x:hidden;width:100%}
-.thead-fixed table{border-collapse:collapse;width:100%}
+.thead-fixed{background:var(--card);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:8px 8px 0 0;display:block;overflow-x:auto;overflow-y:hidden}
+.thead-fixed::-webkit-scrollbar{display:none}
+.thead-fixed{scrollbar-width:none}
+.thead-fixed table{border-collapse:collapse;white-space:nowrap}
 .thead-fixed th{font-family:var(--ff-cond);font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--subtle);padding:6px 11px;border-right:1px solid var(--border);white-space:nowrap}
 .thead-fixed th:last-child{border-right:none}
-.tbl-wrap{border-top:none;overflow-x:auto}
-.tbl-wrap table{border-collapse:collapse;width:100%}
+.tbl-wrap{border-radius:0 0 8px 8px;border-top:none;overflow-x:auto}
+.tbl-wrap table{border-collapse:collapse;white-space:nowrap}
 /* ── COLUMN MANAGER ── */
 .col-mgr-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0;gap:8px}
 .col-mgr-btn{background:none;border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:11px;font-family:var(--ff-cond);font-weight:700;letter-spacing:.5px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
@@ -1259,7 +1260,6 @@ function renderAll(sheets){
   // Mostra solo thead-0 (Intestazione attivo di default)
   [0,1,2].forEach(function(idx){
     var el=document.getElementById('thead-'+idx);
-    console.log('[THEAD DEBUG] thead-'+idx+':', el ? 'found, display='+el.style.display : 'NOT FOUND');
     if(el){ el.style.display=idx===0?'block':'none'; }
   });
 
@@ -1278,34 +1278,47 @@ function tabBtn(id,label,cnt,on){
     +'<button class="col-mgr-btn'+(hid.length?' has-hidden':'')+'" onclick="openColMgr(\''+sn+'\')" title="Gestisci colonne">⚙</button>';
 }
 function switchTab(id){
-  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
+  // Tab buttons
+  document.querySelectorAll('#tabBar .tab').forEach(function(b){b.classList.remove('on');});
+  var tabIdx={ti:0,tc:1,to:2}[id];
+  var tabBtns=document.querySelectorAll('#tabBar .tab');
+  if(tabBtns[tabIdx]) tabBtns[tabIdx].classList.add('on');
+  // Tab panels
   document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('on');});
-  document.getElementById(id).classList.add('on');
-  document.querySelectorAll('#tabBar .tab')[{ti:0,tc:1,to:2}[id]].classList.add('on');
-  // Mostra thead corretto
-  var idxMap={ti:0,tc:1,to:2};
+  var panel=document.getElementById(id);
+  if(panel) panel.classList.add('on');
+  // Thead corretto
   [0,1,2].forEach(function(idx){
     var el=document.getElementById('thead-'+idx);
-    if(el) el.style.display=(idx===idxMap[id])?'':'none';
+    if(el) el.style.display=(idx===tabIdx)?'block':'none';
   });
-  // Sincronizza scroll orizzontale
   syncTableScroll();
-  // Torna in cima
   var sa=document.querySelector('.scroll-area');
   if(sa) sa.scrollTop=0;
 }
 
-// Sincronizza scroll orizzontale tra thead fisso e tbody scrollabile
+// Sincronizza scroll orizzontale tra thead-fixed e tbl-wrap
 function syncTableScroll(){
-  document.querySelectorAll('.tab-panel.on .tbl-inner').forEach(function(bodyScroll){
-    var sn=bodyScroll.closest('.tab-panel').id;
-    var snIdx={ti:0,tc:1,to:2}[sn];
-    var headScroll=document.querySelector('#thead-'+snIdx+' .tbl-inner');
-    if(!headScroll) return;
-    // Rimuovi vecchi listener rimpiazzando il nodo
-    var fresh=bodyScroll.cloneNode(true);
-    bodyScroll.parentNode.replaceChild(fresh,bodyScroll);
-    fresh.addEventListener('scroll',function(){ headScroll.scrollLeft=fresh.scrollLeft; });
+  var panel=document.querySelector('.tab-panel.on');
+  if(!panel) return;
+  var sn=panel.id;
+  var snIdx={ti:0,tc:1,to:2}[sn];
+  var theadFixed=document.getElementById('thead-'+snIdx);
+  var tblWrap=panel.querySelector('.tbl-wrap');
+  if(!theadFixed||!tblWrap) return;
+
+  // Rimuovi vecchi listener clonando
+  var freshWrap=tblWrap.cloneNode(true);
+  tblWrap.parentNode.replaceChild(freshWrap,tblWrap);
+  // Sincronizza: scroll tbl-wrap → thead-fixed
+  freshWrap.addEventListener('scroll',function(){
+    theadFixed.scrollLeft=freshWrap.scrollLeft;
+  });
+  // Sincronizza: scroll thead-fixed → tbl-wrap (per mouse sul thead)
+  var freshThead=theadFixed.cloneNode(true);
+  theadFixed.parentNode.replaceChild(freshThead,theadFixed);
+  freshThead.addEventListener('scroll',function(){
+    freshWrap.scrollLeft=freshThead.scrollLeft;
   });
 }
 function renderTable(sd,isInt,sheetName){
