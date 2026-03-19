@@ -295,7 +295,7 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
       <div class="stat"><div class="sl">Righe ODP</div><div class="sv" id="sOdp">—</div></div>
       <div class="stat"><div class="sl">Con AWB</div><div class="sv amber" id="sAwb">—</div></div>
       <div class="stat"><div class="sl">Tot.Colli</div><div class="sv small" id="sColli">—</div></div>
-      <div class="stat"><div class="sl">Tot.Peso(kg)</div><div class="sv small" id="sPeso">—</div></div>
+      <div class="stat"><div class="sl">Tot.Peso (kg)</div><div class="sv small" id="sPeso">—</div></div>
     </div>
     <div id="content">
       <div class="state"><div class="state-ico">📦</div><div class="state-title">Nessun dato caricato</div><div>Seleziona una data e premi <strong>Carica Dati</strong></div></div>
@@ -1295,7 +1295,6 @@ function modifyAwb(blob,docNums,awbValue){
 var odpMode='compact';
 var ODP_MAX_CHARS=30;
 
-// Trova indice colonna NUMERO_ODP cercando per nome header, fallback a indice 2 (col C)
 function getOdpColIdx(){
   var sd=currentData['Dettagli ODP']||{headers:[],rows:[]};
   var hdr=(sd.headers[1]||sd.headers[0]||[]);
@@ -1320,61 +1319,127 @@ function getOdpList(){
   return list;
 }
 
-// ── COMPRESSIONE INTELLIGENTE ─────────────────
-// Raggruppa ODP con stesso prefisso+suffisso in range consecutivi
-// Es: ["300001","300002","300003","300010"] → ["300001→300003","300010"]
-function compressOdpList(list){
-  if(!list.length) return [];
-  var prefixGroups={};
-  list.forEach(function(v){
-    var m=v.match(/^([A-Za-z\-_]*)(\d+)([A-Za-z\-_]*)$/);
-    if(m){
-      var key=m[1]+'|'+m[3];
-      if(!prefixGroups[key]) prefixGroups[key]={prefix:m[1],suffix:m[3],nums:[],raws:[]};
-      prefixGroups[key].nums.push(parseInt(m[2],10));
-    } else {
-      if(!prefixGroups['__raw__']) prefixGroups['__raw__']={prefix:'',suffix:'',nums:[],raws:[]};
-      prefixGroups['__raw__'].raws.push(v);
-    }
-  });
-  var tokens=[];
-  Object.keys(prefixGroups).forEach(function(key){
-    var g=prefixGroups[key];
-    if(key==='__raw__'){ g.raws.forEach(function(r){ tokens.push(r); }); return; }
-    g.nums.sort(function(a,b){return a-b;});
-    var start=g.nums[0], end=g.nums[0];
-    for(var i=1;i<g.nums.length;i++){
-      if(g.nums[i]===end+1){ end=g.nums[i]; }
-      else {
-        tokens.push(end>start ? g.prefix+start+g.suffix+'→'+g.prefix+end+g.suffix : g.prefix+start+g.suffix);
-        start=g.nums[i]; end=g.nums[i];
-      }
-    }
-    tokens.push(end>start ? g.prefix+start+g.suffix+'→'+g.prefix+end+g.suffix : g.prefix+start+g.suffix);
-  });
-  return tokens; // array di token già compressi
+// ── PREFISSO COMUNE ───────────────────────────
+// Trova il prefisso comune più lungo tra due stringhe
+function commonPrefix(a, b){
+  var i=0;
+  while(i<a.length && i<b.length && a[i]===b[i]) i++;
+  return a.substring(0,i);
 }
 
-// ── SPEZZATURA IN SCAGLIONI ≤ MAX_CHARS ───────
-// Prende array di token e li assembla in blocchi di max N char
-// separati da ' + ', rispettando il limite
-function splitIntoChunks(tokens, maxChars, sep){
-  sep=sep||' + ';
-  if(!tokens.length) return [];
+// Trova il prefisso comune di un array di stringhe
+function groupPrefix(arr){
+  if(!arr.length) return '';
+  var p=arr[0];
+  for(var i=1;i<arr.length;i++) p=commonPrefix(p,arr[i]);
+  return p;
+}
+
+// ── RAGGRUPPA ODP PER PREFISSO ────────────────
+// Raggruppa ODP che condividono almeno MIN_PREFIX caratteri in comune
+// Gruppi con prefisso troppo corto vengono tenuti separati → leggibilità
+var ODP_MIN_PREFIX=3;
+function groupByPrefix(list){
+  if(!list.length) return [];
+  var groups=[];
+  var cur=[list[0]];
+  for(var i=1;i<list.length;i++){
+    var candidate=cur.concat([list[i]]);
+    var p=groupPrefix(candidate);
+    if(p.length>=ODP_MIN_PREFIX){
+      cur=candidate;
+    } else {
+      groups.push(cur);
+      cur=[list[i]];
+    }
+  }
+  groups.push(cur);
+  return groups;
+}
+
+// ── COMPRIMI UN GRUPPO IN STRINGA ─────────────
+// Dato un gruppo con prefisso comune, produce "base(+s1+s2+...)"
+// oppure se c'è un solo elemento, solo "base"
+function compressGroup(group){
+  if(group.length===1) return group[0];
+  var prefix=groupPrefix(group);
+  // suffissi = parte dopo il prefisso
+  var suffixes=group.map(function(v){ return v.substring(prefix.length); });
+  // Il primo elemento: se il prefisso è già l'intera stringa, suffisso = ''
+  // Formato: prefix(+s1+s2+...) oppure prefix se tutti i suffissi sono vuoti
+  var nonEmpty=suffixes.filter(function(s){return s!=='';});
+  if(!nonEmpty.length) return prefix; // tutti identici
+  // Se il primo ODP è uguale al prefisso (nessun suffisso), non aggiungerlo
+  var parts=suffixes.filter(function(s){ return s!==''; });
+  return prefix+'(+'+parts.join('+') + ')';
+}
+
+// ── SPEZZA IN SCAGLIONI ≤ MAX CHARS ──────────
+// tokens = array di stringhe già compresse per gruppo
+// Se un token supera da solo il limite → lo spezza ulteriormente
+// togliendo un suffisso alla volta finché non sta
+function splitIntoChunks(tokens, maxChars){
   var chunks=[];
   var cur='';
+  var SEP=' + ';
+
   tokens.forEach(function(tok){
-    var candidate=cur ? cur+sep+tok : tok;
+    if(!tok) return;
+    var candidate=cur ? cur+SEP+tok : tok;
     if(candidate.length<=maxChars){
       cur=candidate;
     } else {
-      // Il singolo token supera il limite? Lo aggiungiamo da solo (non possiamo fare meglio)
       if(cur) chunks.push(cur);
-      cur=tok;
+      // Il token singolo è già troppo lungo?
+      // Prova a spezzare il gruppo interno in sub-blocchi
+      if(tok.length>maxChars){
+        var subChunks=breakLargeToken(tok, maxChars);
+        subChunks.forEach(function(sc,si){
+          if(si<subChunks.length-1) chunks.push(sc);
+          else cur=sc;
+        });
+      } else {
+        cur=tok;
+      }
     }
   });
   if(cur) chunks.push(cur);
   return chunks;
+}
+
+// Spezza un token "base(+s1+s2+...)" in più blocchi ≤ maxChars
+function breakLargeToken(tok, maxChars){
+  // Prova a parsare come base(+s1+s2+...)
+  var m=tok.match(/^(.*?)\(\+(.+)\)$/);
+  if(!m) return [tok]; // non parsabile, lascia così
+
+  var base=m[1];
+  var parts=m[2].split('+');
+  var chunks=[];
+  var cur=base+'(+'+parts[0];
+  for(var i=1;i<parts.length;i++){
+    var candidate=cur+'+'+parts[i];
+    if((candidate+')').length<=maxChars){
+      cur=candidate;
+    } else {
+      chunks.push(cur+')');
+      cur=base+'(+'+parts[i];
+    }
+  }
+  chunks.push(cur+')');
+  return chunks;
+}
+
+// ── ENTRY POINT COMPRESSIONE ──────────────────
+function buildChunks(list, mode){
+  if(mode==='full'){
+    // Nessuna compressione: ogni ODP è un token, poi spezza a 30 char
+    return splitIntoChunks(list, ODP_MAX_CHARS);
+  }
+  // Mode compact: raggruppa per prefisso, comprimi, poi spezza
+  var groups=groupByPrefix(list);
+  var tokens=groups.map(function(g){ return compressGroup(g); });
+  return splitIntoChunks(tokens, ODP_MAX_CHARS);
 }
 
 // ── RENDER CHUNKS ─────────────────────────────
@@ -1386,7 +1451,6 @@ function renderChunks(){
   if(!list.length){
     var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
     if(odpRows.length>0){
-      // debug
       var lines=[];
       odpRows.slice(0,4).forEach(function(r,i){
         var vals=[];
@@ -1404,11 +1468,10 @@ function renderChunks(){
     return;
   }
 
-  var tokens= odpMode==='compact' ? compressOdpList(list) : list;
-  var chunks=splitIntoChunks(tokens, ODP_MAX_CHARS);
+  var chunks=buildChunks(list, odpMode);
 
   document.getElementById('odpStats').textContent=
-    list.length+' ODP unici → '+tokens.length+' token → '+chunks.length+' scaglioni (max '+ODP_MAX_CHARS+' char)';
+    list.length+' ODP unici → '+chunks.length+' scaglioni (max '+ODP_MAX_CHARS+' char)';
 
   chunks.forEach(function(chunk, idx){
     var row=document.createElement('div');
@@ -1427,22 +1490,22 @@ function renderChunks(){
     var len=document.createElement('span');
     len.className='odp-chunk-len';
     len.textContent=chunk.length+' ch';
-    // Colora in rosso se supera il limite (token singolo troppo lungo)
     if(chunk.length>ODP_MAX_CHARS) len.style.color='var(--red)';
     row.appendChild(len);
 
     var btn=document.createElement('button');
     btn.className='odp-chunk-copy';
     btn.textContent='Copia';
-    btn.addEventListener('click',function(){
-      var b=btn;
-      if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(chunk).then(function(){
-          b.textContent='✓'; b.classList.add('copied');
-          setTimeout(function(){ b.textContent='Copia'; b.classList.remove('copied'); },1500);
-        }).catch(function(){ legacyCopy(chunk,b); });
-      } else { legacyCopy(chunk,b); }
-    });
+    (function(c,b){
+      b.addEventListener('click',function(){
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(c).then(function(){
+            b.textContent='✓'; b.classList.add('copied');
+            setTimeout(function(){ b.textContent='Copia'; b.classList.remove('copied'); },1500);
+          }).catch(function(){ legacyCopy(c,b); });
+        } else { legacyCopy(c,b); }
+      });
+    })(chunk, btn);
     row.appendChild(btn);
     container.appendChild(row);
   });
