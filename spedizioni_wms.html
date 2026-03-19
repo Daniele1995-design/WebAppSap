@@ -1411,6 +1411,10 @@ function groupOdpByQuad(){
 }
 
 // ── COMPRESSIONE INTELLIGENTE ─────────────────
+// Prefisso minimo 2 char, separatore senza spazi per massimizzare i char utili
+var ODP_MIN_PREFIX=2;
+var ODP_SEP='+'; // niente spazi
+
 function commonPrefix(a,b){
   var i=0; while(i<a.length&&i<b.length&&a[i]===b[i])i++; return a.substring(0,i);
 }
@@ -1418,7 +1422,6 @@ function groupPrefix(arr){
   if(!arr.length) return '';
   var p=arr[0]; for(var i=1;i<arr.length;i++) p=commonPrefix(p,arr[i]); return p;
 }
-var ODP_MIN_PREFIX=3;
 function groupByPrefix(list){
   if(!list.length) return [];
   var groups=[],cur=[list[0]];
@@ -1435,16 +1438,17 @@ function compressGroup(group){
   var suffixes=group.map(function(v){ return v.substring(prefix.length); });
   var nonEmpty=suffixes.filter(function(s){return s!=='';});
   if(!nonEmpty.length) return prefix;
-  return prefix+'(+'+nonEmpty.join('+')+')';
+  // Niente + iniziale: prefix(s1+s2+s3)
+  return prefix+'('+nonEmpty.join('+')+')';
 }
 function breakLargeToken(tok,maxChars){
-  var m=tok.match(/^(.*?)\(\+(.+)\)$/);
+  var m=tok.match(/^(.*?)\((.+)\)$/);
   if(!m) return [tok];
-  var base=m[1],parts=m[2].split('+'),chunks=[],cur=base+'(+'+parts[0];
+  var base=m[1],parts=m[2].split('+'),chunks=[],cur=base+'('+parts[0];
   for(var i=1;i<parts.length;i++){
     var candidate=cur+'+'+parts[i];
     if((candidate+')').length<=maxChars){ cur=candidate; }
-    else { chunks.push(cur+')'); cur=base+'(+'+parts[i]; }
+    else { chunks.push(cur+')'); cur=base+'('+parts[i]; }
   }
   chunks.push(cur+')'); return chunks;
 }
@@ -1452,7 +1456,7 @@ function splitIntoChunks(tokens,maxChars){
   var chunks=[],cur='';
   tokens.forEach(function(tok){
     if(!tok) return;
-    var candidate=cur?cur+' + '+tok:tok;
+    var candidate=cur?cur+ODP_SEP+tok:tok;
     if(candidate.length<=maxChars){ cur=candidate; }
     else {
       if(cur) chunks.push(cur);
