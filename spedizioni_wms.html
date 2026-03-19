@@ -1210,8 +1210,8 @@ function tabBtn(id,label,cnt,on){
   var sn={ti:'Intestazione',tc:'Dettagli Carico',to:'Dettagli ODP'}[id];
   var hid=getHiddenCols(sn);
   var gear=hid.length?' <span style="font-size:10px;color:var(--amber);margin-left:3px" title="'+hid.length+' col nascoste">⚙'+hid.length+'</span>':'';
-  return '<button class="tab'+(on?' on':'')+'" onclick="switchTab(''+id+'')">'+label+'<span class="tcnt">'+cnt+'</span>'+gear+'</button>'
-    +'<button class="col-mgr-btn'+(hid.length?' has-hidden':'')+'" onclick="openColMgr(''+sn+'')" title="Gestisci colonne">⚙</button>';
+  return '<button class="tab'+(on?' on':'')+'" onclick="switchTab(\''+id+'\')">'+label+'<span class="tcnt">'+cnt+'</span>'+gear+'</button>'
+    +'<button class="col-mgr-btn'+(hid.length?' has-hidden':'')+'" onclick="openColMgr(\''+sn+'\')" title="Gestisci colonne">⚙</button>';
 }
 function switchTab(id){
   document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
@@ -1251,8 +1251,8 @@ function renderTable(sd,isInt,sheetName){
   rows.forEach(function(row,ri){
     var dn=norm(row[0]); h+='<tr>';
     if(adminMode){
-      var sn2=sheetName.replace(/'/g,"\'");
-      var delFn=isInt?'deleteDocNum('+ri+')':'deleteRow(''+sn2+'','+ri+')';
+      var sn2=sheetName.replace(/'/g,"\\'");
+      var delFn=isInt?'deleteDocNum('+ri+')':"deleteRow('"+sn2+"',"+ri+')';
       h+='<td class="td-del"><button class="btn-del-row" onclick="'+delFn+'" title="Elimina">🗑</button></td>';
     }
     if(showDest){
@@ -1263,28 +1263,28 @@ function renderTable(sd,isInt,sheetName){
       var isAwbCol=isInt&&c===3;
       var isDocNum=c===0;
       var editable=adminMode&&!isDocNum;
-      var sn3=sheetName.replace(/'/g,"\'");
+      var sn3=sheetName.replace(/'/g,"\\'");
       var hc=hcls(c);
       if(isDocNum){
         h+='<td class="dn'+hc+'">'+esc(String(v))+'</td>';
       } else if(isAwbCol){
         var awb=AWB_MAP[dn]||String(v||'');
         var cls='awb-'+(awb?'val':'empty')+(editable?' editable':'')+(hc?' col-hidden':'');
-        h+='<td class="'+cls+'"'+(editable?' onclick="startCellEdit(this,''+sn3+'','+ri+','+c+')"':'')+'>'+esc(awb||'·')+'</td>';
+        h+='<td class="'+cls+'"'+(editable?' onclick="startCellEdit(this,\''+sn3+'\','+ri+','+c+')"':'')+'>'+esc(awb||'\u00b7')+'</td>';
       } else {
-        var cls2=(editable?'editable':'')+(hc?'col-hidden':'');
-        var editAttr=editable?' onclick="startCellEdit(this,''+sn3+'','+ri+','+c+')"':'';
-        h+='<td'+(cls2?' class="'+cls2.trim()+'"':'')+editAttr+'>'+esc(String(v===null||v===undefined?'':v))+'</td>';
+        var cls2=[(editable?'editable':''),(hc?'col-hidden':'')].filter(Boolean).join(' ');
+        var editAttr=editable?' onclick="startCellEdit(this,\''+sn3+'\','+ri+','+c+')"':'';
+        h+='<td'+(cls2?' class="'+cls2+'"':'')+editAttr+'>'+esc(String(v===null||v===undefined?'':v))+'</td>';
       }
     }
     h+='</tr>';
     if(adminMode&&!isInt){
       var isLastInGroup=(ri===rows.length-1)||norm(rows[ri+1][0])!==dn;
       if(isLastInGroup){
-        var sn4=sheetName.replace(/'/g,"\'");
-        var dn2=dn.replace(/'/g,"\'");
+        var sn4=sheetName.replace(/'/g,"\\'");
+        var dn2=dn.replace(/'/g,"\\'");
         h+='<tr class="tr-add">';
-        h+='<td class="td-del"><button class="btn-add-row" onclick="addRow(''+sn4+'',''+dn2+'')" title="Aggiungi riga">➕</button></td>';
+        h+='<td class="td-del"><button class="btn-add-row" onclick="addRow(\''+sn4+'\',\''+dn2+'\')" title="Aggiungi riga">➕</button></td>';
         h+='<td colspan="'+(nc+(showDest?1:0))+'" style="font-size:11px;color:var(--muted);padding-left:8px">+ aggiungi riga per '+esc(dn)+'</td>';
         h+='</tr>';
       }
