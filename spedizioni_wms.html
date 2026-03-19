@@ -1228,22 +1228,23 @@ function renderTable(sd,isInt,sheetName){
     currentData['Intestazione'].rows.forEach(function(r){ destiMap[norm(r[0])]=String(r[8]||'').trim(); });
   }
   var showDest=!isInt;
-  // Colonne nascoste
+  // Colonne nascoste (incluso -1 per colonna DESTINO extra)
   var hiddenSet={};
   getHiddenCols(sheetName).forEach(function(ci){ hiddenSet[ci]=true; });
   function hcls(c){ return hiddenSet[c]?' col-hidden':''; }
+  var destHidden=showDest&&(hiddenSet[-1]||false);
   var h='<div class="tbl-wrap"><table><thead>';
   if(hdr[0]){
     h+='<tr>';
     if(adminMode) h+='<th></th>';
-    if(showDest) h+='<th style="color:var(--amber);opacity:.6;font-size:9px">U_DEST</th>';
+    if(showDest) h+='<th'+(destHidden?' class="col-hidden"':'')+' style="color:var(--amber);opacity:.6;font-size:9px">U_DEST</th>';
     for(var c=0;c<nc;c++) h+='<th'+(hcls(c)?' class="col-hidden"':'')+'>'+esc(hdr[0][c]||'')+'</th>';
     h+='</tr>';
   }
   if(hdr[1]){
     h+='<tr>';
     if(adminMode) h+='<th></th>';
-    if(showDest) h+='<th style="color:var(--amber);font-size:11px;font-weight:600">DESTINO</th>';
+    if(showDest) h+='<th'+(destHidden?' class="col-hidden"':'')+' style="color:var(--amber);font-size:11px;font-weight:600">DESTINO</th>';
     for(var c=0;c<nc;c++) h+='<th'+(hcls(c)?' class="col-hidden"':'')+'>'+esc(hdr[1][c]||'')+'</th>';
     h+='</tr>';
   }
@@ -1256,7 +1257,7 @@ function renderTable(sd,isInt,sheetName){
       h+='<td class="td-del"><button class="btn-del-row" onclick="'+delFn+'" title="Elimina">🗑</button></td>';
     }
     if(showDest){
-      h+='<td style="font-size:11px;color:var(--amber);font-weight:500;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis">'+esc(destiMap[dn]||'')+'</td>';
+      h+='<td'+(destHidden?' class="col-hidden"':'')+' style="font-size:11px;color:var(--amber);font-weight:500;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis">'+esc(destiMap[dn]||'')+'</td>';
     }
     for(var c=0;c<nc;c++){
       var v=row[c]!==undefined?row[c]:'';
@@ -1292,6 +1293,7 @@ function renderTable(sd,isInt,sheetName){
   });
   h+='</tbody></table></div>'; return h;
 }
+
 
 // ── AWB ───────────────────────────────────────
 function applyAwb(){
@@ -1659,7 +1661,8 @@ function openColMgr(sheetName){
 
   // Colonna speciale DESTINO (solo sheet non-Intestazione)
   if(sheetName!=='Intestazione'){
-    var item=makeColItem(-1,'DESTINO (extra)',false);
+    var destVisible=!hidSet[-1];
+    var item=makeColItem(-1,'DESTINO (extra)',destVisible);
     list.appendChild(item);
   }
 
