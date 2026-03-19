@@ -186,7 +186,8 @@ select.fc option{background:var(--card)}
 .tcnt{display:inline-block;background:var(--border);color:var(--muted);font-family:var(--ff-mono);font-size:10px;padding:1px 6px;border-radius:8px;margin-left:5px;vertical-align:middle}
 .tab.on .tcnt{background:var(--amber-dim);color:var(--amber)}
 .tab-panel{display:none}.tab-panel.on{display:block}
-.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:8px}
+.tbl-wrap{border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:8px;overflow:clip}
+.tbl-inner{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 thead tr:first-child{display:none}
 thead th{position:sticky;top:0;z-index:5;background:var(--card);box-shadow:inset 0 -1px 0 var(--border)}
@@ -1250,7 +1251,7 @@ function renderTable(sd,isInt,sheetName){
   getHiddenCols(sheetName).forEach(function(ci){ hiddenSet[ci]=true; });
   function hcls(c){ return hiddenSet[c]?' col-hidden':''; }
   var destHidden=showDest&&(hiddenSet[-1]||false);
-  var h='<div class="tbl-wrap"><table><thead>';
+  var h='<div class="tbl-wrap"><div class="tbl-inner"><table><thead>';
   if(hdr[0]){
     h+='<tr>';
     if(adminMode) h+='<th></th>';
@@ -1308,7 +1309,7 @@ function renderTable(sd,isInt,sheetName){
       }
     }
   });
-  h+='</tbody></table></div>'; return h;
+  h+='</tbody></table></div></div>'; return h;
 }
 
 
