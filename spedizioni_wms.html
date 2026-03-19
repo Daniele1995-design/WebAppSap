@@ -1389,7 +1389,26 @@ function openOdpModal(){
   var odpRows=(currentData['Dettagli ODP']||{rows:[]}).rows;
   document.getElementById('odpModalSub').textContent='ODP da '+odpRows.length+' righe filtrate';
   document.getElementById('odpModal').classList.remove('hide');
-  refreshOdpResult();
+  var list=getOdpList();
+  if(!list.length && odpRows.length>0){
+    // Debug: mostra struttura reale delle prime righe
+    var lines=[];
+    odpRows.slice(0,4).forEach(function(r,i){
+      var vals=[];
+      for(var c=0;c<Math.min(r.length,7);c++){
+        var v=r[c]; if(v!==''&&v!==null&&v!==undefined) vals.push('col'+c+'='+JSON.stringify(String(v).substring(0,20)));
+      }
+      lines.push('Riga '+i+': '+vals.join('  '));
+    });
+    document.getElementById('odpResultBox').style.whiteSpace='pre';
+    document.getElementById('odpResultBox').textContent=
+      '⚠ Nessun valore trovato in colonna 2 (r[2]).\n\n'+
+      'Struttura reale delle prime righe:\n'+lines.join('\n')+
+      '\n\n→ Dimmi quale col contiene NUMERO_ODP';
+    document.getElementById('odpStats').textContent='0 ODP trovati — vedi debug sopra';
+  } else {
+    refreshOdpResult();
+  }
 }
 
 function closeOdpModal(){
