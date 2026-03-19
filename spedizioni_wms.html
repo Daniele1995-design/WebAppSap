@@ -174,7 +174,10 @@ select.fc option{background:var(--card)}
 .sv{font-family:var(--ff-mono);font-size:24px;font-weight:500;color:var(--text)}
 .sv.amber{color:var(--amber)}
 .sv.small{font-size:18px}
-.tabs{display:flex;border-bottom:1px solid var(--border)}
+.tabs{display:flex;align-items:flex-end;border-bottom:1px solid var(--border);gap:2px}
+.col-mgr-btn{background:none;border:1px solid transparent;border-radius:5px;padding:4px 7px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;transition:all .15s;margin-bottom:2px;line-height:1}
+.col-mgr-btn:hover{border-color:var(--blue);color:var(--blue)}
+.col-mgr-btn.has-hidden{color:var(--amber)}
 .tab{background:none;border:none;border-bottom:2px solid transparent;padding:9px 20px;font-family:var(--ff-sans);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;margin-bottom:-1px}
 .tab:hover{color:var(--text)}
 .tab.on{color:var(--amber);border-bottom-color:var(--amber)}
@@ -182,6 +185,30 @@ select.fc option{background:var(--card)}
 .tab.on .tcnt{background:var(--amber-dim);color:var(--amber)}
 .tab-panel{display:none}.tab-panel.on{display:block}
 .tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:12px}
+/* ── COLUMN MANAGER ── */
+.col-mgr-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0;gap:8px}
+.col-mgr-btn{background:none;border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:11px;font-family:var(--ff-cond);font-weight:700;letter-spacing:.5px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+.col-mgr-btn:hover{border-color:var(--blue);color:var(--blue)}
+.col-mgr-btn.has-hidden{border-color:var(--amber-dim);color:var(--amber)}
+.col-mgr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.col-mgr-overlay.hide{display:none}
+.col-mgr-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:420px;max-width:94vw;max-height:80vh;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.col-mgr-title{font-family:var(--ff-cond);font-size:17px;font-weight:700;color:var(--text);letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
+.col-mgr-sheet-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.col-mgr-list{overflow-y:auto;display:flex;flex-direction:column;gap:4px;max-height:340px}
+.col-mgr-item{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:5px;cursor:pointer;transition:background .1s;user-select:none}
+.col-mgr-item:hover{background:rgba(255,255,255,.04)}
+.col-mgr-item input[type=checkbox]{accent-color:var(--amber);width:14px;height:14px;cursor:pointer;flex-shrink:0}
+.col-mgr-item-label{font-family:var(--ff-mono);font-size:12px;color:var(--subtle);flex:1}
+.col-mgr-item input:checked + .col-mgr-item-label{color:var(--text)}
+.col-mgr-item-idx{font-size:10px;color:var(--border);font-family:var(--ff-mono)}
+.col-mgr-footer{display:flex;gap:8px;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px}
+.col-mgr-reset{background:none;border:1px solid var(--border);border-radius:5px;padding:6px 14px;font-family:var(--ff-cond);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s}
+.col-mgr-reset:hover{border-color:var(--red);color:var(--red)}
+.col-mgr-close{background:var(--blue);border:none;border-radius:5px;padding:6px 18px;font-family:var(--ff-cond);font-size:13px;font-weight:700;color:#fff;cursor:pointer;transition:background .15s}
+.col-mgr-close:hover{background:#2563eb}
+.col-mgr-hidden-note{font-size:10px;color:var(--muted);font-family:var(--ff-mono)}
+th.col-hidden,td.col-hidden{display:none}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 thead tr{background:var(--card);border-bottom:1px solid var(--border)}
 thead tr:first-child th{font-family:var(--ff-mono);font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:7px 11px 3px;border-right:1px solid var(--border);white-space:nowrap;user-select:none}
@@ -294,8 +321,8 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
       <div class="stat"><div class="sl">Det. Carico</div><div class="sv" id="sCar">—</div></div>
       <div class="stat"><div class="sl">Righe ODP</div><div class="sv" id="sOdp">—</div></div>
       <div class="stat"><div class="sl">Con AWB</div><div class="sv amber" id="sAwb">—</div></div>
-      <div class="stat"><div class="sl">Tot.Colli</div><div class="sv" id="sColli">—</div></div>
-      <div class="stat"><div class="sl">Tot.Peso (kg)</div><div class="sv" id="sPeso">—</div></div>
+      <div class="stat"><div class="sl">Totale Colli</div><div class="sv small" id="sColli">—</div></div>
+      <div class="stat"><div class="sl">Totale Peso (kg)</div><div class="sv small" id="sPeso">—</div></div>
     </div>
     <div id="content">
       <div class="state"><div class="state-ico">📦</div><div class="state-title">Nessun dato caricato</div><div>Seleziona una data e premi <strong>Carica Dati</strong></div></div>
@@ -346,6 +373,24 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
     <div class="odp-modal-btns">
       <button class="odp-close-btn" onclick="closeOdpModal()">Chiudi</button>
       <button class="odp-copyall-btn" onclick="copyAllChunks()">📋 Copia tutto</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLUMN MANAGER MODAL -->
+<div id="colMgrOverlay" class="col-mgr-overlay hide">
+  <div class="col-mgr-panel">
+    <div class="col-mgr-title">
+      <span>⚙ Gestisci Colonne</span>
+      <span class="col-mgr-sheet-label" id="colMgrSheetLabel"></span>
+    </div>
+    <div class="col-mgr-list" id="colMgrList"></div>
+    <div class="col-mgr-footer">
+      <div>
+        <button class="col-mgr-reset" onclick="resetColsForSheet()">↺ Mostra tutte</button>
+        <span class="col-mgr-hidden-note" id="colMgrNote"></span>
+      </div>
+      <button class="col-mgr-close" onclick="closeColMgr()">Chiudi</button>
     </div>
   </div>
 </div>
@@ -1161,7 +1206,13 @@ function renderAll(sheets){
   h+='<div id="to" class="tab-panel">'+renderTable(odp,false,'Dettagli ODP')+'</div>';
   setContent(h);
 }
-function tabBtn(id,label,cnt,on){return '<button class="tab'+(on?' on':'')+'" onclick="switchTab(\''+id+'\')">'+label+'<span class="tcnt">'+cnt+'</span></button>';}
+function tabBtn(id,label,cnt,on){
+  var sn={ti:'Intestazione',tc:'Dettagli Carico',to:'Dettagli ODP'}[id];
+  var hid=getHiddenCols(sn);
+  var gear=hid.length?' <span style="font-size:10px;color:var(--amber);margin-left:3px" title="'+hid.length+' col nascoste">⚙'+hid.length+'</span>':'';
+  return '<button class="tab'+(on?' on':'')+'" onclick="switchTab(''+id+'')">'+label+'<span class="tcnt">'+cnt+'</span>'+gear+'</button>'
+    +'<button class="col-mgr-btn'+(hid.length?' has-hidden':'')+'" onclick="openColMgr(''+sn+'')" title="Gestisci colonne">⚙</button>';
+}
 function switchTab(id){
   document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
   document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('on');});
@@ -1177,27 +1228,31 @@ function renderTable(sd,isInt,sheetName){
     currentData['Intestazione'].rows.forEach(function(r){ destiMap[norm(r[0])]=String(r[8]||'').trim(); });
   }
   var showDest=!isInt;
+  // Colonne nascoste
+  var hiddenSet={};
+  getHiddenCols(sheetName).forEach(function(ci){ hiddenSet[ci]=true; });
+  function hcls(c){ return hiddenSet[c]?' col-hidden':''; }
   var h='<div class="tbl-wrap"><table><thead>';
   if(hdr[0]){
     h+='<tr>';
     if(adminMode) h+='<th></th>';
     if(showDest) h+='<th style="color:var(--amber);opacity:.6;font-size:9px">U_DEST</th>';
-    for(var c=0;c<nc;c++) h+='<th>'+esc(hdr[0][c]||'')+'</th>';
+    for(var c=0;c<nc;c++) h+='<th'+(hcls(c)?' class="col-hidden"':'')+'>'+esc(hdr[0][c]||'')+'</th>';
     h+='</tr>';
   }
   if(hdr[1]){
     h+='<tr>';
     if(adminMode) h+='<th></th>';
     if(showDest) h+='<th style="color:var(--amber);font-size:11px;font-weight:600">DESTINO</th>';
-    for(var c=0;c<nc;c++) h+='<th>'+esc(hdr[1][c]||'')+'</th>';
+    for(var c=0;c<nc;c++) h+='<th'+(hcls(c)?' class="col-hidden"':'')+'>'+esc(hdr[1][c]||'')+'</th>';
     h+='</tr>';
   }
   h+='</thead><tbody>';
   rows.forEach(function(row,ri){
     var dn=norm(row[0]); h+='<tr>';
     if(adminMode){
-      var sn2=sheetName.replace(/'/g,"\\'");
-      var delFn=isInt?'deleteDocNum('+ri+')':'deleteRow(\''+sn2+'\','+ri+')';
+      var sn2=sheetName.replace(/'/g,"\'");
+      var delFn=isInt?'deleteDocNum('+ri+')':'deleteRow(''+sn2+'','+ri+')';
       h+='<td class="td-del"><button class="btn-del-row" onclick="'+delFn+'" title="Elimina">🗑</button></td>';
     }
     if(showDest){
@@ -1208,25 +1263,28 @@ function renderTable(sd,isInt,sheetName){
       var isAwbCol=isInt&&c===3;
       var isDocNum=c===0;
       var editable=adminMode&&!isDocNum;
-      var sn3=sheetName.replace(/'/g,"\\'");
-      var editAttr=editable?' class="editable" onclick="startCellEdit(this,\''+sn3+'\','+ri+','+c+')"':'';
+      var sn3=sheetName.replace(/'/g,"\'");
+      var hc=hcls(c);
       if(isDocNum){
-        h+='<td class="dn">'+esc(String(v))+'</td>';
+        h+='<td class="dn'+hc+'">'+esc(String(v))+'</td>';
       } else if(isAwbCol){
         var awb=AWB_MAP[dn]||String(v||'');
-        h+=awb?'<td class="awb-val'+(editable?' editable':'')+'"'+(editable?' onclick="startCellEdit(this,\''+sn3+'\','+ri+','+c+')"':'')+'>'+esc(awb)+'</td>':'<td class="awb-empty'+(editable?' editable':'')+'"'+(editable?' onclick="startCellEdit(this,\''+sn3+'\','+ri+','+c+')"':'')+'>·</td>';
+        var cls='awb-'+(awb?'val':'empty')+(editable?' editable':'')+(hc?' col-hidden':'');
+        h+='<td class="'+cls+'"'+(editable?' onclick="startCellEdit(this,''+sn3+'','+ri+','+c+')"':'')+'>'+esc(awb||'·')+'</td>';
       } else {
-        h+='<td'+editAttr+'>'+esc(String(v===null||v===undefined?'':v))+'</td>';
+        var cls2=(editable?'editable':'')+(hc?'col-hidden':'');
+        var editAttr=editable?' onclick="startCellEdit(this,''+sn3+'','+ri+','+c+')"':'';
+        h+='<td'+(cls2?' class="'+cls2.trim()+'"':'')+editAttr+'>'+esc(String(v===null||v===undefined?'':v))+'</td>';
       }
     }
     h+='</tr>';
     if(adminMode&&!isInt){
       var isLastInGroup=(ri===rows.length-1)||norm(rows[ri+1][0])!==dn;
       if(isLastInGroup){
-        var sn4=sheetName.replace(/'/g,"\\'");
-        var dn2=dn.replace(/'/g,"\\'");
+        var sn4=sheetName.replace(/'/g,"\'");
+        var dn2=dn.replace(/'/g,"\'");
         h+='<tr class="tr-add">';
-        h+='<td class="td-del"><button class="btn-add-row" onclick="addRow(\''+sn4+'\',\''+dn2+'\')" title="Aggiungi riga">➕</button></td>';
+        h+='<td class="td-del"><button class="btn-add-row" onclick="addRow(''+sn4+'',''+dn2+'')" title="Aggiungi riga">➕</button></td>';
         h+='<td colspan="'+(nc+(showDest?1:0))+'" style="font-size:11px;color:var(--muted);padding-left:8px">+ aggiungi riga per '+esc(dn)+'</td>';
         h+='</tr>';
       }
@@ -1547,6 +1605,184 @@ function openOdpModal(){
 function closeOdpModal(){
   document.getElementById('odpModal').classList.add('hide');
 }
+
+// ── COLUMN MANAGER ───────────────────────────
+var COL_MGR_KEY='wms_hidden_cols'; // localStorage key
+var colMgrCurrentSheet=null;
+
+// Legge colonne nascoste da localStorage → oggetto {sheetName: [colIdx, ...]}
+function loadHiddenCols(){
+  try{ var s=localStorage.getItem(COL_MGR_KEY); return s?JSON.parse(s):{}; }catch(e){ return {}; }
+}
+function saveHiddenCols(obj){
+  try{ localStorage.setItem(COL_MGR_KEY,JSON.stringify(obj)); }catch(e){}
+}
+// Restituisce array di indici colonna nascosti per la sheet
+function getHiddenCols(sheetName){
+  var obj=loadHiddenCols();
+  return obj[sheetName]||[];
+}
+
+function openColMgr(sheetName){
+  colMgrCurrentSheet=sheetName;
+  var sd=currentData&&currentData[sheetName]||{headers:[],rows:[]};
+  var hdr=sd.headers[1]||sd.headers[0]||[];
+  var nc=Math.max(hdr.length, sd.rows.length?sd.rows[0].length:0);
+  var hidden=getHiddenCols(sheetName);
+  var hidSet={};
+  hidden.forEach(function(i){ hidSet[i]=true; });
+
+  document.getElementById('colMgrSheetLabel').textContent=sheetName;
+  var list=document.getElementById('colMgrList');
+  list.innerHTML='';
+
+  // Colonna speciale DESTINO (solo sheet non-Intestazione)
+  if(sheetName!=='Intestazione'){
+    var item=makeColItem(-1,'DESTINO (extra)',false);
+    list.appendChild(item);
+  }
+
+  for(var c=0;c<nc;c++){
+    var name=String(hdr[c]||'col '+c).trim()||'col '+c;
+    var visible=!hidSet[c];
+    list.appendChild(makeColItem(c, name, visible));
+  }
+
+  updateColMgrNote(sheetName);
+  document.getElementById('colMgrOverlay').classList.remove('hide');
+}
+
+function makeColItem(colIdx, label, visible){
+  var item=document.createElement('label');
+  item.className='col-mgr-item';
+  var cb=document.createElement('input');
+  cb.type='checkbox'; cb.checked=visible;
+  cb.dataset.col=colIdx;
+  cb.addEventListener('change', function(){
+    toggleColVisibility(colMgrCurrentSheet, parseInt(this.dataset.col), this.checked);
+  });
+  var lbl=document.createElement('span');
+  lbl.className='col-mgr-item-label';
+  lbl.textContent=label;
+  var idx=document.createElement('span');
+  idx.className='col-mgr-item-idx';
+  idx.textContent=colIdx>=0?'col '+colIdx:'';
+  item.appendChild(cb); item.appendChild(lbl); item.appendChild(idx);
+  return item;
+}
+
+function toggleColVisibility(sheetName, colIdx, visible){
+  var obj=loadHiddenCols();
+  if(!obj[sheetName]) obj[sheetName]=[];
+  if(visible){
+    obj[sheetName]=obj[sheetName].filter(function(i){ return i!==colIdx; });
+  } else {
+    if(obj[sheetName].indexOf(colIdx)===-1) obj[sheetName].push(colIdx);
+  }
+  if(!obj[sheetName].length) delete obj[sheetName];
+  saveHiddenCols(obj);
+  // Applica immediatamente senza re-render completo
+  applyHiddenColsToDOM(sheetName, obj[sheetName]||[]);
+  updateColMgrNote(sheetName);
+  // Aggiorna badge tab
+  if(currentData) updateTabBadges();
+}
+
+// Applica hide/show alle celle DOM senza re-render
+function applyHiddenColsToDOM(sheetName, hiddenArr){
+  var panelId={Intestazione:'ti','Dettagli Carico':'tc','Dettagli ODP':'to'}[sheetName];
+  if(!panelId) return;
+  var panel=document.getElementById(panelId);
+  if(!panel) return;
+  var nc=0;
+  var sd=currentData&&currentData[sheetName];
+  if(sd) nc=Math.max(sd.headers[0]?sd.headers[0].length:0, sd.rows.length?sd.rows[0].length:0);
+  var hidSet={};
+  hiddenArr.forEach(function(i){ hidSet[i]=true; });
+  // Per ogni colonna indice 0..nc-1, trova th e td per posizione
+  // Le th/td hanno data-col oppure usiamo nth-child
+  // Più semplice: toggle classe col-hidden su tutti gli elementi con data-colidx
+  // Usiamo l'approccio di cercare per class col-hidden o aggiungere data attr
+  // Rifare via re-render della sola tabella è più semplice e affidabile
+  var tableDiv=panel.querySelector('.tbl-wrap');
+  if(!tableDiv) return;
+  // Re-render solo la tabella interna
+  var isInt=sheetName==='Intestazione';
+  tableDiv.outerHTML=renderTable(sd, isInt, sheetName).match(/<div class="tbl-wrap">[\s\S]*/)?renderTable(sd,isInt,sheetName):'';
+  // Più diretto: replace panel innerHTML
+  panel.innerHTML=renderTable(sd, isInt, sheetName);
+}
+
+function updateColMgrNote(sheetName){
+  var h=getHiddenCols(sheetName);
+  var note=document.getElementById('colMgrNote');
+  note.textContent=h.length?h.length+' nascoste':'Tutte visibili';
+}
+
+function resetColsForSheet(){
+  if(!colMgrCurrentSheet) return;
+  var obj=loadHiddenCols();
+  delete obj[colMgrCurrentSheet];
+  saveHiddenCols(obj);
+  // Re-render
+  var sd=currentData&&currentData[colMgrCurrentSheet];
+  var panelId={Intestazione:'ti','Dettagli Carico':'tc','Dettagli ODP':'to'}[colMgrCurrentSheet];
+  if(sd&&panelId){
+    var isInt=colMgrCurrentSheet==='Intestazione';
+    document.getElementById(panelId).innerHTML=renderTable(sd,isInt,colMgrCurrentSheet);
+  }
+  // Reset checkboxes
+  document.querySelectorAll('#colMgrList input[type=checkbox]').forEach(function(cb){ cb.checked=true; });
+  updateColMgrNote(colMgrCurrentSheet);
+  updateTabBadges();
+}
+
+function closeColMgr(){
+  document.getElementById('colMgrOverlay').classList.add('hide');
+  colMgrCurrentSheet=null;
+  updateTabBadges();
+}
+
+// Aggiorna i badge ⚙N sui tab senza re-render completo
+function updateTabBadges(){
+  if(!currentData) return;
+  var map={ti:'Intestazione',tc:'Dettagli Carico',to:'Dettagli ODP'};
+  document.querySelectorAll('.tab').forEach(function(btn){
+    // Trova id del panel corrispondente
+    var onclick=btn.getAttribute('onclick')||'';
+    var m=onclick.match(/switchTab\('(\w+)'\)/);
+    if(!m) return;
+    var panelId=m[1];
+    var sn=map[panelId];
+    if(!sn) return;
+    var hid=getHiddenCols(sn);
+    // Rimuovi gear esistente
+    var gear=btn.querySelector('.tab-gear');
+    if(gear) gear.remove();
+    if(hid.length){
+      var sp=document.createElement('span');
+      sp.className='tab-gear';
+      sp.style.cssText='font-size:10px;color:var(--amber);margin-left:3px';
+      sp.title=hid.length+' col nascoste';
+      sp.textContent='⚙'+hid.length;
+      btn.appendChild(sp);
+    }
+    // Aggiorna btn-mgr accanto al tab
+  });
+  // Aggiorna anche i col-mgr-btn
+  document.querySelectorAll('.col-mgr-btn').forEach(function(btn){
+    var onclick=btn.getAttribute('onclick')||'';
+    var m=onclick.match(/openColMgr\('([^']+)'\)/);
+    if(!m) return;
+    var hid=getHiddenCols(m[1]);
+    btn.classList.toggle('has-hidden', hid.length>0);
+  });
+}
+
+// Click overlay chiude
+document.addEventListener('click',function(e){
+  if(e.target.id==='colMgrOverlay') closeColMgr();
+});
 
 // ── DRIVE API ─────────────────────────────────
 function listFiles(q){ return gFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)&pageSize=200').then(function(r){return r.files||[];}); }
