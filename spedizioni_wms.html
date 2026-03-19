@@ -167,7 +167,8 @@ select.fc option{background:var(--card)}
 .filter-info{margin-left:auto;font-size:11px;color:var(--muted);align-self:flex-end;font-family:var(--ff-mono)}
 #copyToast{position:fixed;bottom:28px;right:28px;background:var(--green);color:#021a10;font-family:var(--ff-mono);font-size:12px;font-weight:700;padding:9px 18px;border-radius:6px;opacity:0;transform:translateY(10px);transition:opacity .18s,transform .18s;pointer-events:none;z-index:9999;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #copyToast.show{opacity:1;transform:translateY(0)}
-.scroll-area{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.fixed-area{flex-shrink:0;padding:16px 24px 0;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.scroll-area{flex:1;overflow-y:auto;overflow-x:auto;padding:0 24px 20px;display:flex;flex-direction:column}
 .stats{padding-top:4px;padding-bottom:6px}
 .stats{display:flex;gap:12px;flex-wrap:wrap}
 .stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;min-width:120px}
@@ -175,7 +176,7 @@ select.fc option{background:var(--card)}
 .sv{font-family:var(--ff-mono);font-size:24px;font-weight:500;color:var(--text)}
 .sv.amber{color:var(--amber)}
 .sv.small{font-size:18px}
-.tabs{display:flex;align-items:flex-end;border-bottom:1px solid var(--border);gap:2px}
+.tabs{display:flex;align-items:flex-end;border-bottom:1px solid var(--border);gap:2px;margin-top:4px}
 .col-mgr-btn{background:none;border:1px solid transparent;border-radius:5px;padding:4px 7px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;transition:all .15s;margin-bottom:2px;line-height:1}
 .col-mgr-btn:hover{border-color:var(--blue);color:var(--blue)}
 .col-mgr-btn.has-hidden{color:var(--amber)}
@@ -185,10 +186,10 @@ select.fc option{background:var(--card)}
 .tcnt{display:inline-block;background:var(--border);color:var(--muted);font-family:var(--ff-mono);font-size:10px;padding:1px 6px;border-radius:8px;margin-left:5px;vertical-align:middle}
 .tab.on .tcnt{background:var(--amber-dim);color:var(--amber)}
 .tab-panel{display:none}.tab-panel.on{display:block}
-.tbl-wrap{overflow-x:auto;overflow-y:visible;border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:12px}
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:8px}
 table{width:100%;border-collapse:collapse}
 thead tr:first-child{display:none}
-thead th{position:sticky;top:-20px;z-index:5;background:var(--card);box-shadow:inset 0 -1px 0 var(--border)}
+thead th{position:sticky;top:0;z-index:5;background:var(--card);box-shadow:inset 0 -1px 0 var(--border)}
 /* ── COLUMN MANAGER ── */
 .col-mgr-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 0;gap:8px}
 .col-mgr-btn{background:none;border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:11px;font-family:var(--ff-cond);font-weight:700;letter-spacing:.5px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
@@ -319,7 +320,8 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
     <div class="filter-info" id="fInfo">Seleziona data → Carica</div>
   </div>
 
-  <div class="scroll-area">
+  <!-- Area fissa: stats + tabs -->
+  <div class="fixed-area">
     <div id="statsBar" style="display:none" class="stats">
       <div class="stat"><div class="sl">Spedizioni</div><div class="sv" id="sDoc">—</div></div>
       <div class="stat"><div class="sl">Det. Carico</div><div class="sv" id="sCar">—</div></div>
@@ -328,6 +330,10 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
       <div class="stat"><div class="sl">Totale Colli</div><div class="sv small" id="sColli">—</div></div>
       <div class="stat"><div class="sl">Totale Peso (kg)</div><div class="sv small" id="sPeso">—</div></div>
     </div>
+    <div id="tabBar"></div>
+  </div>
+  <!-- Area scrollabile: solo corpo tabella -->
+  <div class="scroll-area">
     <div id="content">
       <div class="state"><div class="state-ico">📦</div><div class="state-title">Nessun dato caricato</div><div>Seleziona una data e premi <strong>Carica Dati</strong></div></div>
     </div>
@@ -1200,12 +1206,16 @@ function renderAll(sheets){
     : currentDate.substr(6,2)+'/'+currentDate.substr(4,2)+'/'+currentDate.substr(0,4)+' → '+dateTo.substr(6,2)+'/'+dateTo.substr(4,2)+'/'+dateTo.substr(0,4);
   document.getElementById('fInfo').textContent=rangeLabel+' · '+int.rows.length+' spedizioni';
 
-  var h='<div class="tabs">';
-  h+=tabBtn('ti','Intestazione',int.rows.length,true);
-  h+=tabBtn('tc','Dettagli Carico',car.rows.length,false);
-  h+=tabBtn('to','Dettagli ODP',odp.rows.length,false);
-  h+='</div>';
-  h+='<div id="ti" class="tab-panel on">'+renderTable(int,true,'Intestazione')+'</div>';
+  // Tabs fissi nel tabBar
+  var tabs='<div class="tabs">';
+  tabs+=tabBtn('ti','Intestazione',int.rows.length,true);
+  tabs+=tabBtn('tc','Dettagli Carico',car.rows.length,false);
+  tabs+=tabBtn('to','Dettagli ODP',odp.rows.length,false);
+  tabs+='</div>';
+  document.getElementById('tabBar').innerHTML=tabs;
+
+  // Solo il corpo tabella va nel content scrollabile
+  var h='<div id="ti" class="tab-panel on">'+renderTable(int,true,'Intestazione')+'</div>';
   h+='<div id="tc" class="tab-panel">'+renderTable(car,false,'Dettagli Carico')+'</div>';
   h+='<div id="to" class="tab-panel">'+renderTable(odp,false,'Dettagli ODP')+'</div>';
   setContent(h);
@@ -1222,6 +1232,9 @@ function switchTab(id){
   document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('on');});
   document.getElementById(id).classList.add('on');
   document.querySelectorAll('.tab')[{ti:0,tc:1,to:2}[id]].classList.add('on');
+  // Torna in cima allo scroll quando si cambia tab
+  var sa=document.querySelector('.scroll-area');
+  if(sa) sa.scrollTop=0;
 }
 function renderTable(sd,isInt,sheetName){
   var hdr=sd.headers||[],rows=sd.rows||[];
@@ -1780,7 +1793,7 @@ function closeColMgr(){
 function updateTabBadges(){
   if(!currentData) return;
   var map={ti:'Intestazione',tc:'Dettagli Carico',to:'Dettagli ODP'};
-  document.querySelectorAll('.tab').forEach(function(btn){
+  document.querySelectorAll('#tabBar .tab').forEach(function(btn){
     // Trova id del panel corrispondente
     var onclick=btn.getAttribute('onclick')||'';
     var m=onclick.match(/switchTab\('(\w+)'\)/);
