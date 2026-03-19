@@ -1267,7 +1267,10 @@ function renderAll(sheets){
   h+='<div id="tc" class="tab-panel">'+rc.body+'</div>';
   h+='<div id="to" class="tab-panel">'+ro.body+'</div>';
   setContent(h);
-  syncTableScroll();
+  requestAnimationFrame(function(){
+    alignTheadWidths();
+    syncTableScroll();
+  });
 }
 function tabBtn(id,label,cnt,on){
   var sn={ti:'Intestazione',tc:'Dettagli Carico',to:'Dettagli ODP'}[id];
@@ -1291,9 +1294,39 @@ function switchTab(id){
     var el=document.getElementById('thead-'+idx);
     if(el) el.style.display=(idx===tabIdx)?'block':'none';
   });
-  syncTableScroll();
+  requestAnimationFrame(function(){
+    alignTheadWidths();
+    syncTableScroll();
+  });
   var sa=document.querySelector('.scroll-area');
   if(sa) sa.scrollTop=0;
+}
+
+// Allinea le larghezze delle colonne del thead-fixed con quelle della tabella
+function alignTheadWidths(){
+  [0,1,2].forEach(function(idx){
+    var theadFixed=document.getElementById('thead-'+idx);
+    if(!theadFixed||theadFixed.style.display==='none') return;
+    var panelId=['ti','tc','to'][idx];
+    var panel=document.getElementById(panelId);
+    if(!panel) return;
+    var tbl=panel.querySelector('table');
+    if(!tbl) return;
+    // Prendi le larghezze reali dalle celle della prima riga tbody
+    var firstRow=tbl.querySelector('tbody tr');
+    if(!firstRow) return;
+    var bodyCells=firstRow.querySelectorAll('td');
+    var headCells=theadFixed.querySelectorAll('th');
+    // Imposta larghezza minima su ogni th uguale alla td corrispondente
+    var bodyTbl=tbl;
+    theadFixed.querySelector('table').style.width=bodyTbl.offsetWidth+'px';
+    headCells.forEach(function(th,i){
+      if(bodyCells[i]){
+        th.style.minWidth=bodyCells[i].offsetWidth+'px';
+        th.style.width=bodyCells[i].offsetWidth+'px';
+      }
+    });
+  });
 }
 
 // Sincronizza scroll orizzontale tra thead-fixed e tbl-wrap
