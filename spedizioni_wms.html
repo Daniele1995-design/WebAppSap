@@ -361,6 +361,7 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
       <div class="stat"><div class="sl">Totale Peso (kg)</div><div class="sv small" id="sPeso">—</div></div>
     </div>
     <div id="tabBar"></div>
+    <div id="theadBar"></div>
   </div>
   <!-- Area scrollabile: solo corpo tabella -->
   <div class="scroll-area">
@@ -1254,9 +1255,7 @@ function renderAll(sheets){
 
   // thead fisso nel theadBar (mostra solo quello del tab attivo)
   var theadContent=ri.thead+rc.thead+ro.thead;
-  console.log('[THEAD DEBUG] content length:', theadContent.length, theadContent.substring(0,200));
   document.getElementById('theadBar').innerHTML=theadContent;
-  console.log('[THEAD DEBUG] theadBar children:', document.getElementById('theadBar').children.length);
   // Mostra solo thead-0 (Intestazione attivo di default)
   [0,1,2].forEach(function(idx){
     var el=document.getElementById('thead-'+idx);
