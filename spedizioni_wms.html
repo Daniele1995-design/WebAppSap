@@ -1415,7 +1415,8 @@ function groupOdpByQuad(){
 // ── COMPRESSIONE INTELLIGENTE ─────────────────
 // Prefisso minimo 2 char, separatore senza spazi per massimizzare i char utili
 var ODP_MIN_PREFIX=2;
-var ODP_SEP='+'; // niente spazi
+var ODP_SEP=';'; // separatore tra gruppi
+var ODP_INNER='+'; // separatore dentro gruppo
 
 function commonPrefix(a,b){
   var i=0; while(i<a.length&&i<b.length&&a[i]===b[i])i++; return a.substring(0,i);
@@ -1434,25 +1435,29 @@ function groupByPrefix(list){
   }
   groups.push(cur); return groups;
 }
+// Formato: prefix+suffix1+suffix2+... senza parentesi, gruppi separati da ;
 function compressGroup(group){
   if(group.length===1) return group[0];
   var prefix=groupPrefix(group);
   var suffixes=group.map(function(v){ return v.substring(prefix.length); });
   var nonEmpty=suffixes.filter(function(s){return s!=='';});
   if(!nonEmpty.length) return prefix;
-  // Niente + iniziale: prefix(s1+s2+s3)
-  return prefix+'('+nonEmpty.join('+')+')';
+  return prefix+ODP_INNER+nonEmpty.join(ODP_INNER);
 }
+// Se un singolo token supera max, spezza sui suffissi riusando il prefisso
 function breakLargeToken(tok,maxChars){
-  var m=tok.match(/^(.*?)\((.+)\)$/);
-  if(!m) return [tok];
-  var base=m[1],parts=m[2].split('+'),chunks=[],cur=base+'('+parts[0];
-  for(var i=1;i<parts.length;i++){
-    var candidate=cur+'+'+parts[i];
-    if((candidate+')').length<=maxChars){ cur=candidate; }
-    else { chunks.push(cur+')'); cur=base+'('+parts[i]; }
+  // tok formato: prefix+s1+s2+s3
+  var parts=tok.split(ODP_INNER);
+  if(parts.length<=1) return [tok];
+  var base=parts[0];
+  var suffixes=parts.slice(1);
+  var chunks=[],cur=base+ODP_INNER+suffixes[0];
+  for(var i=1;i<suffixes.length;i++){
+    var candidate=cur+ODP_INNER+suffixes[i];
+    if(candidate.length<=maxChars){ cur=candidate; }
+    else { chunks.push(cur); cur=base+ODP_INNER+suffixes[i]; }
   }
-  chunks.push(cur+')'); return chunks;
+  chunks.push(cur); return chunks;
 }
 function splitIntoChunks(tokens,maxChars){
   var chunks=[],cur='';
