@@ -1745,10 +1745,10 @@ function stampaEtichette() {
 .val-secondary { font-size:7pt; color:Black; font-weight:600; }
 .val-odp { font-size:7pt; color:Black; word-break:break-all; font-weight:600; }
 .val-note { font-size:7pt; color:Black; font-style:italic; }
-.label-footer { background:#1e3a5f; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:1.6cm; }
+.label-footer { background:Black; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:1.6cm; }
 .footer-left { display:flex; flex-direction:column; gap:2px; }
 .footer-plant { color:Black; font-size:8pt; font-weight:600; }
-.val { font-size:8pt; font-weight:700; color:#111; flex:1; line-height:1.3; word-break:break-word; }
+.val { font-size:8pt; font-weight:700; color:Black; flex:1; line-height:1.3; word-break:break-word; }
 .collo-num { display:flex; align-items:baseline; gap:1px; line-height:1; }
 .collo-cur { font-size:36pt; font-weight:900; color:Black; line-height:1; }
 .collo-sep { font-size:22pt; font-weight:700; color:Black; margin:0 1px; }
