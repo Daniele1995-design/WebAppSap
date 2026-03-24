@@ -41,6 +41,15 @@ const BUSINESS_PARTNERS = [
     'C000207 – INFRASTRUTTURE WIRELESS ITALIANE SPA',
 ];
 
+const BP_TO_COMMESSA = {
+    'C000021 – FASTWEB SPA':                        'VODAFONE-NTD',
+    'C000383 – ZAS TRADING SRL':                    'ZAS',
+    'C000384 – AG LOGISTICA SRL':                   'AG-LOGISTICA',
+    'C000223 – GREENCHEM SOLUTIONS SRL':            'GREENCHEM',
+    'C000198 – JOYGUM SRL':                         'JOIGUM',
+    'C000207 – INFRASTRUTTURE WIRELESS ITALIANE SPA': 'INWIT',
+};
+
 /* ================================================================
    STATE
 ================================================================ */
@@ -1059,6 +1068,14 @@ function bindEvents() {
     BUSINESS_PARTNERS.forEach(bp => bpSel.appendChild(new Option(bp, bp)));
 
     bpSel.value = '';
+bpSel.addEventListener('change', () => {
+    const commessaVal = BP_TO_COMMESSA[bpSel.value] || '';
+    q('#vdc-commessa').value = commessaVal;
+    q('#vdc-destino').value = '';
+    hidDD();
+    if (commessaVal) caricaDest(commessaVal);
+});
+
     q('#vdc-plant').value = 'CE71';
     q('#vdc-tipo-spedizione').value = 'Standard';
     q('#vdc-data').value = new Date().toISOString().split('T')[0];
@@ -1745,7 +1762,7 @@ function stampaEtichette() {
 .val-secondary { font-size:7pt; color:Black; font-weight:600; }
 .val-odp { font-size:7pt; color:Black; word-break:break-all; font-weight:600; }
 .val-note { font-size:7pt; color:Black; font-style:italic; }
-.label-footer { background:Black; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:1.6cm; }
+.label-footer {padding:4px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:1.6cm; }
 .footer-left { display:flex; flex-direction:column; gap:2px; }
 .footer-plant { color:Black; font-size:8pt; font-weight:600; }
 .val { font-size:8pt; font-weight:700; color:Black; flex:1; line-height:1.3; word-break:break-word; }
