@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Verbale di Carico Merce – ATS71
 // @namespace    http://tampermonkey.net/
-// @version      6.6
+// @version      7.0
 // @description  Verbale di Carico – UI identica HTML originale, tutti i fix , per il magazzino 71
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/
@@ -419,7 +419,7 @@ function injectCSS() {
 
 /* ---- ODP ITEMS ---- */
 #vdc-ov .odp-item {
-    padding: 13px 16px;
+    padding: 13px 90px 13px 15px;
     border-bottom: 0.5px solid #e5e5ea;
     display: flex;
     align-items: center;
@@ -513,6 +513,39 @@ function injectCSS() {
     line-height: 1.4;
 }
 #vdc-ov .btn-splitta:active { transform: scale(0.98); box-shadow: none; }
+
+/* ---- BTN STAMPA ETICHETTE COLLI ---- */
+#vdc-ov .btn-etichetta {
+    background: linear-gradient(135deg, #5856d6 0%, #3634a3 100%);
+    color: white; border: none; border-radius: 14px;
+    padding: 14px 16px; width: 100%; font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-bottom: 12px; margin-top: 0;
+    letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(88,86,214,0.3);
+    transition: transform 0.1s, box-shadow 0.1s; display: block;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.4;
+}
+#vdc-ov .btn-etichetta:active { transform: scale(0.98); box-shadow: none; }
+
+/* ---- BTN STAMPA RIEPILOGO SPEDIZIONE ---- */
+#vdc-ov .btn-riepilogo {
+    background: linear-gradient(135deg, #00b894 0%, #00856f 100%);
+    color: white; border: none; border-radius: 14px;
+    padding: 14px 16px; width: 100%; font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-bottom: 12px; margin-top: 0;
+    letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(0,184,148,0.3);
+    transition: transform 0.1s, box-shadow 0.1s; display: block;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.4;
+}
+#vdc-ov .btn-riepilogo:active { transform: scale(0.98); box-shadow: none; }
+
+/* ---- BTN STAMPA ODP (per singola riga ODP) ---- */
+#vdc-ov .btn-print-odp {
+    background: #5856d6; color: white; border: none; border-radius: 8px;
+    padding: 6px 10px; font-size: 13px; cursor: pointer;
+    font-family: inherit; margin: 0; line-height: 1; flex-shrink: 0;
+}
 
 /* ---- BOTTOM BAR ---- */
 #vdc-ov .bottom-bar {
@@ -883,6 +916,8 @@ function buildOverlay() {
         </div>
         <button class="btn-add" id="btn-add-riga">➕&nbsp; AGGIUNGI RIGA</button>
         <button class="btn-splitta" id="btn-splitta-peso">⚖️&nbsp; SPLITTA PESO DA ODP</button>
+        <button class="btn-etichetta" id="btn-stampa-etichette">🏷️&nbsp; STAMPA ETICHETTE COLLI</button>
+        <button class="btn-riepilogo" id="btn-stampa-riepilogo">📋&nbsp; STAMPA ETICHETTA RIEPILOGO SPEDIZIONE</button>
     </div>
 
     <!-- ===== TAB ODP ===== -->
@@ -1054,6 +1089,8 @@ function bindEvents() {
 
     // [MODIFICA] bottone Splitta Peso
     q('#btn-splitta-peso').addEventListener('click', () => splittaPeso('manual'));
+    q('#btn-stampa-etichette').addEventListener('click', stampaEtichette);
+    q('#btn-stampa-riepilogo').addEventListener('click', stampaEtichettaRiepilogo);
 
     // Modal ODP
     q('#btn-add-odp').addEventListener('click', apriODP);
@@ -1560,13 +1597,24 @@ function aggiornaVistaODP() {
         const acts = document.createElement('div');
         acts.style.cssText = 'display:flex;gap:6px;';
 
+        // Bottone stampa etichetta ODP 10x5
+        const btnPrint = document.createElement('button');
+        btnPrint.className = 'btn-print-odp';
+        btnPrint.textContent = '🏷️ Stampa';
+        btnPrint.title = 'Stampa etichetta ODP';
+        btnPrint.addEventListener('click', () => stampaEtichetteODP(odp));
+
         const btnEdit = document.createElement('button');
         btnEdit.className = 'btn-edit-odp';
         btnEdit.textContent = '✎';
         btnEdit.addEventListener('click', () => {
             apriODP();
-            // piccolo delay per assicurarsi che il modal sia aperto
-            setTimeout(() => { q('#m-odp-input').value = odp.numero; q('#m-odp-peso').value = odp.peso > 0 ? odp.peso : ''; odps = odps.filter(o => o.id !== odp.id); renderODPModal(); }, 50);
+            setTimeout(() => {
+                q('#m-odp-input').value = odp.numero;
+                q('#m-odp-peso').value = odp.peso > 0 ? odp.peso : '';
+                odps = odps.filter(o => o.id !== odp.id);
+                renderODPModal();
+            }, 50);
         });
 
         const btnDel = document.createElement('button');
@@ -1578,6 +1626,7 @@ function aggiornaVistaODP() {
             aggiornaVistaODP();
         });
 
+        acts.appendChild(btnPrint);
         acts.appendChild(btnEdit);
         acts.appendChild(btnDel);
         div.appendChild(sp);
@@ -1595,6 +1644,356 @@ function toast(msg, ms = 2200) {
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(() => t.remove(), ms);
+}
+
+    /* ================================================================
+   STAMPA ETICHETTE COLLI — 10×10 cm, una per ogni collo fisico
+================================================================ */
+function stampaEtichette() {
+    if (!righeCarico.length) {
+        toast('⚠️ Nessuna riga di carico inserita!');
+        switchTab('carico');
+        return;
+    }
+
+    const commessa  = q('#vdc-commessa').value  || '—';
+    const destino   = (q('#vdc-destino').value  || '').trim() || '—';
+    const tipoSped  = q('#vdc-tipo-spedizione').value || '—';
+    const bp        = q('#vdc-bp').value || '—';
+    const data      = q('#vdc-data').value;
+    const dataFmt   = data ? data.split('-').reverse().join('/') : '—';
+    const plant     = q('#vdc-plant').value || '—';
+    const logoUrl   = 'https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg';
+
+    // Espandi ogni riga in N colli fisici
+    const colli = [];
+    righeCarico.forEach(r => {
+        const pesoUnit = r.quantita > 0 ? (r.peso / r.quantita) : 0;
+        for (let i = 0; i < r.quantita; i++) {
+            colli.push({ imballo: r.imballo, peso: pesoUnit, volume: r.volume, note: r.note || '' });
+        }
+    });
+
+    const totColli = colli.length;
+    const odpStr   = odps.length ? odps.map(o => o.numero).join(' ; ') : '—';
+
+    let labelsHtml = '';
+    colli.forEach((c, i) => {
+        const pesoStr   = c.peso > 0   ? c.peso.toFixed(1).replace('.', ',') + ' kg'   : '—';
+        const volumeStr = c.volume > 0 ? c.volume.toFixed(4).replace('.', ',') + ' m³' : '—';
+        labelsHtml += `
+        <div class="label">
+            <div class="label-header">
+                <img src="${logoUrl}" class="label-logo" alt="ATS">
+                <div class="label-brand">
+                    <div class="label-company">ATS GRUPPO</div>
+                    <div class="label-sub">Verbale di Carico Merce</div>
+                </div>
+                <div class="label-date">${dataFmt}</div>
+            </div>
+            <div class="label-body">
+               <div class="label-row">
+             <span class="lbl">Commessa</span>
+            <span style="font-size:14pt;color:#1e3a5f;font-weight:900;flex:1;line-height:1.3;word-break:break-word;">${commessa}</span>
+               </div>
+               <div class="label-row">
+                <span class="lbl">Destino</span>
+                <span style="font-size:16pt;color:#1e3a5f;font-weight:900;flex:1;line-height:1.3;word-break:break-word;">${destino}</span>
+               </div>
+                <div class="label-row">
+                    <span class="lbl">Spedizione</span>
+                    <span class="val">${tipoSped}</span>
+                </div>
+                <div class="label-row">
+                    <span class="lbl">Imballo</span>
+                    <span class="val">${c.imballo} <span class="val-secondary">&nbsp;|&nbsp;${pesoStr}&nbsp;|&nbsp;${volumeStr}</span></span>
+                </div>
+                <div class="label-row">
+                    <span class="lbl">ODP</span>
+                    <span class="val val-odp" style="font-size:9pt;">${odpStr}</span>
+                </div>
+                ${c.note ? `<div class="label-row"><span class="lbl">Note</span><span class="val val-note">${c.note}</span></div>` : ''}
+            </div>
+            <div class="label-footer">
+                <div class="footer-left">
+                    <div class="footer-plant">Plant: ${plant}</div>
+                    <div class="footer-bp">${bp.split('–')[0].trim()}</div>
+                </div>
+                <div class="collo-num">
+                    <span class="collo-cur">${i + 1}</span>
+                    <span class="collo-sep">/</span>
+                    <span class="collo-tot">${totColli}</span>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    const html = buildLabelPage({
+        titolo: `🏷️ ${totColli} etichett${totColli===1?'a':'e'} — ${commessa} → ${destino}`,
+        size: '10cm 10cm',
+        headerColor: '#1e3a5f',
+        labelsHtml,
+        extraCSS: `
+.label { width:10cm; height:10cm; background:white; border:2px solid #1e3a5f; border-radius:6px; display:flex; flex-direction:column; overflow:hidden; }
+.label-header { background:linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%); padding:5px 8px; display:flex; align-items:center; gap:8px; flex-shrink:0; min-height:1.4cm; }
+.label-logo { height:26px; width:auto; object-fit:contain; background:white; border-radius:3px; padding:2px 4px; flex-shrink:0; }
+.label-brand { flex:1; display:flex; flex-direction:column; }
+.label-company { color:white; font-size:11pt; font-weight:900; letter-spacing:1px; line-height:1; }
+.label-sub { color:rgba(255,255,255,0.75); font-size:6.5pt; margin-top:2px; }
+.label-date { color:rgba(255,255,255,0.9); font-size:8pt; font-weight:700; flex-shrink:0; }
+.label-body { flex:1; padding:5px 8px 3px; display:flex; flex-direction:column; overflow:hidden; }
+.label-row { display:flex; align-items:flex-start; padding:4px 0; border-bottom:0.5px solid #eee; gap:5px; }
+.label-row:last-child { border-bottom:none; }
+.lbl { font-size:8pt; color:#888; text-transform:uppercase; font-weight:700; min-width:58px; flex-shrink:0; padding-top:1px; }
+.val { font-size:10pt; font-weight:700; color:#111; flex:1; line-height:1.3; word-break:break-word; }
+.val-big { font-size:14pt; color:#1e3a5f; font-weight:900; }
+.val-secondary { font-size:7pt; color:#555; font-weight:600; }
+.val-odp { font-size:7pt; color:#333; word-break:break-all; font-weight:600; }
+.val-note { font-size:7pt; color:#c06000; font-style:italic; }
+.label-footer { background:#1e3a5f; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:1.6cm; }
+.footer-left { display:flex; flex-direction:column; gap:2px; }
+.footer-plant { color:rgba(255,255,255,0.7); font-size:6.5pt; font-weight:600; }
+.footer-bp { color:rgba(255,255,255,0.9); font-size:7.5pt; font-weight:700; }
+.collo-num { display:flex; align-items:baseline; gap:1px; line-height:1; }
+.collo-cur { font-size:36pt; font-weight:900; color:white; line-height:1; }
+.collo-sep { font-size:22pt; font-weight:700; color:rgba(255,255,255,0.6); margin:0 1px; }
+.collo-tot { font-size:22pt; font-weight:700; color:rgba(255,255,255,0.75); line-height:1; }`
+    });
+
+    apriFinestra(html);
+}
+
+/* ================================================================
+   STAMPA ETICHETTA RIEPILOGO SPEDIZIONE — 10×10 cm, singola
+================================================================ */
+function stampaEtichettaRiepilogo() {
+    const commessa  = q('#vdc-commessa').value  || '—';
+    const destino   = (q('#vdc-destino').value  || '').trim() || '—';
+    const tipoSped  = q('#vdc-tipo-spedizione').value || '—';
+    const bp        = q('#vdc-bp').value || '—';
+    const data      = q('#vdc-data').value;
+    const dataFmt   = data ? data.split('-').reverse().join('/') : '—';
+    const plant     = q('#vdc-plant').value || '—';
+    const note      = q('#vdc-note').value || '';
+    const logoUrl   = 'https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg';
+
+    const totColli  = righeCarico.reduce((s,r) => s + r.quantita, 0);
+    const totVolume = righeCarico.reduce((s,r) => s + r.volume * r.quantita, 0);
+    const totPeso   = righeCarico.reduce((s,r) => s + r.peso, 0);
+    const odpStr    = odps.length ? odps.map(o => o.numero).join(' ; ') : '—';
+
+    let righeHtml = '';
+    righeCarico.forEach((r, i) => {
+        righeHtml += `<div class="riga-row">
+            <span class="riga-n">${i+1}.</span>
+            <span class="riga-desc">${r.imballo} ×${r.quantita}
+                <span class="riga-detail">&nbsp;${r.altezza}×${r.larghezza}×${r.profondita}cm | ${(r.volume*r.quantita).toFixed(3).replace('.',',')}m³ | ${r.peso.toFixed(1).replace('.',',')}kg</span>
+                ${r.note ? `<span class="riga-note"> – ${r.note}</span>` : ''}
+            </span>
+        </div>`;
+    });
+
+    const labelsHtml = `
+    <div class="label">
+        <div class="label-header">
+            <img src="${logoUrl}" class="label-logo" alt="ATS">
+            <div class="label-brand">
+                <div class="label-company">ATS GRUPPO</div>
+                <div class="label-sub">Riepilogo Spedizione</div>
+            </div>
+            <div class="label-date">${dataFmt}</div>
+        </div>
+        <div class="label-body">
+            <div class="label-row">
+                <span class="lbl">Commessa</span>
+                <span class="val val-big">${commessa}</span>
+            </div>
+           <div class="label-row" style="border-bottom:1.5px solid #d0d8ff;">
+            <span class="lbl">Destino</span>
+            <span class="val val-big" style="font-size:14pt; color:#1e3a5f; font-weight:900;">${destino}</span>
+           </div>
+            <div class="label-row">
+                <span class="lbl">Spedizione</span>
+                <span class="val">${tipoSped} <span style="font-size:6.5pt;color:#555;font-weight:600;">| Plant: ${plant} | ${bp.split('–')[0].trim()}</span></span>
+            </div>
+            <div class="label-row">
+                <span class="lbl">ODP</span>
+                <span class="val val-odp">${odpStr}</span>
+            </div>
+            <div class="totali-bar">
+                <div class="tot-item"><div class="tot-val">${totColli}</div><div class="tot-lbl">Colli</div></div>
+                <div class="tot-item"><div class="tot-val">${totVolume.toFixed(3).replace('.',',')}</div><div class="tot-lbl">m³</div></div>
+                <div class="tot-item"><div class="tot-val">${totPeso.toFixed(1).replace('.',',')}</div><div class="tot-lbl">kg</div></div>
+            </div>
+            <div class="righe-block">
+                <div class="righe-title">Dettaglio Carico</div>
+                ${righeHtml || '<div style="font-size:7pt;color:#ccc;padding:4px;">Nessuna riga</div>'}
+            </div>
+            ${note ? `<div class="label-row" style="margin-top:2px;"><span class="lbl">Note</span><span class="val val-note">${note}</span></div>` : ''}
+        </div>
+        <div class="label-footer">
+            <div class="footer-left">
+                <div class="footer-riepilogo">RIEPILOGO SPEDIZIONE</div>
+                <div class="footer-bp">${bp.split('–')[0].trim()}</div>
+            </div>
+            <div style="color:rgba(255,255,255,0.85);font-size:9pt;font-weight:700;text-align:right;line-height:1.4;">
+                ${odps.length} ODP<br><span style="font-size:7pt;opacity:0.7;">${dataFmt}</span>
+            </div>
+        </div>
+    </div>`;
+
+    const html = buildLabelPage({
+        titolo: `📋 Riepilogo Spedizione — ${commessa} → ${destino}`,
+        size: '10cm 10cm',
+        headerColor: '#00856f',
+        labelsHtml,
+        extraCSS: `
+.label { width:10cm; height:10cm; background:white; border:2px solid #1e3a5f; border-radius:6px; display:flex; flex-direction:column; overflow:hidden; }
+.label-header { background:linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%); padding:5px 8px; display:flex; align-items:center; gap:8px; flex-shrink:0; min-height:1.4cm; }
+.label-logo { height:26px; width:auto; object-fit:contain; background:white; border-radius:3px; padding:2px 4px; flex-shrink:0; }
+.label-brand { flex:1; display:flex; flex-direction:column; }
+.label-company { color:white; font-size:11pt; font-weight:900; letter-spacing:1px; line-height:1; }
+.label-sub { color:rgba(255,255,255,0.75); font-size:6.5pt; margin-top:2px; }
+.label-date { color:rgba(255,255,255,0.9); font-size:8pt; font-weight:700; flex-shrink:0; }
+.label-body { flex:1; padding:5px 8px 3px; display:flex; flex-direction:column; overflow:hidden; }
+.label-row { display:flex; align-items:flex-start; padding:2px 0; border-bottom:0.5px solid #eee; gap:5px; }
+.label-row:last-child { border-bottom:none; }
+.lbl { font-size:6pt; color:#888; text-transform:uppercase; font-weight:700; min-width:50px; flex-shrink:0; padding-top:1px; }
+.val { font-size:8pt; font-weight:700; color:#111; flex:1; line-height:1.3; word-break:break-word; }
+.val-big { font-size:9.5pt; color:#1e3a5f; }
+.val-odp { font-size:6.5pt; color:#333; word-break:break-all; font-weight:600; }
+.val-note { font-size:6.5pt; color:#c06000; font-style:italic; }
+.totali-bar { background:#f0f4ff; border:1px solid #d0d8ff; border-radius:5px; margin:3px 0; display:flex; justify-content:space-around; padding:4px 6px; flex-shrink:0; }
+.tot-item { text-align:center; }
+.tot-val { font-size:10pt; font-weight:900; color:#1e3a5f; line-height:1; }
+.tot-lbl { font-size:5.5pt; color:#888; text-transform:uppercase; margin-top:1px; }
+.righe-block { flex:1; overflow:hidden; border:0.5px solid #eee; border-radius:4px; padding:3px 5px; margin-top:2px; }
+.righe-title { font-size:6pt; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:2px; }
+.riga-row { display:flex; gap:3px; padding:1px 0; border-bottom:0.3px solid #f0f0f0; }
+.riga-row:last-child { border-bottom:none; }
+.riga-n { font-size:6pt; color:#888; min-width:10px; flex-shrink:0; }
+.riga-desc { font-size:6.5pt; color:#222; font-weight:600; line-height:1.3; }
+.riga-detail { color:#666; font-weight:400; font-size:6pt; }
+.riga-note { color:#c06000; font-style:italic; font-size:6pt; }
+.label-footer { background:#1e3a5f; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:1.2cm; }
+.footer-left { display:flex; flex-direction:column; gap:2px; }
+.footer-riepilogo { color:#34c759; font-size:8pt; font-weight:900; letter-spacing:0.5px; }
+.footer-bp { color:rgba(255,255,255,0.9); font-size:7.5pt; font-weight:700; }`
+    });
+
+    apriFinestra(html);
+}
+
+/* ================================================================
+   STAMPA ETICHETTE ODP — 10×5 cm, N etichette per N colli
+================================================================ */
+function stampaEtichetteODP(odp) {
+    const destino   = (q('#vdc-destino').value || '').trim() || '—';
+    const data      = q('#vdc-data').value;
+    const dataFmt   = data ? data.split('-').reverse().join('/') : '—';
+    const commessa  = q('#vdc-commessa').value || '—';
+    const logoUrl   = 'https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg';
+
+    const nColliStr = window.prompt(`ODP: ${odp.numero}\nQuanti colli ha questo ODP?`, '1');
+    if (nColliStr === null) return;
+    const nColli = parseInt(nColliStr);
+    if (isNaN(nColli) || nColli < 1) { toast('⚠️ Numero colli non valido'); return; }
+
+    let labelsHtml = '';
+    for (let i = 1; i <= nColli; i++) {
+        labelsHtml += `
+        <div class="label">
+            <div class="label-header">
+                <img src="${logoUrl}" class="label-logo" alt="ATS">
+                <div class="label-brand">
+                    <div class="label-company">ATS GRUPPO</div>
+                    <div class="label-sub">${commessa}</div>
+                </div>
+                <div class="label-date">${dataFmt}</div>
+            </div>
+           <div class="label-body">
+           <div class="odp-label">ODP</div>
+           <div class="odp-big">${odp.numero}</div>
+           <div class="destino-label">Destino</div>
+           <div class="destino-line">${destino}</div>
+           </div>
+            <div class="label-footer">
+                <div class="footer-collo">
+                    Collo <span class="collo-cur">${i}</span>/<span class="collo-tot">${nColli}</span>
+                </div>
+                ${odp.peso > 0 ? `<div class="footer-peso">⚖️ ${odp.peso.toFixed(1).replace('.',',')} kg</div>` : ''}
+            </div>
+        </div>`;
+    }
+
+    const html = buildLabelPage({
+        titolo: `🏷️ ODP ${odp.numero} — ${nColli} etichett${nColli===1?'a':'e'} → ${destino}`,
+        size: '10cm 5cm',
+        headerColor: '#5856d6',
+        labelsHtml,
+        extraCSS: `
+.label { width:10cm; height:5cm; background:white; border:2px solid #1e3a5f; border-radius:6px; display:flex; flex-direction:column; overflow:hidden; }
+.label-header { background:linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%); padding:4px 8px; display:flex; align-items:center; gap:8px; flex-shrink:0; min-height:1cm; }
+.label-logo { height:20px; width:auto; object-fit:contain; background:white; border-radius:3px; padding:2px 4px; flex-shrink:0; }
+.label-brand { flex:1; }
+.label-company { color:white; font-size:9pt; font-weight:900; letter-spacing:1px; line-height:1; }
+.label-sub { color:rgba(255,255,255,0.75); font-size:5.5pt; margin-top:1px; }
+.label-date { color:rgba(255,255,255,0.9); font-size:8pt; font-weight:700; flex-shrink:0; }
+.label-body { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2px 8px; gap:2px; }
+.odp-big { font-size:30pt; font-weight:900; color:#1e3a5f; letter-spacing:2px; line-height:1; text-align:center; }
+.destino-line { font-size:28pt; color:#444; font-weight:900; text-align:center; line-height:1.1; width:100%; word-break:break-word; }
+.label-footer { background:#1e3a5f; padding:4px 12px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:0.9cm; }
+.footer-collo { color:white; font-size:10pt; font-weight:700; }
+.collo-cur { font-size:18pt; font-weight:900; color:white; }
+.collo-tot { font-size:13pt; font-weight:700; color:rgba(255,255,255,0.75); }
+.footer-peso { color:#34c759; font-size:9pt; font-weight:700; }
+.odp-label { font-size:7pt; color:rgba(255,255,255,0.6); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+.destino-label { font-size:7pt; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:1px; }`
+    });
+
+    apriFinestra(html);
+}
+
+/* ================================================================
+   HELPER — costruisce la pagina HTML di stampa
+================================================================ */
+function buildLabelPage({ titolo, size, headerColor, labelsHtml, extraCSS }) {
+    return `<!DOCTYPE html>
+<html lang="it"><head><meta charset="utf-8">
+<title>${titolo}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:Arial,Helvetica,sans-serif; background:#d0d0d0; }
+@media screen {
+    body { padding:24px; }
+    .label { margin:16px auto; box-shadow:0 4px 18px rgba(0,0,0,0.25); }
+    .print-bar { position:sticky; top:0; z-index:99; background:${headerColor}; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; border-radius:10px; margin-bottom:20px; }
+    .print-info { color:white; font-size:14px; font-weight:600; }
+    .btn-print { padding:10px 28px; background:#34c759; color:white; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
+}
+@media print {
+    body { background:white; padding:0; }
+    .print-bar { display:none !important; }
+    .label { page-break-after:always; margin:0 !important; box-shadow:none !important; border-radius:0 !important; }
+    .label:last-child { page-break-after:avoid; }
+    @page { size:${size}; margin:0; }
+}
+${extraCSS}
+</style></head><body>
+<div class="print-bar">
+    <div class="print-info">${titolo}</div>
+    <button class="btn-print" onclick="window.print()">🖨️ STAMPA</button>
+</div>
+${labelsHtml}
+</body></html>`;
+}
+
+/* Helper — apre la finestra di stampa */
+function apriFinestra(html) {
+    const win = window.open('', '_blank', 'width=820,height=750');
+    if (!win) { toast('⚠️ Pop-up bloccato! Consenti i pop-up per questo sito.'); return; }
+    win.document.write(html);
+    win.document.close();
 }
 
 /* ================================================================
