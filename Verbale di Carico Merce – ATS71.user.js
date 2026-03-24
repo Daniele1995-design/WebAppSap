@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Verbale di Carico Merce – ATS71
 // @namespace    http://tampermonkey.net/
-// @version      7.0
+// @version      6.6
 // @description  Verbale di Carico – UI identica HTML originale, tutti i fix , per il magazzino 71
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/
@@ -1694,30 +1694,26 @@ function stampaEtichette() {
             <div class="label-body">
                <div class="label-row">
              <span class="lbl">Commessa</span>
-            <span style="font-size:14pt;color:#1e3a5f;font-weight:900;flex:1;line-height:1.3;word-break:break-word;">${commessa}</span>
+            <span style="font-size:18pt;color:Black;font-weight:900;flex:1;line-height:1.3;word-break:break-word;">${commessa}</span>
                </div>
                <div class="label-row">
                 <span class="lbl">Destino</span>
-                <span style="font-size:16pt;color:#1e3a5f;font-weight:900;flex:1;line-height:1.3;word-break:break-word;">${destino}</span>
+                <span style="font-size:20pt;color:Black;font-weight:900;flex:1;line-height:1.3;word-break:break-word;">${destino}</span>
                </div>
-                <div class="label-row">
-                    <span class="lbl">Spedizione</span>
-                    <span class="val">${tipoSped}</span>
-                </div>
                 <div class="label-row">
                     <span class="lbl">Imballo</span>
                     <span class="val">${c.imballo} <span class="val-secondary">&nbsp;|&nbsp;${pesoStr}&nbsp;|&nbsp;${volumeStr}</span></span>
                 </div>
                 <div class="label-row">
                     <span class="lbl">ODP</span>
-                    <span class="val val-odp" style="font-size:9pt;">${odpStr}</span>
+                    <span class="val val-odp" style="font-size:10pt;">${odpStr}</span>
                 </div>
                 ${c.note ? `<div class="label-row"><span class="lbl">Note</span><span class="val val-note">${c.note}</span></div>` : ''}
             </div>
             <div class="label-footer">
                 <div class="footer-left">
-                    <div class="footer-plant">Plant: ${plant}</div>
-                    <div class="footer-bp">${bp.split('–')[0].trim()}</div>
+                    <div class="footer-plant">PLANT : ${plant}</div>
+                    <span class="val">SPEDIZIONE : ${tipoSped}</span>
                 </div>
                 <div class="collo-num">
                     <span class="collo-cur">${i + 1}</span>
@@ -1738,26 +1734,25 @@ function stampaEtichette() {
 .label-header { background:linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%); padding:5px 8px; display:flex; align-items:center; gap:8px; flex-shrink:0; min-height:1.4cm; }
 .label-logo { height:26px; width:auto; object-fit:contain; background:white; border-radius:3px; padding:2px 4px; flex-shrink:0; }
 .label-brand { flex:1; display:flex; flex-direction:column; }
-.label-company { color:white; font-size:11pt; font-weight:900; letter-spacing:1px; line-height:1; }
-.label-sub { color:rgba(255,255,255,0.75); font-size:6.5pt; margin-top:2px; }
-.label-date { color:rgba(255,255,255,0.9); font-size:8pt; font-weight:700; flex-shrink:0; }
+.label-company { color:Black; font-size:11pt; font-weight:900; letter-spacing:1px; line-height:1; }
+.label-sub { color:Black; font-size:6.5pt; margin-top:2px; }
+.label-date { color:Black; font-size:8pt; font-weight:700; flex-shrink:0; }
 .label-body { flex:1; padding:5px 8px 3px; display:flex; flex-direction:column; overflow:hidden; }
-.label-row { display:flex; align-items:flex-start; padding:4px 0; border-bottom:0.5px solid #eee; gap:5px; }
+.label-row { display:flex; align-items:flex-start; padding:4px 0; border-bottom:0.5px solid Black; gap:5px; }
 .label-row:last-child { border-bottom:none; }
-.lbl { font-size:8pt; color:#888; text-transform:uppercase; font-weight:700; min-width:58px; flex-shrink:0; padding-top:1px; }
-.val { font-size:10pt; font-weight:700; color:#111; flex:1; line-height:1.3; word-break:break-word; }
-.val-big { font-size:14pt; color:#1e3a5f; font-weight:900; }
-.val-secondary { font-size:7pt; color:#555; font-weight:600; }
-.val-odp { font-size:7pt; color:#333; word-break:break-all; font-weight:600; }
-.val-note { font-size:7pt; color:#c06000; font-style:italic; }
+.lbl { font-size:8pt; color:Black; text-transform:uppercase; font-weight:700; min-width:58px; flex-shrink:0; padding-top:1px; }
+.val-big { font-size:14pt; color:Black; font-weight:900; }
+.val-secondary { font-size:7pt; color:Black; font-weight:600; }
+.val-odp { font-size:7pt; color:Black; word-break:break-all; font-weight:600; }
+.val-note { font-size:7pt; color:Black; font-style:italic; }
 .label-footer { background:#1e3a5f; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:1.6cm; }
 .footer-left { display:flex; flex-direction:column; gap:2px; }
-.footer-plant { color:rgba(255,255,255,0.7); font-size:6.5pt; font-weight:600; }
-.footer-bp { color:rgba(255,255,255,0.9); font-size:7.5pt; font-weight:700; }
+.footer-plant { color:Black; font-size:8pt; font-weight:600; }
+.val { font-size:8pt; font-weight:700; color:#111; flex:1; line-height:1.3; word-break:break-word; }
 .collo-num { display:flex; align-items:baseline; gap:1px; line-height:1; }
-.collo-cur { font-size:36pt; font-weight:900; color:white; line-height:1; }
-.collo-sep { font-size:22pt; font-weight:700; color:rgba(255,255,255,0.6); margin:0 1px; }
-.collo-tot { font-size:22pt; font-weight:700; color:rgba(255,255,255,0.75); line-height:1; }`
+.collo-cur { font-size:36pt; font-weight:900; color:Black; line-height:1; }
+.collo-sep { font-size:22pt; font-weight:700; color:Black; margin:0 1px; }
+.collo-tot { font-size:22pt; font-weight:700; color:Black; line-height:1; }`
     });
 
     apriFinestra(html);
@@ -1810,7 +1805,7 @@ function stampaEtichettaRiepilogo() {
             </div>
            <div class="label-row" style="border-bottom:1.5px solid #d0d8ff;">
             <span class="lbl">Destino</span>
-            <span class="val val-big" style="font-size:14pt; color:#1e3a5f; font-weight:900;">${destino}</span>
+            <span class="val val-big" style="font-size:14pt; color:Black; font-weight:900;">${destino}</span>
            </div>
             <div class="label-row">
                 <span class="lbl">Spedizione</span>
@@ -1852,33 +1847,33 @@ function stampaEtichettaRiepilogo() {
 .label-header { background:linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%); padding:5px 8px; display:flex; align-items:center; gap:8px; flex-shrink:0; min-height:1.4cm; }
 .label-logo { height:26px; width:auto; object-fit:contain; background:white; border-radius:3px; padding:2px 4px; flex-shrink:0; }
 .label-brand { flex:1; display:flex; flex-direction:column; }
-.label-company { color:white; font-size:11pt; font-weight:900; letter-spacing:1px; line-height:1; }
-.label-sub { color:rgba(255,255,255,0.75); font-size:6.5pt; margin-top:2px; }
-.label-date { color:rgba(255,255,255,0.9); font-size:8pt; font-weight:700; flex-shrink:0; }
+.label-company { color:Black; font-size:11pt; font-weight:900; letter-spacing:1px; line-height:1; }
+.label-sub { color:Black; font-size:6.5pt; margin-top:2px; }
+.label-date { color:Black; font-size:8pt; font-weight:700; flex-shrink:0; }
 .label-body { flex:1; padding:5px 8px 3px; display:flex; flex-direction:column; overflow:hidden; }
-.label-row { display:flex; align-items:flex-start; padding:2px 0; border-bottom:0.5px solid #eee; gap:5px; }
+.label-row { display:flex; align-items:flex-start; padding:2px 0; border-bottom:0.5px solid Black; gap:5px; }
 .label-row:last-child { border-bottom:none; }
-.lbl { font-size:6pt; color:#888; text-transform:uppercase; font-weight:700; min-width:50px; flex-shrink:0; padding-top:1px; }
-.val { font-size:8pt; font-weight:700; color:#111; flex:1; line-height:1.3; word-break:break-word; }
-.val-big { font-size:9.5pt; color:#1e3a5f; }
-.val-odp { font-size:6.5pt; color:#333; word-break:break-all; font-weight:600; }
-.val-note { font-size:6.5pt; color:#c06000; font-style:italic; }
+.lbl { font-size:6pt; color:Black; text-transform:uppercase; font-weight:700; min-width:50px; flex-shrink:0; padding-top:1px; }
+.val { font-size:8pt; font-weight:700; color:Black; flex:1; line-height:1.3; word-break:break-word; }
+.val-big { font-size:9.5pt; color:Black; }
+.val-odp { font-size:6.5pt; color:Black; word-break:break-all; font-weight:600; }
+.val-note { font-size:6.5pt; color:Black; font-style:italic; }
 .totali-bar { background:#f0f4ff; border:1px solid #d0d8ff; border-radius:5px; margin:3px 0; display:flex; justify-content:space-around; padding:4px 6px; flex-shrink:0; }
 .tot-item { text-align:center; }
-.tot-val { font-size:10pt; font-weight:900; color:#1e3a5f; line-height:1; }
-.tot-lbl { font-size:5.5pt; color:#888; text-transform:uppercase; margin-top:1px; }
+.tot-val { font-size:10pt; font-weight:900; color:Black; line-height:1; }
+.tot-lbl { font-size:5.5pt; color:Black; text-transform:uppercase; margin-top:1px; }
 .righe-block { flex:1; overflow:hidden; border:0.5px solid #eee; border-radius:4px; padding:3px 5px; margin-top:2px; }
-.righe-title { font-size:6pt; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:2px; }
+.righe-title { font-size:6pt; color:Black; text-transform:uppercase; font-weight:700; margin-bottom:2px; }
 .riga-row { display:flex; gap:3px; padding:1px 0; border-bottom:0.3px solid #f0f0f0; }
 .riga-row:last-child { border-bottom:none; }
-.riga-n { font-size:6pt; color:#888; min-width:10px; flex-shrink:0; }
-.riga-desc { font-size:6.5pt; color:#222; font-weight:600; line-height:1.3; }
-.riga-detail { color:#666; font-weight:400; font-size:6pt; }
-.riga-note { color:#c06000; font-style:italic; font-size:6pt; }
+.riga-n { font-size:6pt; color:Black; min-width:10px; flex-shrink:0; }
+.riga-desc { font-size:6.5pt; color:Black; font-weight:600; line-height:1.3; }
+.riga-detail { color:Black; font-weight:400; font-size:6pt; }
+.riga-note { color:Black; font-style:italic; font-size:6pt; }
 .label-footer { background:#1e3a5f; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:1.2cm; }
 .footer-left { display:flex; flex-direction:column; gap:2px; }
-.footer-riepilogo { color:#34c759; font-size:8pt; font-weight:900; letter-spacing:0.5px; }
-.footer-bp { color:rgba(255,255,255,0.9); font-size:7.5pt; font-weight:700; }`
+.footer-riepilogo { color:Black; font-size:8pt; font-weight:900; letter-spacing:0.5px; }
+.footer-bp { color:Black; font-size:7.5pt; font-weight:700; }`
     });
 
     apriFinestra(html);
@@ -1912,7 +1907,6 @@ function stampaEtichetteODP(odp) {
                 <div class="label-date">${dataFmt}</div>
             </div>
            <div class="label-body">
-           <div class="odp-label">ODP</div>
            <div class="odp-big">${odp.numero}</div>
            <div class="destino-label">Destino</div>
            <div class="destino-line">${destino}</div>
@@ -1936,19 +1930,19 @@ function stampaEtichetteODP(odp) {
 .label-header { background:linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%); padding:4px 8px; display:flex; align-items:center; gap:8px; flex-shrink:0; min-height:1cm; }
 .label-logo { height:20px; width:auto; object-fit:contain; background:white; border-radius:3px; padding:2px 4px; flex-shrink:0; }
 .label-brand { flex:1; }
-.label-company { color:white; font-size:9pt; font-weight:900; letter-spacing:1px; line-height:1; }
-.label-sub { color:rgba(255,255,255,0.75); font-size:5.5pt; margin-top:1px; }
-.label-date { color:rgba(255,255,255,0.9); font-size:8pt; font-weight:700; flex-shrink:0; }
+.label-company { color:Black; font-size:9pt; font-weight:900; letter-spacing:1px; line-height:1; }
+.label-sub { color:Black; font-size:5.5pt; margin-top:1px; }
+.label-date { color:Black; font-size:8pt; font-weight:700; flex-shrink:0; }
 .label-body { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2px 8px; gap:2px; }
-.odp-big { font-size:30pt; font-weight:900; color:#1e3a5f; letter-spacing:2px; line-height:1; text-align:center; }
-.destino-line { font-size:28pt; color:#444; font-weight:900; text-align:center; line-height:1.1; width:100%; word-break:break-word; }
+.odp-big { font-size:26pt; font-weight:900; color:Black; letter-spacing:2px; line-height:1; text-align:center; }
+.destino-line { font-size:18pt; color:Black; font-weight:900; text-align:center; line-height:1.1; width:100%; word-break:break-word; }
 .label-footer { background:#1e3a5f; padding:4px 12px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:0.9cm; }
-.footer-collo { color:white; font-size:10pt; font-weight:700; }
-.collo-cur { font-size:18pt; font-weight:900; color:white; }
-.collo-tot { font-size:13pt; font-weight:700; color:rgba(255,255,255,0.75); }
-.footer-peso { color:#34c759; font-size:9pt; font-weight:700; }
-.odp-label { font-size:7pt; color:rgba(255,255,255,0.6); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
-.destino-label { font-size:7pt; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:1px; }`
+.footer-collo { color:Black; font-size:10pt; font-weight:700; }
+.collo-cur { font-size:18pt; font-weight:900; color:Black; }
+.collo-tot { font-size:13pt; font-weight:700; color:Black; }
+.footer-peso { color:Black; font-size:9pt; font-weight:700; }
+.odp-label { font-size:7pt; color:Black; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+.destino-label { font-size:7pt; color:Black; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:1px; }`
     });
 
     apriFinestra(html);
