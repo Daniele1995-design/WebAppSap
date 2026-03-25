@@ -1759,7 +1759,7 @@ function stampaEtichette() {
 }
 
 /* ================================================================
-   STAMPA ETICHETTA RIEPILOGO SPEDIZIONE — 10×10 cm, singola
+   STAMPA ETICHETTA RIEPILOGO SPEDIZIONE — A4, singola
 ================================================================ */
 function stampaEtichettaRiepilogo() {
     const commessa  = q('#vdc-commessa').value  || '—';
@@ -1775,110 +1775,396 @@ function stampaEtichettaRiepilogo() {
     const totColli  = righeCarico.reduce((s,r) => s + r.quantita, 0);
     const totVolume = righeCarico.reduce((s,r) => s + r.volume * r.quantita, 0);
     const totPeso   = righeCarico.reduce((s,r) => s + r.peso, 0);
-    const odpStr    = odps.length ? odps.map(o => o.numero).join(' ; ') : '—';
+    const odpStr    = odps.length ? odps.map(o => o.numero).join(' · ') : '—';
 
-    let righeHtml = '';
+    /* --- TABELLA RIGHE CARICO --- */
+    let righeRows = '';
     righeCarico.forEach((r, i) => {
-        righeHtml += `<div class="riga-row">
-            <span class="riga-n">${i+1}.</span>
-            <span class="riga-desc">${r.imballo} ×${r.quantita}
-                <span class="riga-detail">&nbsp;${r.altezza}×${r.larghezza}×${r.profondita}cm | ${(r.volume*r.quantita).toFixed(3).replace('.',',')}m³ | ${r.peso.toFixed(1).replace('.',',')}kg</span>
-                ${r.note ? `<span class="riga-note"> – ${r.note}</span>` : ''}
-            </span>
-        </div>`;
+        const volTot = (r.volume * r.quantita).toFixed(4).replace('.',',');
+        const pesoStr = r.peso.toFixed(1).replace('.',',');
+        righeRows += `
+        <tr>
+            <td style="text-align:center;">${i + 1}</td>
+            <td>${r.imballo}</td>
+            <td style="text-align:center;">${r.quantita}</td>
+            <td style="text-align:center;">${r.altezza} × ${r.larghezza} × ${r.profondita}</td>
+            <td style="text-align:right;">${volTot}</td>
+            <td style="text-align:right;">${pesoStr}</td>
+            <td>${r.note || ''}</td>
+        </tr>`;
     });
+    if (!righeRows) {
+        righeRows = `<tr><td colspan="7" style="text-align:center;color:#aaa;font-style:italic;">Nessuna riga inserita</td></tr>`;
+    }
 
-    const labelsHtml = `
-    <div class="label">
-        <div class="label-header">
-            <img src="${logoUrl}" class="label-logo" alt="ATS">
-            <div class="label-brand">
-                <div class="label-company">ATS GRUPPO</div>
-                <div class="label-sub">Riepilogo Spedizione</div>
-            </div>
-            <div class="label-date">${dataFmt}</div>
-        </div>
-        <div class="label-body">
-            <div class="label-row">
-                <span class="lbl">Commessa</span>
-                <span class="val val-big">${commessa}</span>
-            </div>
-           <div class="label-row" style="border-bottom:1.5px solid #d0d8ff;">
-            <span class="lbl">Destino</span>
-            <span class="val val-big" style="font-size:14pt; color:Black; font-weight:900;">${destino}</span>
-           </div>
-            <div class="label-row">
-                <span class="lbl">Spedizione</span>
-                <span class="val">${tipoSped} <span style="font-size:6.5pt;color:#555;font-weight:600;">| Plant: ${plant} | ${bp.split('–')[0].trim()}</span></span>
-            </div>
-            <div class="label-row">
-                <span class="lbl">ODP</span>
-                <span class="val val-odp">${odpStr}</span>
-            </div>
-            <div class="totali-bar">
-                <div class="tot-item"><div class="tot-val">${totColli}</div><div class="tot-lbl">Colli</div></div>
-                <div class="tot-item"><div class="tot-val">${totVolume.toFixed(3).replace('.',',')}</div><div class="tot-lbl">m³</div></div>
-                <div class="tot-item"><div class="tot-val">${totPeso.toFixed(1).replace('.',',')}</div><div class="tot-lbl">kg</div></div>
-            </div>
-            <div class="righe-block">
-                <div class="righe-title">Dettaglio Carico</div>
-                ${righeHtml || '<div style="font-size:7pt;color:#ccc;padding:4px;">Nessuna riga</div>'}
-            </div>
-            ${note ? `<div class="label-row" style="margin-top:2px;"><span class="lbl">Note</span><span class="val val-note">${note}</span></div>` : ''}
-        </div>
-        <div class="label-footer">
-            <div class="footer-left">
-                <div class="footer-riepilogo">RIEPILOGO SPEDIZIONE</div>
-                <div class="footer-bp">${bp.split('–')[0].trim()}</div>
-            </div>
-            <div style="color:rgba(255,255,255,0.85);font-size:9pt;font-weight:700;text-align:right;line-height:1.4;">
-                ${odps.length} ODP<br><span style="font-size:7pt;opacity:0.7;">${dataFmt}</span>
-            </div>
-        </div>
-    </div>`;
-
-    const html = buildLabelPage({
-        titolo: `📋 Riepilogo Spedizione — ${commessa} → ${destino}`,
-        size: '10cm 10cm',
-        headerColor: '#00856f',
-        labelsHtml,
-        extraCSS: `
-.label { width:10cm; height:10cm; background:white; border:2px solid #1e3a5f; border-radius:6px; display:flex; flex-direction:column; overflow:hidden; }
-.label-header { background:linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%); padding:5px 8px; display:flex; align-items:center; gap:8px; flex-shrink:0; min-height:1.4cm; }
-.label-logo { height:26px; width:auto; object-fit:contain; background:white; border-radius:3px; padding:2px 4px; flex-shrink:0; }
-.label-brand { flex:1; display:flex; flex-direction:column; }
-.label-company { color:Black; font-size:11pt; font-weight:900; letter-spacing:1px; line-height:1; }
-.label-sub { color:Black; font-size:6.5pt; margin-top:2px; }
-.label-date { color:Black; font-size:8pt; font-weight:700; flex-shrink:0; }
-.label-body { flex:1; padding:5px 8px 3px; display:flex; flex-direction:column; overflow:hidden; }
-.label-row { display:flex; align-items:flex-start; padding:2px 0; border-bottom:0.5px solid Black; gap:5px; }
-.label-row:last-child { border-bottom:none; }
-.lbl { font-size:6pt; color:Black; text-transform:uppercase; font-weight:700; min-width:50px; flex-shrink:0; padding-top:1px; }
-.val { font-size:8pt; font-weight:700; color:Black; flex:1; line-height:1.3; word-break:break-word; }
-.val-big { font-size:9.5pt; color:Black; }
-.val-odp { font-size:6.5pt; color:Black; word-break:break-all; font-weight:600; }
-.val-note { font-size:6.5pt; color:Black; font-style:italic; }
-.totali-bar { background:#f0f4ff; border:1px solid #d0d8ff; border-radius:5px; margin:3px 0; display:flex; justify-content:space-around; padding:4px 6px; flex-shrink:0; }
-.tot-item { text-align:center; }
-.tot-val { font-size:10pt; font-weight:900; color:Black; line-height:1; }
-.tot-lbl { font-size:5.5pt; color:Black; text-transform:uppercase; margin-top:1px; }
-.righe-block { flex:1; overflow:hidden; border:0.5px solid #eee; border-radius:4px; padding:3px 5px; margin-top:2px; }
-.righe-title { font-size:6pt; color:Black; text-transform:uppercase; font-weight:700; margin-bottom:2px; }
-.riga-row { display:flex; gap:3px; padding:1px 0; border-bottom:0.3px solid #f0f0f0; }
-.riga-row:last-child { border-bottom:none; }
-.riga-n { font-size:6pt; color:Black; min-width:10px; flex-shrink:0; }
-.riga-desc { font-size:6.5pt; color:Black; font-weight:600; line-height:1.3; }
-.riga-detail { color:Black; font-weight:400; font-size:6pt; }
-.riga-note { color:Black; font-style:italic; font-size:6pt; }
-.label-footer { background:#1e3a5f; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:1.2cm; }
-.footer-left { display:flex; flex-direction:column; gap:2px; }
-.footer-riepilogo { color:Black; font-size:8pt; font-weight:900; letter-spacing:0.5px; }
-.footer-bp { color:Black; font-size:7.5pt; font-weight:700; }`
+    /* --- TABELLA ODP --- */
+    let odpRows = '';
+    odps.forEach((o, i) => {
+        odpRows += `
+        <tr>
+            <td style="text-align:center;">${i + 1}</td>
+            <td style="font-weight:700;">${o.numero}</td>
+            <td style="text-align:right;">${o.peso > 0 ? o.peso.toFixed(1).replace('.',',') + ' kg' : '—'}</td>
+        </tr>`;
     });
+    if (!odpRows) {
+        odpRows = `<tr><td colspan="3" style="text-align:center;color:#aaa;font-style:italic;">Nessun ODP inserito</td></tr>`;
+    }
+
+    const html = `<!DOCTYPE html>
+<html lang="it"><head><meta charset="utf-8">
+<title>Riepilogo Spedizione – ${commessa} – ${dataFmt}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    color: #1c1c1e;
+    background: #e8e8e8;
+}
+
+/* ---- PRINT BAR (solo schermo) ---- */
+@media screen {
+    body { padding: 24px; }
+    .print-bar {
+        position: sticky; top: 0; z-index: 99;
+        background: #1e3a5f;
+        padding: 12px 20px;
+        display: flex; align-items: center; justify-content: space-between;
+        border-radius: 10px; margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .print-info { color: white; font-size: 14px; font-weight: 700; }
+    .btn-print {
+        padding: 10px 28px;
+        background: #34c759; color: white;
+        border: none; border-radius: 8px;
+        font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+    .page { box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
+}
+
+/* ---- PAGINA A4 ---- */
+.page {
+    width: 21cm;
+    min-height: 29.7cm;
+    background: white;
+    margin: 0 auto;
+    padding: 1.2cm 1.4cm 1.2cm;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ---- HEADER ---- */
+.doc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #1e3a5f;
+    padding-bottom: 12px;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.header-logo { height: 48px; width: auto; object-fit: contain; }
+.header-brand-name {
+    font-size: 18pt; font-weight: 900;
+    color: #1e3a5f; letter-spacing: 1px; line-height: 1;
+}
+.header-brand-sub { font-size: 8pt; color: #666; margin-top: 3px; }
+.header-right { text-align: right; }
+.doc-title {
+    font-size: 15pt; font-weight: 900;
+    color: #1e3a5f; line-height: 1.1;
+}
+.doc-subtitle { font-size: 8.5pt; color: #666; margin-top: 4px; }
+
+/* ---- SEZIONE INFO ---- */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.info-box {
+    border: 1px solid #dde3f0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.info-box-title {
+    background: #1e3a5f;
+    color: white;
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+}
+.info-box-body { padding: 8px 10px; }
+.info-row {
+    display: flex; justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 0.5px solid #eee;
+    padding: 3px 0;
+    font-size: 9pt;
+}
+.info-row:last-child { border-bottom: none; }
+.info-lbl { color: #666; min-width: 90px; flex-shrink: 0; }
+.info-val { font-weight: 700; color: #1c1c1e; text-align: right; word-break: break-word; }
+.info-val-big {
+    font-size: 13pt; font-weight: 900;
+    color: #1e3a5f; word-break: break-word;
+}
+
+/* ---- TOTALI BAR ---- */
+.totali-bar {
+    background: #1e3a5f;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-around;
+    padding: 14px 20px;
+    gap: 10px;
+}
+.tot-item { text-align: center; }
+.tot-val {
+    font-size: 22pt; font-weight: 900;
+    color: white; line-height: 1;
+}
+.tot-lbl {
+    font-size: 7.5pt; color: rgba(255,255,255,0.75);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-top: 3px;
+}
+
+/* ---- SEZIONE TITOLO ---- */
+.section-title {
+    font-size: 8.5pt; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: #1e3a5f;
+    border-left: 3px solid #1e3a5f;
+    padding-left: 8px;
+    margin-bottom: 6px;
+}
+
+/* ---- TABELLE ---- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+}
+thead tr {
+    background: #1e3a5f;
+    color: white;
+}
+thead th {
+    padding: 6px 8px;
+    font-weight: 700;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-align: left;
+}
+tbody tr { border-bottom: 0.5px solid #e8e8e8; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:nth-child(even) { background: #f7f9ff; }
+tbody td { padding: 6px 8px; vertical-align: middle; }
+
+/* ---- NOTE ---- */
+.note-box {
+    border: 1px solid #dde3f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 9pt;
+    color: #444;
+    font-style: italic;
+    background: #fafbff;
+}
+
+/* ---- FIRMA ---- */
+.firma-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: auto;
+    padding-top: 10px;
+}
+.firma-box {
+    border-top: 1.5px solid #1e3a5f;
+    padding-top: 6px;
+    font-size: 8pt;
+    color: #666;
+    text-align: center;
+}
+
+/* ---- FOOTER ---- */
+.doc-footer {
+    border-top: 1px solid #dde3f0;
+    padding-top: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 7.5pt;
+    color: #999;
+}
+
+/* ---- STAMPA ---- */
+@media print {
+    body { background: white; padding: 0; }
+    .print-bar { display: none !important; }
+    .page {
+        width: 100%; min-height: 100vh;
+        box-shadow: none;
+        padding: 0.8cm 1cm;
+        margin: 0;
+    }
+    @page { size: A4 portrait; margin: 0; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+}
+</style></head><body>
+
+<div class="print-bar">
+    <div class="print-info">📋 Riepilogo Spedizione — ${commessa} → ${destino} — ${dataFmt}</div>
+    <button class="btn-print" onclick="window.print()">🖨️ STAMPA</button>
+</div>
+
+<div class="page">
+
+    <!-- HEADER -->
+    <div class="doc-header">
+        <div class="header-left">
+            <img src="${logoUrl}" class="header-logo" alt="ATS">
+            <div>
+                <div class="header-brand-name">ATS GRUPPO</div>
+                <div class="header-brand-sub">Magazzino 14 — Verbale di Carico Merce</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="doc-title">Riepilogo Spedizione</div>
+            <div class="doc-subtitle">Data: ${dataFmt} &nbsp;|&nbsp; Plant: ${plant}</div>
+        </div>
+    </div>
+
+    <!-- INFO GRID -->
+    <div class="info-grid">
+        <div class="info-box">
+            <div class="info-box-title">Dati Spedizione</div>
+            <div class="info-box-body">
+                <div class="info-row">
+                    <span class="info-lbl">Business Partner</span>
+                    <span class="info-val">${bp}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-lbl">Tipo Spedizione</span>
+                    <span class="info-val">${tipoSped}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-lbl">Data</span>
+                    <span class="info-val">${dataFmt}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-lbl">Plant</span>
+                    <span class="info-val">${plant}</span>
+                </div>
+            </div>
+        </div>
+        <div class="info-box">
+            <div class="info-box-title">Commessa &amp; Destinazione</div>
+            <div class="info-box-body">
+                <div class="info-row">
+                    <span class="info-lbl">Commessa</span>
+                    <span class="info-val">${commessa}</span>
+                </div>
+                <div class="info-row" style="align-items:flex-start;">
+                    <span class="info-lbl">Destino</span>
+                    <span class="info-val-big">${destino}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-lbl">N° ODP</span>
+                    <span class="info-val">${odps.length}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOTALI -->
+    <div class="totali-bar">
+        <div class="tot-item">
+            <div class="tot-val">${totColli}</div>
+            <div class="tot-lbl">Colli Totali</div>
+        </div>
+        <div class="tot-item">
+            <div class="tot-val">${totVolume.toFixed(3).replace('.',',')} m³</div>
+            <div class="tot-lbl">Volume Totale</div>
+        </div>
+        <div class="tot-item">
+            <div class="tot-val">${totPeso.toFixed(1).replace('.',',')} kg</div>
+            <div class="tot-lbl">Peso Totale</div>
+        </div>
+        <div class="tot-item">
+            <div class="tot-val">${odps.length}</div>
+            <div class="tot-lbl">ODP</div>
+        </div>
+    </div>
+
+    <!-- DETTAGLIO CARICO -->
+    <div>
+        <div class="section-title">Dettaglio Righe di Carico</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th>Imballo</th>
+                    <th style="text-align:center;">Qtà</th>
+                    <th style="text-align:center;">Dim. (cm) L×P×H</th>
+                    <th style="text-align:right;">Volume Tot. (m³)</th>
+                    <th style="text-align:right;">Peso Tot. (kg)</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>${righeRows}</tbody>
+        </table>
+    </div>
+
+    <!-- ODP -->
+    <div>
+        <div class="section-title">Elenco ODP</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th>Numero ODP</th>
+                    <th style="text-align:right;">Peso ODP (kg)</th>
+                </tr>
+            </thead>
+            <tbody>${odpRows}</tbody>
+        </table>
+    </div>
+
+    ${note ? `
+    <!-- NOTE -->
+    <div>
+        <div class="section-title">Note Generali</div>
+        <div class="note-box">${note}</div>
+    </div>` : ''}
+
+    <!-- FIRME -->
+    <div class="firma-grid">
+        <div class="firma-box">Compilato da</div>
+        <div class="firma-box">Verificato da</div>
+        <div class="firma-box">Autista / Vettore</div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="doc-footer">
+        <span>ATS Gruppo — Magazzino 14</span>
+        <span>Commessa: ${commessa} | Destino: ${destino}</span>
+        <span>Generato il ${dataFmt}</span>
+    </div>
+
+</div>
+</body></html>`;
 
     apriFinestra(html);
 }
-
 /* ================================================================
    STAMPA ETICHETTE ODP — 10×5 cm, N etichette per N colli
 ================================================================ */
