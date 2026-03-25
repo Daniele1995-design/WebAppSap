@@ -1887,30 +1887,30 @@ function printFiltered(){
     return String(s||'')
       .replace(/Volume_Unitario_Mc/gi,'Vol.Un.')
       .replace(/Volume_Totale_Riga_Mc/gi,'Vol.Tot.')
-      .replace(/Peso_Totale_Riga_Kg/gi,'Ps.Tot.')
-      .replace(/Peso_ODP_Kg/gi,'Ps.Kg')
+      .replace(/Peso_Totale_Riga_Kg/gi,'Peso.Tot.')
+      .replace(/Peso_ODP_Kg/gi,'Peso.Kg')
       .replace(/Numero_ODP/gi,'N.ODP')
-      .replace(/Profondita_Cm/gi,'Prof.')
-      .replace(/Larghezza_Cm/gi,'Larg.')
-      .replace(/Altezza_Cm/gi,'Alt.')
+      .replace(/Profondita_Cm/gi,'Prof.cm')
+      .replace(/Larghezza_Cm/gi,'Larg.cm')
+      .replace(/Altezza_Cm/gi,'Alt.cm')
       .replace(/Quantity/gi,'Qty')
-      .replace(/Imballo/gi,'Imb.')
+      .replace(/Imballo/gi,'Imballo')
       .replace(/_/g,' ');
   }
 
   var html='<style>'+
-    'body{font-family:Arial,sans-serif;font-size:20px;color:#000}'+
+    'body{font-family:Arial,sans-serif;font-size:18px;color:#000}'+
     '.print-section{margin-bottom:16px;border:1px solid #ccc;border-radius:4px;overflow:hidden}'+
     '.print-header{background:#1a2236;color:#fff;padding:6px 10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}'+
-    '.print-header span{font-size:20px}.print-header strong{font-size:22px;color:#f59e0b}'+
+    '.print-header span{font-size:18px}.print-header strong{font-size:22px;color:#f59e0b}'+
     '.print-header .awb-val{color:#10b981;font-weight:700}'+
-    '.print-sub{font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;'+
+    '.print-sub{font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;'+
     'background:#e8edf5;padding:3px 10px;border-bottom:1px solid #ccc}'+
-    'table{width:100%;border-collapse:collapse;font-size:18px}'+
+    'table{width:100%;border-collapse:collapse;font-size:16px}'+
     'th{background:#eef2f7;padding:6px 12px;text-align:left;border:1px solid #ccc;font-weight:600;white-space:nowrap}'+
     'td{padding:6px 12px;border:1px solid #e0e0e0;white-space:nowrap}'+
     'tr:nth-child(even) td{background:#f7f9fc}'+
-    '.no-data{padding:6px 10px;color:#999;font-style:italic;font-size:18px}'+
+    '.no-data{padding:6px 10px;color:#999;font-style:italic;font-size:16px}'+
     '@media print{@page{size:A4 landscape;margin:8mm}}</style>';
 
   intRows.forEach(function(ir){
