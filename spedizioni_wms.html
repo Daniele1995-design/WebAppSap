@@ -257,6 +257,13 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
 .btn-print{background:none;border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-family:var(--ff-cond);font-size:13px;font-weight:700;letter-spacing:1px;color:var(--subtle);cursor:pointer;transition:all .2s;align-self:flex-end}
 .btn-print:hover{border-color:#a855f7;color:#a855f7}
 .btn-print:disabled{opacity:.3;cursor:not-allowed}
+
+.fc-free-wrap{position:relative;display:inline-flex;align-items:center}
+.fc-free-wrap input{padding-right:26px}
+.btn-clear-field{position:absolute;right:6px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;display:none;transition:color .15s}
+.btn-clear-field:hover{color:var(--red)}
+.fc-free-wrap:has(input:not(:placeholder-shown)) .btn-clear-field{display:block}  
+  
 @media print{
   body *{visibility:hidden}
   #printArea,#printArea *{visibility:visible}
@@ -338,21 +345,27 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
 
     <!-- ── AWB: input libero + datalist ── -->
     <div class="fg">
-      <div class="fl">AWB</div>
-      <input id="fAwb" class="fc-free" type="text" list="listFiltroAwb" placeholder="Digita o scegli…" autocomplete="off"
-             oninput="currentData&&scheduleFilter()" onchange="currentData&&loadData()">
-      <datalist id="listFiltroAwb">
-        <option value="__VUOTI__"></option>
-      </datalist>
-    </div>
+  <div class="fl">AWB</div>
+  <div class="fc-free-wrap">
+    <input id="fAwb" class="fc-free" type="text" list="listFiltroAwb" placeholder="Digita o scegli…" autocomplete="off"
+           oninput="currentData&&scheduleFilter()" onchange="currentData&&loadData()">
+    <button class="btn-clear-field" onclick="clearField('fAwb')" tabindex="-1" title="Pulisci">✕</button>
+  </div>
+  <datalist id="listFiltroAwb">
+    <option value="__VUOTI__"></option>
+  </datalist>
+   </div>
 
     <!-- ── ODP: input libero + datalist ── -->
     <div class="fg">
-      <div class="fl">Numero ODP</div>
-      <input id="fOdp" class="fc-free" type="text" list="listFiltroOdp" placeholder="Digita o scegli…" autocomplete="off"
-             oninput="currentData&&scheduleFilter()" onchange="currentData&&loadData()">
-      <datalist id="listFiltroOdp"></datalist>
-    </div>
+  <div class="fl">Numero ODP</div>
+  <div class="fc-free-wrap">
+    <input id="fOdp" class="fc-free" type="text" list="listFiltroOdp" placeholder="Digita o scegli…" autocomplete="off"
+           oninput="currentData&&scheduleFilter()" onchange="currentData&&loadData()">
+    <button class="btn-clear-field" onclick="clearField('fOdp')" tabindex="-1" title="Pulisci">✕</button>
+  </div>
+  <datalist id="listFiltroOdp"></datalist>
+</div>
 
     <button class="btn-load" id="btnLoad" onclick="loadData()" disabled>Carica Dati</button>
     <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" disabled title="Ricarica dal file">↻ Aggiorna</button>
@@ -1220,7 +1233,7 @@ function fillDatalist(datalistId, obj, addVuoti){
   var dl=document.getElementById(datalistId);
   dl.innerHTML='';
   if(addVuoti){
-    var ov=document.createElement('option'); ov.value='__VUOTI__'; ov.label='— Vuoti —'; dl.appendChild(ov);
+    var ov=document.createElement('option'); ov.value='__VUOTI__'; dl.appendChild(ov);
   }
   Object.keys(obj).sort().forEach(function(v){
     var o=document.createElement('option'); o.value=v; dl.appendChild(o);
@@ -1870,34 +1883,20 @@ function printFiltered(){
   var odpCols=[];
   for(var i=2;i<odpHdr.length;i++) if(odpHdr[i]) odpCols.push(i);
 
-  function abbr(s){
-    return String(s||'')
-      .replace(/Volume_Unitario_Mc/gi,'Vol.Unit.')
-      .replace(/Volume_Totale_Riga_Mc/gi,'Vol.Tot.')
-      .replace(/Peso_Totale_Riga_Kg/gi,'Peso Tot.')
-      .replace(/Peso_ODP_Kg/gi,'Peso Kg')
-      .replace(/Numero_ODP/gi,'N.ODP')
-      .replace(/Profondita_Cm/gi,'Prof.')
-      .replace(/Larghezza_Cm/gi,'Larg.')
-      .replace(/Altezza_Cm/gi,'Alt.')
-      .replace(/Quantity/gi,'Qty')
-      .replace(/Imballo/gi,'Imb.')
-      .replace(/_/g,' ');
-  }
-
   var html='<style>'+
-    'body{font-family:Arial,sans-serif;font-size:11px;color:#000;margin:0;padding:4mm}'+
-    '.print-section{margin-bottom:8px;border:1px solid #bbb;border-radius:3px;overflow:hidden;page-break-inside:avoid}'+
-    '.print-header{background:#1a2236;color:#fff;padding:4px 7px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:11px}'+
-    '.print-header strong{font-size:12px;color:#f59e0b;white-space:nowrap}'+
-    '.print-header .awb-val{color:#10b981;font-weight:700;white-space:nowrap}'+
-    '.print-header span{white-space:nowrap}'+
-    '.print-sub{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:#e8edf5;padding:2px 7px;border-bottom:1px solid #ccc}'+
-    'table{border-collapse:collapse;font-size:10px}'+
-    'th{background:#eef2f7;padding:2px 5px;text-align:left;border:1px solid #ccc;font-weight:700;font-size:9px}'+
-    'td{padding:2px 5px;border:1px solid #e0e0e0;font-size:10px}'+
-    '.no-data{padding:4px 7px;color:#999;font-style:italic;font-size:9px}'+
-    '@media print{@page{size:A4 landscape;margin:6mm}html,body{width:100%}}</style>';
+    'body{font-family:Arial,sans-serif;font-size:20px;color:#000}'+
+    '.print-section{margin-bottom:16px;border:1px solid #ccc;border-radius:4px;overflow:hidden}'+
+    '.print-header{background:#1a2236;color:#fff;padding:6px 10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}'+
+    '.print-header span{font-size:20px}.print-header strong{font-size:22px;color:#f59e0b}'+
+    '.print-header .awb-val{color:#10b981;font-weight:700}'+
+    '.print-sub{font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;'+
+    'background:#e8edf5;padding:3px 10px;border-bottom:1px solid #ccc}'+
+    'table{width:100%;border-collapse:collapse;font-size:18px}'+
+    'th{background:#eef2f7;padding:6px 12px;text-align:left;border:1px solid #ccc;font-weight:600}'+
+    'td{padding:6px 12px;border:1px solid #e0e0e0}'+
+    'tr:nth-child(even) td{background:#f7f9fc}'+
+    '.no-data{padding:6px 10px;color:#999;font-style:italic;font-size:18px}'+
+    '@media print{@page{size:A4 landscape;margin:8mm}}</style>';
 
   intRows.forEach(function(ir){
     var dn=norm(ir[0]);
@@ -1910,47 +1909,44 @@ function printFiltered(){
     html+='<div class="print-section">';
     html+='<div class="print-header">';
     html+='<strong>'+esc(dn)+'</strong>';
-    if(bp) html+='<span>'+esc(bp)+'</span>';
-    if(data) html+='<span>'+esc(data)+'</span>';
-    if(tipo) html+='<span>'+esc(tipo)+'</span>';
-    if(destino) html+='<span>'+esc(destino)+'</span>';
-    html+='<span class="awb-val">'+(awb?esc(awb):'— no AWB —')+'</span>';
+    html+='<span>'+esc(bp)+'</span>';
+    html+='<span>'+esc(data)+'</span>';
+    html+='<span>'+esc(tipo)+'</span>';
+    html+='<span>'+esc(destino)+'</span>';
+    html+='<span class="awb-val">'+(awb?awb:'— no AWB —')+'</span>';
     html+='</div>';
-
     var cars=carByDoc[dn]||[];
     if(cars.length){
       html+='<div class="print-sub">Dettagli Carico ('+cars.length+')</div>';
-      html+='<table style="table-layout:auto;width:auto;max-width:100%"><tr>';
-      carCols.forEach(function(ci){ html+='<th style="white-space:nowrap">'+esc(abbr(carHdr[ci]||''))+'</th>'; });
+      html+='<table><tr>';
+      carCols.forEach(function(ci){ html+='<th>'+esc(carHdr[ci]||'')+'</th>'; });
       html+='</tr>';
       cars.forEach(function(row){
         html+='<tr>';
-        carCols.forEach(function(ci){ html+='<td style="white-space:nowrap">'+esc(String(row[ci]===null||row[ci]===undefined?'':row[ci]))+'</td>'; });
+        carCols.forEach(function(ci){ html+='<td>'+esc(String(row[ci]===null||row[ci]===undefined?'':row[ci]))+'</td>'; });
         html+='</tr>';
       });
       html+='</table>';
     }
-
     var odps=odpByDoc[dn]||[];
     if(odps.length){
       html+='<div class="print-sub">Dettagli ODP ('+odps.length+')</div>';
-      html+='<table style="table-layout:fixed;width:100%"><tr>';
-      odpCols.forEach(function(ci){ html+='<th style="word-break:break-word;white-space:normal">'+esc(abbr(odpHdr[ci]||''))+'</th>'; });
+      html+='<table><tr>';
+      odpCols.forEach(function(ci){ html+='<th>'+esc(odpHdr[ci]||'')+'</th>'; });
       html+='</tr>';
       odps.forEach(function(row){
         html+='<tr>';
-        odpCols.forEach(function(ci){ html+='<td style="word-break:break-word;white-space:normal">'+esc(String(row[ci]===null||row[ci]===undefined?'':row[ci]))+'</td>'; });
+        odpCols.forEach(function(ci){ html+='<td>'+esc(String(row[ci]===null||row[ci]===undefined?'':row[ci]))+'</td>'; });
         html+='</tr>';
       });
       html+='</table>';
     }
-
     if(!cars.length&&!odps.length) html+='<div class="no-data">Nessun dettaglio disponibile</div>';
     html+='</div>';
   });
 
   var win=window.open('','_blank','width=900,height=700');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Spedizioni '+
+  win.document.write('<!DOCTYPE html><html><head><title>Spedizioni '+
     (currentDate?currentDate.substr(6,2)+'/'+currentDate.substr(4,2)+'/'+currentDate.substr(0,4):'')+
     '</title></head><body>'+html+'</body></html>');
   win.document.close();
@@ -1984,6 +1980,12 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function fmtDate(d){return('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();}
 function cc(a,b){var c=new Uint8Array(a.length+b.length);c.set(a);c.set(b,a.length);return c;}
 document.getElementById('awbInput').addEventListener('keydown',function(e){if(e.key==='Enter')applyAwb();});
+  function clearField(id){
+  var el=document.getElementById(id);
+  el.value='';
+  el.focus();
+  if(currentData) loadData();
+}
 </script>
 </body>
 </html>
