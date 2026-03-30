@@ -393,7 +393,7 @@ figli.forEach(f => {
             const isLast = idx === f.alternativi.length - 1;
             html += `<tr style="border-bottom:${isLast ? '1px solid #eee' : '0'}; background:#fff8e1;">
                 <td style="padding:4px 6px 4px 14px; word-wrap:break-word; color:#e65100;">
-                    <span style="font-size:0.75em; background:#ff9800; color:white; border-radius:3px; padding:1px 4px; margin-right:4px;">ALT</span>
+                    <span style="font-size:0.75em; background:#ff9800; color:white; border-radius:3px; padding:1px 4px; margin-right:4px;">Oppure: </span>
                     ${alt.figlio}
                 </td>
                 <td style="padding:4px 6px; color:#e65100;">${alt.pn || '—'}</td>
@@ -518,7 +518,7 @@ figli.forEach(f => {
         ? f.alternativi.map(alt =>
             `<tr style="background:#fff8e1;">
                 <td style="padding-left:6px; color:#e65100; font-size:0.85em;">
-                    <em>[ALT] ${alt.figlio}</em>
+                    <em>Oppure:  ${alt.figlio}</em>
                 </td>
                 <td style="color:#e65100; font-size:0.85em;">${alt.pn || '—'}</td>
                 <td>—</td>
