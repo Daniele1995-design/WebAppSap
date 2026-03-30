@@ -32,15 +32,27 @@ const CATALOGO_BP_URL = "https://corsproxy.io/?" + encodeURIComponent(
             results.data.forEach(row => {
                 const wmsCode = (row[0] || "").trim().toUpperCase();
                 const materialCode = (row[1] || "").trim();
-                const figlio = (row[4] || "").trim().toUpperCase();
-                const pnFiglio = (row[3] || "").trim();
-                const qty = parseInt(row[6] || "0", 10);
-                if (wmsCode && figlio && qty > 0) {
-                    if (!bomData[wmsCode]) {
-                        bomData[wmsCode] = { materialCode, figli: [] };
-                    }
-                    bomData[wmsCode].figli.push({ figlio, pn: pnFiglio, qty });
-                }
+        const figlio = (row[4] || "").trim().toUpperCase();
+const pnFiglio = (row[3] || "").trim();
+const qty = parseInt(row[6] || "0", 10);
+const lineNum = (row[9] || "").trim(); // colonna J = indice 9
+
+if (wmsCode && figlio && qty > 0) {
+    if (!bomData[wmsCode]) {
+        bomData[wmsCode] = { materialCode, figli: [] };
+    }
+    // Cerca se esiste già un figlio con lo stesso lineNum (materiale alternativo)
+    if (lineNum) {
+        const existing = bomData[wmsCode].figli.find(f => f.lineNum === lineNum);
+        if (existing) {
+            // Aggiungi come alternativo
+            if (!existing.alternativi) existing.alternativi = [];
+            existing.alternativi.push({ figlio, pn: pnFiglio });
+            return; // non aggiungere come riga separata
+        }
+    }
+    bomData[wmsCode].figli.push({ figlio, pn: pnFiglio, qty, lineNum, alternativi: [] });
+}
             });
             console.log(`✅ BOM caricata: ${Object.keys(bomData).length} padri trovati`);
             aggiungiPulsantiBOM();
@@ -363,15 +375,34 @@ function aggiornaRigheCatalogoBP() {
                      <th style="padding:8px 6px; text-align:center; width:8%;">Qty x1</th>
                      <th style="padding:8px 6px; text-align:center; font-weight:bold; color:#1565c0; width:7%;">Tot.</th>
                  </tr></thead><tbody>`;
-        figli.forEach(f => {
-            const totale = qta * f.qty;
-            html += `<tr style="border-bottom:1px solid #eee;">
-                <td style="padding:8px 6px; word-wrap:break-word; overflow-wrap:break-word;"><strong>${f.figlio}</strong></td>
-                <td style="padding:8px 6px; word-wrap:break-word; overflow-wrap:break-word; max-width:0;">${f.pn || '—'}</td>
-                <td style="padding:8px 6px; text-align:center;">${f.qty}</td>
-                <td style="padding:8px 6px; text-align:center; font-weight:bold; color:#1565c0;">${totale}</td>
+figli.forEach(f => {
+    const totale = qta * f.qty;
+    const hasAlt = f.alternativi && f.alternativi.length > 0;
+
+    // Riga principale
+    html += `<tr style="border-bottom:${hasAlt ? '0' : '1px solid #eee'};">
+        <td style="padding:8px 6px; word-wrap:break-word;"><strong>${f.figlio}</strong></td>
+        <td style="padding:8px 6px; word-wrap:break-word;">${f.pn || '—'}</td>
+        <td style="padding:8px 6px; text-align:center;">${f.qty}</td>
+        <td style="padding:8px 6px; text-align:center; font-weight:bold; color:#1565c0;">${totale}</td>
+    </tr>`;
+
+    // Righe alternativi
+    if (hasAlt) {
+        f.alternativi.forEach((alt, idx) => {
+            const isLast = idx === f.alternativi.length - 1;
+            html += `<tr style="border-bottom:${isLast ? '1px solid #eee' : '0'}; background:#fff8e1;">
+                <td style="padding:4px 6px 4px 14px; word-wrap:break-word; color:#e65100;">
+                    <span style="font-size:0.75em; background:#ff9800; color:white; border-radius:3px; padding:1px 4px; margin-right:4px;">ALT</span>
+                    ${alt.figlio}
+                </td>
+                <td style="padding:4px 6px; color:#e65100;">${alt.pn || '—'}</td>
+                <td style="padding:4px 6px; text-align:center; color:#999;">—</td>
+                <td style="padding:4px 6px; text-align:center; color:#999;">—</td>
             </tr>`;
         });
+    }
+});
         html += `</tbody></table>`;
     }
 
@@ -482,7 +513,20 @@ function aggiornaRigheCatalogoBP() {
             <table>
                 <thead><tr><th>Codice</th><th>P/N</th><th>Qty</th></tr></thead>
                 <tbody>
-                    ${data.figli.map(f => `<tr><td><strong>${f.figlio}</strong></td><td>${f.pn || '—'}</td><td>${f.qty}</td></tr>`).join('')}
+                   ${data.figli.map(f => {
+    const altRows = (f.alternativi && f.alternativi.length > 0)
+        ? f.alternativi.map(alt =>
+            `<tr style="background:#fff8e1;">
+                <td style="padding-left:6px; color:#e65100; font-size:0.85em;">
+                    <em>[ALT] ${alt.figlio}</em>
+                </td>
+                <td style="color:#e65100; font-size:0.85em;">${alt.pn || '—'}</td>
+                <td>—</td>
+            </tr>`
+          ).join('')
+        : '';
+    return `<tr><td><strong>${f.figlio}</strong></td><td>${f.pn || '—'}</td><td>${f.qty}</td></tr>${altRows}`;
+}).join('')}
                 </tbody>
             </table>
             <div class="footer">Commessa: ${commessa} | Rif: ${rif}</div>
