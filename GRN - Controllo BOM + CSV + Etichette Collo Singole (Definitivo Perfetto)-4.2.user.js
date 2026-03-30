@@ -2,7 +2,7 @@
 // @name         GRN - Controllo BOM + CSV + Etichette Collo Singole + Ricerca VDS
 // @namespace    http://tampermonkey.net/
 // @version      6.1
-// @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati
+// @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati+Equivalenze
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/*
 // @match        http://172.18.20.20:8095/*
