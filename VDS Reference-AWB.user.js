@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name         VDS Reference/AWB
 // @namespace    http://tampermonkey.net/
-// @version      2.0
-// @description  Gestione AWB/DDT/NumPO con popup
+// @version      3.0
+// @description  Gestione AWB/DDT/NumPO/PosizionePO/TipoMerce con popup
+// @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/VDS/*
 // @grant        none
 // ==/UserScript==
@@ -14,7 +15,6 @@
         const rifInput = document.getElementById("Rif");
         if (!rifInput) return;
 
-        // Rende il campo NON editabile manualmente
         rifInput.readOnly = true;
         rifInput.style.cursor = "pointer";
         rifInput.style.backgroundColor = "#f5f7fa";
@@ -26,17 +26,18 @@
 
     function openModal(existingValue = "") {
 
-        // Rimuove eventuale modale precedente
         const old = document.getElementById("rifModalOverlay");
         if (old) old.remove();
 
-        let awb = "", ddt = "", numpo = "";
+        let awb = "", ddt = "", numpo = "", posizionePO = "", tipoMerce = "Nuovo";
 
         if (existingValue.includes("/")) {
             const parts = existingValue.split("/");
-            awb = parts[0] || "";
-            ddt = parts[1] || "";
-            numpo = parts[2] || "";
+            awb         = parts[0] || "";
+            ddt         = parts[1] || "";
+            numpo       = parts[2] || "";
+            posizionePO = parts[3] || "";
+            tipoMerce   = parts[4] || "Nuovo";
         }
 
         const overlay = document.createElement("div");
@@ -67,13 +68,15 @@
                         font-weight:600;
                     ">Gestione Reference / AWB</h3>
 
-                    ${createInput("AWB", "awbField", awb)}
-                    ${createInput("DDT", "ddtField", ddt)}
-                    ${createInput("NumPO", "numpoField", numpo)}
+                    ${createInput("AWB",          "awbField",         awb)}
+                    ${createInput("DDT",          "ddtField",         ddt)}
+                    ${createInput("NumPO",        "numpoField",       numpo)}
+                    ${createInput("Posizione PO", "posizionePOField", posizionePO)}
+                    ${createSelect("Tipo Merce",  "tipoMerceField",   tipoMerce)}
 
                     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
                         <button id="rifCancel" style="${btnSecondary()}">Annulla</button>
-                        <button id="rifSave" style="${btnPrimary()}">Salva</button>
+                        <button id="rifSave"   style="${btnPrimary()}">Salva</button>
                     </div>
                 </div>
             </div>
@@ -81,12 +84,30 @@
             <style>
                 @keyframes fadeIn {
                     from { opacity:0; transform:scale(0.95); }
-                    to { opacity:1; transform:scale(1); }
+                    to   { opacity:1; transform:scale(1); }
                 }
             </style>
         `;
 
         document.body.appendChild(overlay);
+
+        // Listener slash→trattino sui campi testo
+        ["awbField", "ddtField", "numpoField", "posizionePOField"].forEach(function(id) {
+            document.getElementById(id).addEventListener("input", function () {
+                const pos = this.selectionStart;
+                const hadSlash = this.value.includes("/");
+                this.value = this.value.replace(/\//g, "-");
+                if (hadSlash) this.setSelectionRange(pos, pos);
+            });
+        });
+
+        // Pulizia errore Posizione PO quando si digita
+        document.getElementById("posizionePOField").addEventListener("input", function () {
+            this.style.borderColor = "#d1d5db";
+            this.style.backgroundColor = "#fff";
+            const errMsg = document.getElementById("posizionePOError");
+            if (errMsg) errMsg.remove();
+        });
 
         document.getElementById("awbField").focus();
 
@@ -96,17 +117,35 @@
         });
 
         document.getElementById("rifSave").onclick = function () {
+            const awbVal         = document.getElementById("awbField").value.trim();
+            const ddtVal         = document.getElementById("ddtField").value.trim();
+            const numpoVal       = document.getElementById("numpoField").value.trim();
+            const posizionePOVal = document.getElementById("posizionePOField").value.trim();
+            const tipoMerceVal   = document.getElementById("tipoMerceField").value;
 
-            const awbVal = document.getElementById("awbField").value.trim();
-            const ddtVal = document.getElementById("ddtField").value.trim();
-            const numpoVal = document.getElementById("numpoField").value.trim();
+            // Validazione: Posizione PO obbligatoria se Tipo Merce = Nuovo
+            if (tipoMerceVal === "Nuovo" && posizionePOVal === "") {
+                const field = document.getElementById("posizionePOField");
+                field.style.borderColor = "#e74c3c";
+                field.style.backgroundColor = "#fff5f5";
+                field.focus();
 
-            const result = `${awbVal}/${ddtVal}/${numpoVal}`;
+                let errMsg = document.getElementById("posizionePOError");
+                if (!errMsg) {
+                    errMsg = document.createElement("div");
+                    errMsg.id = "posizionePOError";
+                    errMsg.style.cssText = "color:#e74c3c; font-size:12px; margin-top:4px;";
+                    errMsg.textContent = "⚠ Posizione PO è obbligatoria per Tipo Merce 'Nuovo'";
+                    field.parentNode.appendChild(errMsg);
+                }
+                return;
+            }
+
+            const result = `${awbVal}/${ddtVal}/${numpoVal}/${posizionePOVal}/${tipoMerceVal}`;
 
             const rifInput = document.getElementById("Rif");
             rifInput.value = result;
 
-            // trigger onchange originale
             if (typeof vds !== "undefined" && typeof vds.updateRif === "function") {
                 vds.updateRif();
             }
@@ -133,10 +172,45 @@
                     border:1px solid #d1d5db;
                     border-radius:4px;
                     font-size:14px;
+                    box-sizing:border-box;
                     transition: all 0.2s;
                 "
                 onfocus="this.style.borderColor='#1ab394'"
                 onblur="this.style.borderColor='#d1d5db'">
+            </div>
+        `;
+    }
+
+    function createSelect(label, id, selectedValue) {
+        const options = ["Nuovo", "Censito", "Riutilizzo"];
+        const optionsHtml = options.map(opt => `
+            <option value="${opt}" ${opt === selectedValue ? "selected" : ""}>${opt}</option>
+        `).join("");
+
+        return `
+            <div style="margin-bottom:15px;">
+                <label style="
+                    display:block;
+                    font-size:13px;
+                    font-weight:600;
+                    margin-bottom:5px;
+                    color:#555;
+                ">${label}</label>
+                <select id="${id}" style="
+                    width:100%;
+                    padding:8px 10px;
+                    border:1px solid #d1d5db;
+                    border-radius:4px;
+                    font-size:14px;
+                    box-sizing:border-box;
+                    background:#fff;
+                    cursor:pointer;
+                    transition: all 0.2s;
+                "
+                onfocus="this.style.borderColor='#1ab394'"
+                onblur="this.style.borderColor='#d1d5db'">
+                    ${optionsHtml}
+                </select>
             </div>
         `;
     }
@@ -174,7 +248,6 @@
         if (e.key === "Escape") closeModal();
     }
 
-    // Attesa caricamento DOM dinamico
     const observer = new MutationObserver(() => {
         const rifInput = document.getElementById("Rif");
         if (rifInput) {
