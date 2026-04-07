@@ -754,8 +754,16 @@ function parseXlsx(blob){
 
 /* DRIVE */
 function listFiles(q){
-    return gFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)&pageSize=200')
-           .then(function(r){return r.files||[];});
+  function fetchPage(pageToken){
+    var url='https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name),nextPageToken&pageSize=1000';
+    if(pageToken) url+='&pageToken='+encodeURIComponent(pageToken);
+    return gFetch(url).then(function(r){
+      var files=r.files||[];
+      if(r.nextPageToken) return fetchPage(r.nextPageToken).then(function(more){ return files.concat(more); });
+      return files;
+    });
+  }
+  return fetchPage(null);
 }
 function downloadFile(id){
     return fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{headers:{Authorization:'Bearer '+TOKEN}})
