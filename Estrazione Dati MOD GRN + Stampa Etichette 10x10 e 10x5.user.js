@@ -11,6 +11,7 @@
 // @connect      script.google.com
 // @connect      script.googleusercontent.com
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
+// @connect      corsproxy.io
 // ==/UserScript==
 /* global grn */
 
@@ -20,6 +21,67 @@
     function sleep(ms) {
         return new Promise(res => setTimeout(res, ms));
     }
+    // ===== CACHE CDC DA GOOGLE SHEET =====
+let cdcMapCache = null;
+let cdcMapLoading = false;
+let cdcMapTimestamp = 0;
+const CDC_CACHE_TTL = 5 * 60 * 1000;
+
+async function loadCdcMap(forceRefresh = false) {
+    const now = Date.now();
+    if (cdcMapCache && !forceRefresh && (now - cdcMapTimestamp) < CDC_CACHE_TTL) {
+        return cdcMapCache;
+    }
+    if (cdcMapLoading) {
+        await new Promise(res => {
+            const check = setInterval(() => {
+                if (!cdcMapLoading) { clearInterval(check); res(); }
+            }, 200);
+        });
+        return cdcMapCache;
+    }
+    cdcMapLoading = true;
+    const sheetId = '15GNL3FmZVNyK9kjl5G0nHp2OBQlhgaSUMW9C5hRFZIQ';
+    const gid = '894500886';
+    const driveUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${now}`;
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(driveUrl);
+    return new Promise((resolve) => {
+        fetch(proxyUrl, { cache: 'no-store' })
+            .then(r => r.text())
+            .then(csvText => {
+                const map = {};
+                const lines = csvText.split('\n');
+                lines.forEach((line, idx) => {
+                    if (idx === 0) return;
+                    const cols = [];
+                    let current = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const ch = line[i];
+                        if (ch === '"') { inQuotes = !inQuotes; }
+                        else if (ch === ',' && !inQuotes) { cols.push(current.trim()); current = ''; }
+                        else { current += ch; }
+                    }
+                    cols.push(current.trim());
+                    const po = (cols[0] || '').replace(/^"|"$/g, '').trim();
+                    const cdc = (cols[1] || '').replace(/^"|"$/g, '').trim();
+                    if (po) map[po] = cdc;
+                });
+                cdcMapCache = map;
+                cdcMapTimestamp = Date.now();
+                cdcMapLoading = false;
+                console.log('✅ CDC Map caricata:', Object.keys(map).length, 'voci');
+                resolve(map);
+            })
+            .catch(err => {
+                console.warn('⚠️ Errore caricamento CDC map:', err);
+                cdcMapCache = cdcMapCache || {};
+                cdcMapLoading = false;
+                resolve(cdcMapCache);
+            });
+    });
+}
+
 
     async function waitForSerials(timeout = 10000) {
         let elapsed = 0, interval = 500;
@@ -317,7 +379,7 @@ async function downloadCSV() {
 
         // Invia a Google Drive
         const base64Seriali = btoa(unescape(encodeURIComponent(csvSeriali)));
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzEEBRPLitb7K5ZNlr3mm5hyVj0KHryrPb9_3-Y7Zuy7wT9sNY_jTA/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzUQDvDUxFShoWWbHougyHjr0tFz3E38fX8e0bnTUpya-P0mXW_jTA/exec";
         GM_xmlhttpRequest({
             method: "POST",
             url: scriptUrl,
@@ -351,7 +413,7 @@ async function downloadCSV() {
 
         // Invia a Google Drive
         const base64Lotti = btoa(unescape(encodeURIComponent(csvLotti)));
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzEEBRPLitb7K5ZNlr3mm5hyVj0KHryrPb9_3-Y7Zuy7wT9sNY_jTA/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzUQDvDUxFShoWWbHougyHjr0tFz3E38fX8e0bnTUpya-P0mXW_jTA/exec";
         GM_xmlhttpRequest({
             method: "POST",
             url: scriptUrl,
@@ -1380,37 +1442,73 @@ function addPrintButtonsToRows() {
                 const grnNumber = document.getElementById('numeroGRN')?.textContent?.trim() || 'unknown';
                 const storageKey = `cdc-${grnNumber}-${idx}-${srIdx}`;
 
-                const select = document.createElement('select');
-                select.className = 'cdc-select';
-                select.style.cssText = `
-                    margin-left: auto;
-                    display: block;
-                    padding: 1px 3px;
-                    border-radius: 4px;
-                    border: 1.5px solid #17a2b8;
-                    font-size: 16px;
-                    font-weight: 600;
-                    background: #f8f9fa;
-                    cursor: pointer;
-                    width: 60px;
-                `;
+const select = document.createElement('select');
+select.className = 'cdc-select';
+select.style.cssText = `
+    margin-left: auto;
+    display: block;
+    padding: 1px 3px;
+    border-radius: 4px;
+    border: 1.5px solid #17a2b8;
+    font-size: 16px;
+    font-weight: 600;
+    background: #f8f9fa;
+    cursor: pointer;
+    width: 60px;
+`;
 
-                ['- CDC -', 'IT2V', 'IT2N','IT7V','IT7N', 'IT6V', 'IT6N'].forEach(opt => {
-                    const option = document.createElement('option');
-                    option.value = opt === '- CDC -' ? '' : opt;
-                    option.textContent = opt;
-                    select.appendChild(option);
-                });
+['- CDC -', 'IT2V', 'IT2N', 'IT7V', 'IT7N', 'IT6V', 'IT6N'].forEach(opt => {
+    const option = document.createElement('option');
+    option.value = opt === '- CDC -' ? '' : opt;
+    option.textContent = opt;
+    select.appendChild(option);
+});
 
-                const savedCdc = sessionStorage.getItem(storageKey);
-                if (savedCdc) {
-                    select.value = savedCdc;
-                }
+const savedCdc = sessionStorage.getItem(storageKey);
+if (savedCdc) {
+    select.value = savedCdc;
+}
 
-                select.addEventListener('change', () => {
-                    const currentGrn = document.getElementById('numeroGRN')?.textContent?.trim() || 'unknown';
-                    sessionStorage.setItem(`cdc-${currentGrn}-${idx}-${srIdx}`, select.value);
-                });
+// ===== AUTO-POPOLAMENTO CDC DA FOGLIO =====
+// Legge il Rif della riga e cerca nel map
+(async () => {
+    const cdcMap = await loadCdcMap();
+
+    // Estrai il Rif dalla riga (primissimi 4 caratteri come fa riferimentoPulito)
+    // ma qui usiamo il riferimento completo per matchare meglio
+    const data = getDataFromLi(li);
+    const rifCompleto = (data.riferimentoOrdine || data.riferimento || '').trim();
+    const rifPulito   = data.riferimentoPulito || '';
+
+    // Prova prima con il riferimento completo, poi con i primi 4 caratteri
+    let cdcFromSheet = cdcMap[rifCompleto] || cdcMap[rifPulito] || '';
+
+    // Aggiorna il select SOLO se non c'è già un valore salvato manualmente
+    if (!savedCdc && cdcFromSheet && select) {
+        // Aggiungi l'opzione se non è già nella lista standard
+        const opzioniStandard = ['IT2V','IT2N','IT7V','IT7N','IT6V','IT6N'];
+        if (!opzioniStandard.includes(cdcFromSheet)) {
+            const extraOpt = document.createElement('option');
+            extraOpt.value = cdcFromSheet;
+            extraOpt.textContent = cdcFromSheet;
+            select.appendChild(extraOpt);
+        }
+        select.value = cdcFromSheet;
+        select.style.borderColor = '#28a745'; // verde = popolato da foglio
+        select.title = `CDC da foglio: ${cdcFromSheet} (Rif: ${rifCompleto || rifPulito})`;
+
+        // Salva anche in sessionStorage così rimane se la pagina si riaggiorna
+        const currentGrn = document.getElementById('numeroGRN')?.textContent?.trim() || 'unknown';
+        sessionStorage.setItem(`cdc-${currentGrn}-${idx}-${srIdx}`, cdcFromSheet);
+    }
+})();
+
+select.addEventListener('change', () => {
+    const currentGrn = document.getElementById('numeroGRN')?.textContent?.trim() || 'unknown';
+    sessionStorage.setItem(`cdc-${currentGrn}-${idx}-${srIdx}`, select.value);
+    select.style.borderColor = '#17a2b8'; // torna al colore normale se modificato manualmente
+    select.title = 'Modificato manualmente';
+});
 
                 const flexDiv = sr.querySelector("div[style*='display:flex']");
                 if (flexDiv) {
@@ -2003,5 +2101,26 @@ grn.salvaDocumento = function(...args) {
     console.log("✅ Conferma Entrata Merci cliccato, avvio downloadCSV");
     downloadCSV();
 };
+    // Invalida cache CDC se l'utente naviga (es. cambia GRN)
+const origPushState = history.pushState;
+history.pushState = function(...args) {
+    cdcMapCache = null;
+    return origPushState.apply(this, args);
+};
+    // Invalida cache e riapplica CDC al cambio GRN
+let lastGrnNumber = '';
+setInterval(() => {
+    const currentGrn = document.getElementById('numeroGRN')?.textContent?.trim() || '';
+    if (currentGrn && currentGrn !== lastGrnNumber) {
+        console.log(`🔄 GRN cambiato da "${lastGrnNumber}" a "${currentGrn}" — ricarico CDC map`);
+        lastGrnNumber = currentGrn;
+        cdcMapCache = null;
+        cdcMapTimestamp = 0;
+        // Rimuovi tutti i select CDC esistenti così vengono ricreati con i nuovi valori
+        document.querySelectorAll('.cdc-select').forEach(s => s.remove());
+        // Rilancia addPrintButtonsToRows che ricreerà i select e popolerà i CDC
+        addPrintButtonsToRows();
+    }
+}, 1000);
 
 })();
