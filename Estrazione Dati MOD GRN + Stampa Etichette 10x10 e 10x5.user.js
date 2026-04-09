@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      17.0
+// @version      18.0
 // @description  Esporta seriali e lotti in CSV e XLXS separati e aggiunge funzionalità di stampa etichette 10x10 e 10x5 + filtro e scroll righe
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/*
