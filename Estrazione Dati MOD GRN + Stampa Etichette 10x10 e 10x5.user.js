@@ -754,7 +754,7 @@ html, body {
             pnBlock.className = 'pn-block';
             const pnLeft = document.createElement('div');
             pnLeft.className = 'small';
-            pnLeft.innerHTML = '<b>Part Number<\/b><div style="font-weight:700;font-size: 20px;">'+(lab.pn||'')+'<\/div>';
+            pnLeft.innerHTML = '<b>Part Number<\/b><div style="font-weight:700;font-size: 14px;">'+(lab.pn||'')+'<\/div>';
             const pnRight = document.createElement('div');
             pnRight.style.display='flex';
             pnRight.style.flexDirection='column';
