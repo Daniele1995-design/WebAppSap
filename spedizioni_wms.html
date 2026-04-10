@@ -476,7 +476,7 @@ body.copy-mode td:not(.awb-empty):hover{background:rgba(245,158,11,.1);color:var
 var CLIENT_ID   = '256693770433-b1pjdpaglrh7827o6ln2s24802rcnshd.apps.googleusercontent.com';
 var FOLDER_ID   = '1dSm4qSDB2cZ5WhwDf_40TF-K7sjwStg4';
 var SHEET_NAMES = ['Intestazione','Dettagli Carico','Dettagli ODP'];
-var TOKEN=null, currentData=null, currentDate=null, AWB_MAP={};
+var TOKEN=null, currentData=null, currentDate=null, currentDateTo=null, AWB_MAP={};
 var currentFileIds={};
 var copyModeOn=false, toastTimer=null;
 // Timer per filtraggio con debounce su input liberi AWB/ODP
@@ -1029,7 +1029,7 @@ function loadData(){
   var fOdp     =document.getElementById('fOdp').value.trim();
 
   // Se già abbiamo i dati grezzi per lo stesso periodo, filtra solo senza riscaricare
-  if(allMerged && currentDate===dateFrom){
+  if(allMerged && currentDate===dateFrom && currentDateTo===dateTo){
     var md=applyFilters(allMerged,fPlant,fCommessa,fTipo,fDestino,fAwb,fOdp);
     var filtered=deepFilterMerged(allMerged, md);
     // Popola filtri con i valori presenti nei risultati filtrati
@@ -1039,7 +1039,7 @@ function loadData(){
     return;
   }
 
-  currentDate=dateFrom; AWB_MAP={}; currentData=null; currentFileIds={};
+  currentDate=dateFrom; currentDateTo=dateTo; AWB_MAP={}; currentData=null; currentFileIds={};
   allMerged=null;
   COL_COLLI=-1; COL_PESO=-1;
   var rangeLabel=dateFrom===dateTo
