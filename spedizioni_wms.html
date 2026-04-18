@@ -799,10 +799,13 @@ function addRowInBlob(blob, sheetName, insertAfterFileRowIdx, newRow){
 
 // ── CONFERMA MODAL ────────────────────────────
 var confirmCallback=null;
-function showConfirm(title,msg,cb){
+function showConfirm(title,msg,cb,okLabel,okStyle){
   document.getElementById('confirmTitle').textContent=title;
   document.getElementById('confirmMsg').innerHTML=msg;
   confirmCallback=cb;
+  var btn=document.getElementById('confirmOkBtn');
+  btn.textContent=okLabel||'Elimina';
+  btn.style.background=okStyle==='blue'?'var(--blue)':'var(--red)';
   document.getElementById('confirmModal').classList.remove('hide');
 }
 function closeConfirm(){
@@ -1454,29 +1457,82 @@ function applyAwb(){
   var awb=document.getElementById('awbInput').value.trim();
   if(!awb){setAwbSt('err','⚠ Inserisci un codice AWB');return;}
   if(!currentData){setAwbSt('err','⚠ Carica prima i dati');return;}
-  var docs=(currentData['Intestazione']||{rows:[]}).rows.map(function(r){return norm(r[0]);}).filter(Boolean);
+
+  var intRows=(currentData['Intestazione']||{rows:[]}).rows;
+  var docs=intRows.map(function(r){return norm(r[0]);}).filter(Boolean);
   if(!docs.length){setAwbSt('err','⚠ Nessuna riga filtrata');return;}
-  document.getElementById('btnAwb').disabled=true;
-  setAwbSt('loading','⏳ Salvataggio AWB su '+Object.keys(groupByFile(docs)).length+' file...');
-  var groups=groupByFile(docs);
-  var fileIds=Object.keys(groups);
-  Promise.all(fileIds.map(function(fid){
-    return downloadFile(fid).then(function(blob){ return modifyAwb(blob,groups[fid],awb).then(function(nb){ return uploadFile(fid,nb,''); }); });
-  }))
-  .then(function(){
-    docs.forEach(function(dn){AWB_MAP[dn]=awb;});
-    document.querySelectorAll('#ti tbody tr').forEach(function(tr){
-      var dc=tr.querySelector('td.dn'); if(!dc)return;
-      var dn=norm(dc.textContent);
-      if(AWB_MAP[dn]){var tds=tr.querySelectorAll('td');if(tds[3]){tds[3].className='awb-val';tds[3].textContent=AWB_MAP[dn];}}
-    });
-    var int2=currentData['Intestazione']||{rows:[]};
-    document.getElementById('sAwb').textContent=int2.rows.filter(function(r){return AWB_MAP[norm(r[0])];}).length+' / '+int2.rows.length;
-    setAwbSt('ok','✓ AWB "'+awb+'" applicato a '+docs.length+' righe su '+fileIds.length+' file');
-    document.getElementById('awbInput').value='';
-    document.getElementById('btnAwb').disabled=false;
-  })
-  .catch(function(e){setAwbSt('err','✗ '+e.message);document.getElementById('btnAwb').disabled=false;});
+
+  // ── 1. Controlla che l'AWB non sia già presente nei dati completi ──
+  var allIntRows=(allMerged&&allMerged['Intestazione'])||{rows:[]};
+  var awbLower=awb.toLowerCase();
+  var already=allIntRows.rows.filter(function(r){
+    return String(r[3]||'').trim().toLowerCase()===awbLower;
+  });
+  if(already.length){
+    var esistenti=already.map(function(r){return norm(r[0]);}).join(', ');
+    setAwbSt('err','⚠ AWB "'+awb+'" già presente in: '+esistenti);
+    return;
+  }
+
+  // ── 2. Verifica che tutte le righe filtrate abbiano lo stesso destino ──
+  var destinoMap={};
+  intRows.forEach(function(r){ var d=String(r[8]||'').trim(); destinoMap[d]=true; });
+  var destinoKeys=Object.keys(destinoMap);
+  if(destinoKeys.length>1){
+    setAwbSt('err','⚠ Destini diversi nelle righe filtrate: '+destinoKeys.join(' | ')+
+      ' — Filtra per un solo destino prima di applicare l\'AWB');
+    return;
+  }
+  var destino=destinoKeys[0]||'—';
+
+  // ── 3. Funzione di applicazione effettiva ──────────────────────
+  function doApply(){
+    document.getElementById('btnAwb').disabled=true;
+    setAwbSt('loading','⏳ Salvataggio AWB su '+Object.keys(groupByFile(docs)).length+' file...');
+    var groups=groupByFile(docs);
+    var fileIds=Object.keys(groups);
+    Promise.all(fileIds.map(function(fid){
+      return downloadFile(fid).then(function(blob){
+        return modifyAwb(blob,groups[fid],awb).then(function(nb){ return uploadFile(fid,nb,''); });
+      });
+    }))
+    .then(function(){
+      docs.forEach(function(dn){AWB_MAP[dn]=awb;});
+      // Aggiorna anche allMerged così i controlli duplicati funzionano subito
+      if(allMerged&&allMerged['Intestazione']){
+        allMerged['Intestazione'].rows.forEach(function(r){
+          if(docs.indexOf(norm(r[0]))!==-1) r[3]=awb;
+        });
+      }
+      document.querySelectorAll('#ti tbody tr').forEach(function(tr){
+        var dc=tr.querySelector('td.dn'); if(!dc)return;
+        var dn=norm(dc.textContent);
+        if(AWB_MAP[dn]){var tds=tr.querySelectorAll('td');if(tds[3]){tds[3].className='awb-val';tds[3].textContent=AWB_MAP[dn];}}
+      });
+      var int2=currentData['Intestazione']||{rows:[]};
+      document.getElementById('sAwb').textContent=
+        int2.rows.filter(function(r){return AWB_MAP[norm(r[0])];}).length+' / '+int2.rows.length;
+      setAwbSt('ok','✓ AWB "'+awb+'" applicato a '+docs.length+' righe su '+fileIds.length+' file');
+      document.getElementById('awbInput').value='';
+      document.getElementById('btnAwb').disabled=false;
+    })
+    .catch(function(e){setAwbSt('err','✗ '+e.message);document.getElementById('btnAwb').disabled=false;});
+  }
+
+  // ── 4. Se più righe → chiedi conferma ─────────────────────────
+  if(docs.length>1){
+    showConfirm(
+      'Conferma applicazione AWB',
+      'Ci sono <strong>'+docs.length+' verbali di carico</strong> per la destinazione:<br>'+
+      '<strong style="color:var(--amber);font-size:15px">'+esc(destino)+'</strong><br><br>'+
+      'Aggiungere AWB <strong style="color:var(--green)">'+esc(awb)+'</strong> a tutte?',
+      doApply,
+      'Sì, applica a tutte',
+      'blue'
+    );
+  } else {
+    doApply();
+  }
 }
 function groupByFile(docNums){
   var groups={};
