@@ -1468,8 +1468,14 @@ function applyAwb(){
   var already=allIntRows.rows.filter(function(r){
     return String(r[3]||'').trim().toLowerCase()===awbLower;
   });
-  if(already.length){
-    var esistenti=already.map(function(r){return norm(r[0]);}).join(', ');
+if(already.length){
+    var esistenti=already.map(function(r){
+      var dn=norm(r[0]);
+      var dest=String(r[8]||'').trim()||'—';
+      var data=String(r[1]||'').trim();
+      if(/^\d{8}$/.test(data)) data=data.substr(6,2)+'/'+data.substr(4,2)+'/'+data.substr(0,4);
+      return dn+' ('+dest+' · '+data+')';
+    }).join(' | ');
     setAwbSt('err','⚠ AWB "'+awb+'" già presente in: '+esistenti);
     return;
   }
