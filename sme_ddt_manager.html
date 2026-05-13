@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SME DDT Manager</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f18;--surface:#131929;--card:#1a2236;--border:#243048;
+  --blue:#3b82f6;--green:#10b981;--red:#ef4444;--amber:#f59e0b;
+  --amber-dim:#78350f;--amber-glow:rgba(245,158,11,.12);
+  --text:#e2e8f0;--muted:#64748b;--subtle:#94a3b8;
+  --ff-sans:'IBM Plex Sans',sans-serif;--ff-mono:'IBM Plex Mono',monospace;--ff-cond:'Barlow Condensed',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--ff-sans);font-size:14px;overflow-x:hidden}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 30% 40%,rgba(59,130,246,.06) 0%,transparent 60%),var(--bg)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:52px 56px;text-align:center;max-width:420px;width:90%;box-shadow:0 32px 80px rgba(0,0,0,.5)}
+.login-logo{font-family:var(--ff-cond);font-size:34px;font-weight:800;letter-spacing:2px;color:var(--blue);margin-bottom:6px}
+.login-logo span{color:var(--subtle);font-weight:600}
+.login-sub{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:40px}
+.login-desc{font-size:13px;color:var(--subtle);line-height:1.8;margin-bottom:36px}
+.btn-google{display:inline-flex;align-items:center;gap:12px;background:#fff;color:#1f2937;border:none;border-radius:8px;padding:13px 28px;font-family:var(--ff-sans);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.btn-google:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-google svg{width:20px;height:20px;flex-shrink:0}
+.login-note{font-size:11px;color:var(--muted);margin-top:22px;line-height:1.6}
+
+/* SHELL */
+#appShell{display:none;flex-direction:column;height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+.topbar-logo{font-family:var(--ff-cond);font-size:22px;font-weight:800;letter-spacing:1.5px;color:var(--blue);text-transform:uppercase}
+.topbar-logo span{color:var(--subtle);font-weight:600}
+.topbar-div{width:1px;height:24px;background:var(--border)}
+.topbar-sub{font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.user-badge{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:4px 12px 4px 6px;font-size:12px;color:var(--subtle)}
+.user-avatar{width:24px;height:24px;border-radius:50%;flex-shrink:0;object-fit:cover}
+.user-avatar-fallback{width:24px;height:24px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-family:var(--ff-cond);font-size:11px;font-weight:700;color:var(--blue)}
+.btn-logout{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--ff-sans);transition:all .2s}
+.btn-logout:hover{color:var(--red);border-color:var(--red)}
+
+/* FILTERS */
+.filters{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;flex-shrink:0}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fl{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.fc{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 11px;color:var(--text);font-family:var(--ff-sans);font-size:13px;outline:none;cursor:pointer;transition:border-color .2s;min-width:130px}
+.fc:focus{border-color:var(--blue)}
+select.fc option{background:var(--card)}
+.btn-load{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:8px 20px;font-family:var(--ff-cond);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s;align-self:flex-end}
+.btn-load:hover{background:#2563eb}
+.btn-load:disabled{background:var(--border);cursor:not-allowed}
+.btn-refresh,.btn-download{background:none;border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-family:var(--ff-cond);font-size:13px;font-weight:700;letter-spacing:1px;color:var(--subtle);cursor:pointer;transition:all .2s;align-self:flex-end}
+.btn-refresh:hover{border-color:var(--green);color:var(--green)}
+.btn-download:hover{border-color:var(--amber);color:var(--amber)}
+.btn-refresh:disabled,.btn-download:disabled{opacity:.3;cursor:not-allowed}
+.btn-refresh.spin svg{animation:spin .7s linear infinite}
+.filter-info{margin-left:auto;font-size:11px;color:var(--muted);align-self:flex-end;font-family:var(--ff-mono)}
+
+/* STATS */
+.stats-bar{display:flex;gap:12px;flex-wrap:wrap;padding:16px 24px 0;flex-shrink:0}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;min-width:120px}
+.sl{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.sv{font-family:var(--ff-mono);font-size:22px;font-weight:500;color:var(--text)}
+.sv.blue{color:var(--blue)}
+.sv.green{color:var(--green)}
+
+/* TABLE AREA */
+.scroll-area{flex:1;overflow:auto;padding:16px 24px 24px}
+.tbl-outer{border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-top:0}
+table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:13px}
+thead th{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:2px solid var(--border);padding:7px 10px;font-family:var(--ff-cond);font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--subtle);border-right:1px solid var(--border)}
+thead th:last-child{border-right:none}
+tbody tr{border-bottom:1px solid rgba(36,48,72,.7);transition:background .1s}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+tbody tr:last-child{border-bottom:none}
+td{padding:7px 10px;border-right:1px solid rgba(36,48,72,.5);max-width:200px;overflow:hidden;text-overflow:ellipsis;user-select:text;font-size:13px}
+td:last-child{border-right:none}
+td.mono{font-family:var(--ff-mono);font-size:12px;color:var(--subtle)}
+td.editable{cursor:cell}
+td.editable:hover{background:rgba(59,130,246,.08);outline:1px solid var(--blue)}
+td.editing{padding:0!important}
+td.editing input,td.editing select{width:100%;height:100%;min-height:32px;background:var(--card);border:2px solid var(--blue);border-radius:0;padding:6px 8px;font-family:var(--ff-mono);font-size:12px;color:var(--text);outline:none;box-sizing:border-box}
+.stato-aperto{color:var(--amber);font-weight:600;font-family:var(--ff-cond);letter-spacing:.5px;font-size:12px}
+.stato-chiuso{color:var(--green);font-weight:600;font-family:var(--ff-cond);letter-spacing:.5px;font-size:12px}
+
+/* STATO */
+.state{padding:60px 24px;text-align:center;color:var(--muted);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.state-ico{font-size:42px;opacity:.4}
+.state-title{font-weight:600;color:var(--subtle);font-size:15px}
+.spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.prog-wrap{width:200px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-bar{height:100%;background:var(--blue);border-radius:2px;transition:width .4s}
+
+/* TOAST */
+#copyToast{position:fixed;bottom:28px;right:28px;background:var(--green);color:#021a10;font-family:var(--ff-mono);font-size:12px;font-weight:700;padding:9px 18px;border-radius:6px;opacity:0;transform:translateY(10px);transition:opacity .18s,transform .18s;pointer-events:none;z-index:9999}
+#copyToast.show{opacity:1;transform:translateY(0)}
+
+/* SAVE INDICATOR */
+.save-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;opacity:0;transition:opacity .3s}
+.save-dot.show{opacity:1;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">SME DDT <span>Manager</span></div>
+    <div class="login-sub">Gestione Bolle di Consegna</div>
+    <p class="login-desc">Visualizza, modifica e aggiorna i file DDT dalla cartella Drive condivisa.</p>
+    <button class="btn-google" onclick="signIn()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Accedi con Google
+    </button>
+    <p class="login-note">Richiede accesso a Google Drive per leggere e modificare i file CSV nella cartella DDT.</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appShell">
+  <header class="topbar">
+    <div class="topbar-logo">SME DDT <span>Manager</span></div>
+    <div class="topbar-div"></div>
+    <div class="topbar-sub">Bolle di Consegna</div>
+    <div id="saveIndicator" style="display:flex;align-items:center;font-size:11px;color:var(--green)">
+      <span class="save-dot" id="saveDot"></span><span id="saveMsg"></span>
+    </div>
+    <div class="topbar-right">
+      <div class="user-badge">
+        <div id="userAvatarWrap"></div>
+        <span id="userName">—</span>
+      </div>
+      <button class="btn-logout" onclick="signOut()">Esci</button>
+    </div>
+  </header>
+
+  <div class="filters">
+    <div class="fg">
+      <div class="fl">Data</div>
+      <select id="fData" class="fc" style="min-width:160px" onchange="onDateChange()">
+        <option value="">— Seleziona —</option>
+      </select>
+    </div>
+    <div class="fg">
+      <div class="fl">Commessa</div>
+      <select id="fCommessa" class="fc" style="min-width:140px">
+        <option value="">— Tutte —</option>
+      </select>
+    </div>
+    <div class="fg">
+      <div class="fl">Stato File</div>
+      <select id="fStato" class="fc" style="min-width:130px" onchange="applyFilter()">
+        <option value="">— Tutti —</option>
+        <option value="Aperto">Aperto</option>
+        <option value="Chiuso">Chiuso</option>
+      </select>
+    </div>
+    <button class="btn-load" id="btnLoad" onclick="loadData()" disabled>Carica Dati</button>
+    <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" disabled>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+      Aggiorna
+    </button>
+    <button class="btn-download" id="btnDownload" onclick="downloadModified()" disabled>⬇ Salva CSV</button>
+    <div class="filter-info" id="fInfo">Seleziona data → Carica</div>
+  </div>
+
+  <div class="stats-bar" id="statsBar" style="display:none">
+    <div class="stat"><div class="sl">File caricati</div><div class="sv blue" id="sFile">—</div></div>
+    <div class="stat"><div class="sl">Righe totali</div><div class="sv" id="sRighe">—</div></div>
+    <div class="stat"><div class="sl">Commesse</div><div class="sv" id="sCommesse">—</div></div>
+    <div class="stat"><div class="sl">Aperti</div><div class="sv" style="color:var(--amber)" id="sAperti">—</div></div>
+    <div class="stat"><div class="sl">Chiusi</div><div class="sv green" id="sChiusi">—</div></div>
+  </div>
+
+  <div class="scroll-area">
+    <div id="content">
+      <div class="state"><div class="state-ico">📋</div><div class="state-title">Nessun dato caricato</div><div>Seleziona una data e premi <strong>Carica Dati</strong></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="copyToast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+var CLIENT_ID   = '256693770433-b1pjdpaglrh7827o6ln2s24802rcnshd.apps.googleusercontent.com';
+var FOLDER_TODAY = '1oXhZ0VR0tPjxa_bbIw2kOQ7FVKa1I1xM';
+var FOLDER_STORICO = '1v2hlsXWFPjTrpye1I38FXRbOq_KquTEw';
+var STATO_COL = 'Stato_File';
+
+var TOKEN = null;
+var allRows = [];       // tutte le righe caricate (con fileId e commessa)
+var filteredRows = [];  // righe dopo filtro
+var dateCache = {};     // { '2026-05-13': folderId }
+var loadedDates = [];
+var modifiedFiles = {}; // fileId -> { originalText, rows[] }
+var toastTimer = null;
+
+// ── INIT ─────────────────────────────────────
+window.onload = function(){
+  var saved = getSavedSession();
+  if(saved){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = 'flex';
+    setUserUI(saved.name, saved.email, saved.picture);
+  }
+  waitGsi();
+};
+
+// ── GSI ──────────────────────────────────────
+var tokenClient;
+function waitGsi(){
+  if(typeof google === 'undefined'){ setTimeout(waitGsi, 150); return; }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+    callback: onToken
+  });
+  var saved = getSavedSession();
+  if(saved) tokenClient.requestAccessToken({prompt:'', login_hint: saved.email||''});
+}
+function signIn(){ tokenClient.requestAccessToken({prompt:'select_account'}); }
+function signOut(){
+  if(TOKEN) google.accounts.oauth2.revoke(TOKEN, function(){});
+  TOKEN = null; allRows = []; clearSavedSession();
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+function onToken(resp){
+  if(resp.error){
+    if(!getSavedSession()){ document.getElementById('loginScreen').style.display='flex'; document.getElementById('appShell').style.display='none'; }
+    return;
+  }
+  TOKEN = resp.access_token;
+  clearTimeout(window._tokenRefreshTimer);
+  window._tokenRefreshTimer = setTimeout(function(){
+    var s = getSavedSession();
+    tokenClient.requestAccessToken({prompt:'', login_hint: s?s.email||'':''});
+  }, 50*60*1000);
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  loadUserInfo();
+  loadAvailableDates();
+}
+
+// ── SESSION ───────────────────────────────────
+function getSavedSession(){ try{ var s=localStorage.getItem('ddt_session'); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function saveSession(n,e,p){ try{ localStorage.setItem('ddt_session', JSON.stringify({name:n,email:e,picture:p})); }catch(e){} }
+function clearSavedSession(){ try{ localStorage.removeItem('ddt_session'); }catch(e){} }
+
+// ── USER ─────────────────────────────────────
+function loadUserInfo(){
+  gFetch('https://www.googleapis.com/oauth2/v2/userinfo').then(function(u){
+    if(u.error)return;
+    saveSession(u.name||u.email||'', u.email||'', u.picture||'');
+    setUserUI(u.name||u.email||'—', u.email||'', u.picture||'');
+  }).catch(function(){});
+}
+function setUserUI(name, email, picture){
+  document.getElementById('userName').textContent = name||'—';
+  var wrap = document.getElementById('userAvatarWrap'); wrap.innerHTML='';
+  if(picture){
+    var img = document.createElement('img');
+    img.className='user-avatar'; img.referrerPolicy='no-referrer'; img.src=picture; img.alt=name;
+    img.onerror = function(){ wrap.innerHTML = makeInitial(email||name); };
+    wrap.appendChild(img);
+  } else { wrap.innerHTML = makeInitial(email||name); }
+}
+function makeInitial(str){
+  var src=(str||'?').trim();
+  var ch=src.includes('@')?src.split('@')[0].charAt(0):src.charAt(0);
+  return '<div class="user-avatar-fallback">'+ch.toUpperCase()+'</div>';
+}
+
+// ── LOAD AVAILABLE DATES ──────────────────────
+function loadAvailableDates(){
+  // Oggi
+  var today = todayIso();
+  // Cartella storico: lista sottocartelle
+  listFiles('"'+FOLDER_STORICO+'" in parents and mimeType="application/vnd.google-apps.folder" and trashed=false')
+  .then(function(folders){
+    var sel = document.getElementById('fData');
+    sel.innerHTML = '<option value="">— Seleziona —</option>';
+    // Aggiungi oggi come prima opzione
+    var todayOpt = document.createElement('option');
+    todayOpt.value = 'TODAY';
+    todayOpt.textContent = 'Oggi ('+today+')';
+    sel.appendChild(todayOpt);
+    // Ordina folders per data decrescente
+    var dated = folders.filter(function(f){ return /^\d{4}-\d{2}-\d{2}$/.test(f.name); });
+    dated.sort(function(a,b){ return b.name.localeCompare(a.name); });
+    dated.forEach(function(f){
+      dateCache[f.name] = f.id;
+      var opt = document.createElement('option');
+      opt.value = f.name;
+      opt.textContent = formatDateLabel(f.name);
+      sel.appendChild(opt);
+    });
+    // Seleziona oggi di default
+    sel.value = 'TODAY';
+    document.getElementById('btnLoad').disabled = false;
+  }).catch(function(e){ showToast('Errore caricamento date: '+e.message); });
+}
+
+function onDateChange(){
+  document.getElementById('btnLoad').disabled = false;
+}
+
+function formatDateLabel(iso){
+  var p = iso.split('-');
+  if(p.length===3) return p[2]+'/'+p[1]+'/'+p[0];
+  return iso;
+}
+function todayIso(){
+  var d = new Date();
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+}
+
+// ── LOAD DATA ─────────────────────────────────
+function loadData(){
+  var dateVal = document.getElementById('fData').value;
+  if(!dateVal){ showToast('Seleziona una data'); return; }
+  allRows = []; modifiedFiles = {};
+  document.getElementById('statsBar').style.display = 'none';
+  document.getElementById('btnRefresh').disabled = true;
+  document.getElementById('btnDownload').disabled = true;
+  setContent(spinnerHtml('Ricerca file...', 15));
+
+  getFolderIdForDate(dateVal)
+  .then(function(folderId){
+    setContent(spinnerHtml('Caricamento file...', 35));
+    return listFiles('"'+folderId+'" in parents and mimeType!="application/vnd.google-apps.folder" and trashed=false');
+  })
+  .then(function(files){
+    var csvFiles = files.filter(function(f){
+      return f.name.toLowerCase().indexOf('_eliminato_') === -1;
+    });
+    if(!csvFiles.length) throw new Error('Nessun file trovato per la data selezionata');
+    setContent(spinnerHtml('Download '+csvFiles.length+' file...', 50));
+    return Promise.all(csvFiles.map(function(f){
+      return downloadFileText(f.id).then(function(text){
+        return {id:f.id, name:f.name, text:text};
+      });
+    }));
+  })
+  .then(function(results){
+    setContent(spinnerHtml('Parsing CSV...', 75));
+    var allParsed = [];
+    results.forEach(function(r){
+      var commessa = extractCommessa(r.name);
+      var parsed = parseCsv(r.text, r.id, r.name, commessa);
+      modifiedFiles[r.id] = { originalText: r.text, name: r.name, commessa: commessa, rows: parsed };
+      allParsed = allParsed.concat(parsed);
+    });
+    allRows = allParsed;
+    populateCommessaFilter();
+    applyFilter();
+    document.getElementById('btnRefresh').disabled = false;
+    document.getElementById('btnDownload').disabled = false;
+    updateStats();
+  })
+  .catch(function(e){
+    setContent('<div class="state"><div class="state-ico">⚠️</div><div class="state-title">Errore</div><div>'+esc(e.message)+'</div></div>');
+  });
+}
+
+function getFolderIdForDate(dateVal){
+  if(dateVal === 'TODAY') return Promise.resolve(FOLDER_TODAY);
+  if(dateCache[dateVal]) return Promise.resolve(dateCache[dateVal]);
+  return listFiles('"'+FOLDER_STORICO+'" in parents and mimeType="application/vnd.google-apps.folder" and name="'+dateVal+'" and trashed=false')
+  .then(function(folders){
+    if(!folders.length) throw new Error('Cartella '+dateVal+' non trovata');
+    dateCache[dateVal] = folders[0].id;
+    return folders[0].id;
+  });
+}
+
+// ── CSV PARSE ─────────────────────────────────
+function parseCsv(text, fileId, fileName, commessa){
+  var lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  // Riga 0 potrebbe essere "sep=;"
+  var sepLine = -1, sep = ';';
+  if(lines[0] && lines[0].startsWith('sep=')){
+    sep = lines[0].replace('sep=','').trim() || ';';
+    sepLine = 0;
+  }
+  var dataLines = sepLine >= 0 ? lines.slice(1) : lines;
+  // Prima riga = header
+  var header = dataLines[0] ? splitCsvLine(dataLines[0], sep) : [];
+  var rows = [];
+  for(var i=1; i<dataLines.length; i++){
+    var line = dataLines[i];
+    if(!line.trim()) continue;
+    var cells = splitCsvLine(line, sep);
+    var obj = {};
+    header.forEach(function(h,idx){ obj[h] = cells[idx]||''; });
+    // Aggiungi Stato_File se non presente
+    if(obj[STATO_COL] === undefined) obj[STATO_COL] = '';
+    obj.__fileId = fileId;
+    obj.__fileName = fileName;
+    obj.__commessa = commessa;
+    obj.__sep = sep;
+    obj.__sepLine = sepLine >= 0 ? lines[0] : null;
+    obj.__header = header;
+    obj.__lineIdx = i;
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function splitCsvLine(line, sep){
+  var result = [], cur = '', inQ = false;
+  for(var i=0; i<line.length; i++){
+    var c = line[i];
+    if(c==='"'){ inQ=!inQ; }
+    else if(c===sep && !inQ){ result.push(cur.trim()); cur=''; }
+    else { cur+=c; }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function extractCommessa(filename){
+  // Es: "SME DDT Nr. 260188685" → "SME"
+  var m = filename.match(/^([A-Z0-9\-]+)\s/);
+  return m ? m[1] : filename.split(' ')[0];
+}
+
+// ── FILTER ────────────────────────────────────
+function populateCommessaFilter(){
+  var sel = document.getElementById('fCommessa');
+  var prev = sel.value;
+  var set = {};
+  allRows.forEach(function(r){ if(r.__commessa) set[r.__commessa]=true; });
+  sel.innerHTML = '<option value="">— Tutte —</option>';
+  Object.keys(set).sort().forEach(function(c){
+    var o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    if(c===prev) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+function applyFilter(){
+  var fCommessa = document.getElementById('fCommessa').value;
+  var fStato = document.getElementById('fStato').value;
+  filteredRows = allRows.filter(function(r){
+    if(fCommessa && r.__commessa !== fCommessa) return false;
+    if(fStato && (r[STATO_COL]||'') !== fStato) return false;
+    return true;
+  });
+  renderTable();
+  updateStats();
+}
+
+// ── RENDER TABLE ──────────────────────────────
+function renderTable(){
+  if(!filteredRows.length){
+    setContent('<div class="state"><div class="state-ico">🔍</div><div class="state-title">Nessun risultato</div><div>Nessuna riga con i filtri selezionati.</div></div>');
+    return;
+  }
+  var sample = filteredRows[0];
+  var cols = sample.__header.filter(function(h){ return h && h!==STATO_COL; });
+  // Colonne da mostrare: Commessa (extra), file, poi le colonne CSV, poi Stato_File
+  var h = '<div class="tbl-outer"><table><thead><tr>';
+  h += '<th>Commessa</th>';
+  h += '<th>File</th>';
+  cols.forEach(function(c){ h += '<th>'+esc(c)+'</th>'; });
+  h += '<th style="color:var(--amber)">'+STATO_COL+'</th>';
+  h += '</tr></thead><tbody>';
+
+  filteredRows.forEach(function(row, ri){
+    h += '<tr>';
+    h += '<td class="mono" style="color:var(--blue)">'+esc(row.__commessa)+'</td>';
+    h += '<td class="mono" style="font-size:11px;max-width:160px" title="'+esc(row.__fileName)+'">'+esc(shortFileName(row.__fileName))+'</td>';
+    cols.forEach(function(c, ci){
+      var v = row[c]||'';
+      h += '<td class="editable" onclick="editCell(this,'+ri+',\''+escAttr(c)+'\')" title="'+esc(v)+'">'+esc(v)+'</td>';
+    });
+    // Stato_File
+    var stato = row[STATO_COL]||'';
+    var cls = stato==='Chiuso'?'stato-chiuso':stato==='Aperto'?'stato-aperto':'';
+    h += '<td class="editable '+cls+'" onclick="editStato(this,'+ri+')">'+esc(stato||'—')+'</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+  setContent(h);
+  document.getElementById('fInfo').textContent = filteredRows.length+' righe';
+}
+
+function shortFileName(name){
+  if(name.length <= 22) return name;
+  return name.substring(0,20)+'…';
+}
+
+// ── EDIT CELL ─────────────────────────────────
+function editCell(td, rowIdx, colName){
+  if(td.classList.contains('editing')) return;
+  var row = filteredRows[rowIdx];
+  var currentVal = row[colName]||'';
+  td.classList.add('editing');
+  var inp = document.createElement('input');
+  inp.value = currentVal; td.innerHTML=''; td.appendChild(inp);
+  inp.focus(); inp.select();
+  function save(){
+    var newVal = inp.value;
+    td.classList.remove('editing');
+    td.textContent = newVal;
+    if(newVal === currentVal) return;
+    row[colName] = newVal;
+    markModified(row.__fileId);
+    indicateSave();
+  }
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+    if(e.key==='Escape'){ inp.removeEventListener('blur',save); td.classList.remove('editing'); td.textContent=currentVal; }
+  });
+}
+
+function editStato(td, rowIdx){
+  if(td.classList.contains('editing')) return;
+  var row = filteredRows[rowIdx];
+  var currentVal = row[STATO_COL]||'';
+  td.classList.add('editing');
+  td.className = 'editing';
+  var sel = document.createElement('select');
+  ['','Aperto','Chiuso'].forEach(function(v){
+    var o = document.createElement('option');
+    o.value = v; o.textContent = v||'—';
+    if(v===currentVal) o.selected=true;
+    sel.appendChild(o);
+  });
+  td.innerHTML=''; td.appendChild(sel);
+  sel.focus();
+  function save(){
+    var newVal = sel.value;
+    row[STATO_COL] = newVal;
+    td.classList.remove('editing');
+    var cls = newVal==='Chiuso'?'stato-chiuso':newVal==='Aperto'?'stato-aperto':'';
+    td.className = 'editable '+cls;
+    td.textContent = newVal||'—';
+    markModified(row.__fileId);
+    indicateSave();
+    updateStats();
+  }
+  sel.addEventListener('change', save);
+  sel.addEventListener('blur', save);
+  sel.addEventListener('keydown', function(e){ if(e.key==='Escape'){ sel.removeEventListener('blur',save); td.classList.remove('editing'); td.textContent=currentVal||'—'; } });
+}
+
+function markModified(fileId){ modifiedFiles[fileId]._modified = true; }
+
+var saveIndicatorTimer = null;
+function indicateSave(){
+  var dot = document.getElementById('saveDot');
+  var msg = document.getElementById('saveMsg');
+  dot.classList.add('show');
+  msg.textContent = 'Modifiche non salvate';
+  clearTimeout(saveIndicatorTimer);
+}
+
+// ── DOWNLOAD MODIFIED CSV ─────────────────────
+function downloadModified(){
+  var commessa = document.getElementById('fCommessa').value;
+  // Ricostruisci tutti i CSV dai dati in memoria
+  var fileIds = Object.keys(modifiedFiles);
+  if(!fileIds.length){ showToast('Nessun file caricato'); return; }
+
+  // Raggruppa allRows per fileId
+  var rowsByFile = {};
+  allRows.forEach(function(r){
+    if(!rowsByFile[r.__fileId]) rowsByFile[r.__fileId] = [];
+    rowsByFile[r.__fileId].push(r);
+  });
+
+  // Per ogni file modificato, ricostruisci il CSV e scaricalo
+  var toSave = fileIds.filter(function(fid){ return modifiedFiles[fid]._modified; });
+  if(!toSave.length){ showToast('Nessuna modifica da salvare'); return; }
+
+  showToast('Salvataggio in corso...');
+  var promises = toSave.map(function(fid){
+    var fd = modifiedFiles[fid];
+    var rows = rowsByFile[fid]||[];
+    var csvText = buildCsv(rows, fd);
+    var blob = new Blob([csvText], {type:'text/csv;charset=utf-8;'});
+    return uploadFileText(fid, blob, fd.name).then(function(){
+      modifiedFiles[fid]._modified = false;
+    });
+  });
+
+  Promise.all(promises).then(function(){
+    showToast('✓ '+toSave.length+' file salvati su Drive!');
+    document.getElementById('saveDot').classList.remove('show');
+    document.getElementById('saveMsg').textContent = '✓ Salvato';
+    setTimeout(function(){ document.getElementById('saveMsg').textContent=''; }, 3000);
+  }).catch(function(e){ showToast('✗ Errore salvataggio: '+e.message); });
+}
+
+function buildCsv(rows, fd){
+  if(!rows.length) return fd.originalText;
+  var header = rows[0].__header;
+  // Assicura che Stato_File sia nell'header
+  var fullHeader = header.slice();
+  if(fullHeader.indexOf(STATO_COL)===-1) fullHeader.push(STATO_COL);
+  var sep = rows[0].__sep || ';';
+  var lines = [];
+  if(rows[0].__sepLine) lines.push(rows[0].__sepLine);
+  lines.push(fullHeader.join(sep));
+  rows.forEach(function(r){
+    var cells = fullHeader.map(function(h){ return csvEscape(r[h]||'', sep); });
+    lines.push(cells.join(sep));
+  });
+  return lines.join('\r\n');
+}
+
+function csvEscape(val, sep){
+  var s = String(val);
+  if(s.indexOf(sep)!==-1 || s.indexOf('"')!==-1 || s.indexOf('\n')!==-1){
+    return '"'+s.replace(/"/g,'""')+'"';
+  }
+  return s;
+}
+
+// ── REFRESH ───────────────────────────────────
+function refreshData(){
+  var hasUnsaved = Object.keys(modifiedFiles).some(function(fid){ return modifiedFiles[fid]._modified; });
+  if(hasUnsaved){
+    if(!confirm('Hai modifiche non salvate. Ricaricare e perdere le modifiche?')) return;
+  }
+  loadData();
+}
+
+// ── STATS ─────────────────────────────────────
+function updateStats(){
+  if(!allRows.length){ document.getElementById('statsBar').style.display='none'; return; }
+  var commesse = {};
+  allRows.forEach(function(r){ commesse[r.__commessa]=true; });
+  var aperti = allRows.filter(function(r){ return r[STATO_COL]==='Aperto'; }).length;
+  var chiusi = allRows.filter(function(r){ return r[STATO_COL]==='Chiuso'; }).length;
+  document.getElementById('sFile').textContent = Object.keys(modifiedFiles).length;
+  document.getElementById('sRighe').textContent = allRows.length;
+  document.getElementById('sCommesse').textContent = Object.keys(commesse).length;
+  document.getElementById('sAperti').textContent = aperti;
+  document.getElementById('sChiusi').textContent = chiusi;
+  document.getElementById('statsBar').style.display = 'flex';
+}
+
+// ── DRIVE API ─────────────────────────────────
+function listFiles(q){
+  function fetchPage(pt){
+    var url='https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name),nextPageToken&pageSize=1000';
+    if(pt) url+='&pageToken='+encodeURIComponent(pt);
+    return gFetch(url).then(function(r){
+      var files=r.files||[];
+      if(r.nextPageToken) return fetchPage(r.nextPageToken).then(function(m){ return files.concat(m); });
+      return files;
+    });
+  }
+  return fetchPage(null);
+}
+
+function downloadFileText(id){
+  return fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{headers:{Authorization:'Bearer '+TOKEN}})
+  .then(function(r){
+    if(!r.ok) throw new Error('Download fallito: '+r.status);
+    return r.text();
+  });
+}
+
+function uploadFileText(fileId, blob, name){
+  var boundary = 'ddt_'+Date.now();
+  var meta = JSON.stringify(name ? {name:name} : {});
+  var enc = new TextEncoder();
+  var pre = '--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: text/csv\r\n\r\n';
+  var post = '\r\n--'+boundary+'--';
+  return blob.arrayBuffer().then(function(buf){
+    var body = cc(cc(enc.encode(pre), new Uint8Array(buf)), enc.encode(post));
+    return fetch('https://www.googleapis.com/upload/drive/v3/files/'+fileId+'?uploadType=multipart',{
+      method:'PATCH',
+      headers:{Authorization:'Bearer '+TOKEN,'Content-Type':'multipart/related; boundary='+boundary},
+      body: body
+    });
+  }).then(function(r){ if(!r.ok) return r.text().then(function(t){throw new Error('Upload: '+t);}); return r.json(); });
+}
+
+function gFetch(url){
+  if(!TOKEN) return Promise.reject(new Error('No token'));
+  return fetch(url,{headers:{Authorization:'Bearer '+TOKEN}}).then(function(r){ return r.json(); });
+}
+
+// ── UTILITY ───────────────────────────────────
+function setContent(h){ document.getElementById('content').innerHTML=h; }
+function spinnerHtml(msg,pct){ return '<div class="state"><div class="spinner"></div><div class="state-title">'+esc(msg)+'</div><div class="prog-wrap"><div class="prog-bar" style="width:'+(pct||10)+'%"></div></div></div>'; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s){ return s.replace(/'/g,"\\'"); }
+function cc(a,b){ var c=new Uint8Array(a.length+b.length); c.set(a); c.set(b,a.length); return c; }
+function showToast(msg){
+  var t=document.getElementById('copyToast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove('show');},2200);
+}
+</script>
+</body>
+</html>
