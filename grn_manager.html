@@ -219,12 +219,20 @@ td.editing input,td.editing select{width:100%;height:100%;min-height:30px;backgr
     <!-- Numero DDT -->
     <div class="fg">
       <div class="fl">N° DDT</div>
-      <input id="fDdt" class="fc" type="text" placeholder="es. 260188685" style="width:120px" oninput="scheduleFilter()">
+      <div style="position:relative">
+        <input id="fDdt" class="fc" type="text" list="listDdt" placeholder="es. 678" style="width:130px;padding-right:24px" oninput="scheduleFilter()" onchange="onFilterChange()">
+        <datalist id="listDdt"></datalist>
+        <button onclick="clearFld('fDdt')" tabindex="-1" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;line-height:1">✕</button>
+      </div>
     </div>
     <!-- Rif. Ordine -->
     <div class="fg">
       <div class="fl">Rif. Ordine</div>
-      <input id="fOrdine" class="fc" type="text" placeholder="es. ODR10001" style="width:120px" oninput="scheduleFilter()">
+      <div style="position:relative">
+        <input id="fOrdine" class="fc" type="text" list="listOrdine" placeholder="es. ODR10001" style="width:130px;padding-right:24px" oninput="scheduleFilter()" onchange="onFilterChange()">
+        <datalist id="listOrdine"></datalist>
+        <button onclick="clearFld('fOrdine')" tabindex="-1" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;line-height:1">✕</button>
+      </div>
     </div>
     <!-- Stato Logico -->
     <div class="fg">
@@ -322,16 +330,57 @@ window.onload = function(){
     if(window.self !== window.top){
       var w = document.getElementById('iframeWarning');
       if(w) w.style.display='block';
-      // Disabilita il bottone login che non può funzionare
       var btn = document.querySelector('.btn-google');
       if(btn){ btn.disabled=true; btn.style.opacity='0.4'; btn.style.cursor='not-allowed'; btn.title='Apri il file HTML direttamente nel browser'; }
-      return; // non inizializzare GSI, tanto non funzionerebbe
+      return;
     }
   }catch(e){}
+  restoreFilterState();
   var s = getSavedSession();
   if(s){ showApp(); setUserUI(s.name,s.email,s.picture); }
   waitGsi();
 };
+
+var FILTER_STATE_KEY='grn_filter_state';
+
+function saveFilterState(){
+  try{
+    var state={
+      dateFrom: document.getElementById('fDateFrom').value,
+      dateTo:   document.getElementById('fDateTo').value,
+      commessa: document.getElementById('fCommessa').value,
+      ddt:      document.getElementById('fDdt').value,
+      ordine:   document.getElementById('fOrdine').value,
+      statoLogico: document.getElementById('fStatoLogico').value,
+      stato:    document.getElementById('fStato').value
+    };
+    sessionStorage.setItem(FILTER_STATE_KEY, JSON.stringify(state));
+  }catch(e){}
+}
+
+function restoreFilterState(){
+  try{
+    var raw=sessionStorage.getItem(FILTER_STATE_KEY);
+    if(!raw) return;
+    var state=JSON.parse(raw);
+    // I select delle date vengono popolati dopo, usiamo un flag
+    window._pendingFilterState=state;
+  }catch(e){}
+}
+
+function applyPendingFilterState(){
+  if(!window._pendingFilterState) return;
+  var s=window._pendingFilterState;
+  window._pendingFilterState=null;
+  if(s.dateFrom){ var el=document.getElementById('fDateFrom'); if(el) el.value=s.dateFrom; }
+  if(s.dateTo)  { var el=document.getElementById('fDateTo');   if(el) el.value=s.dateTo; }
+  if(s.ddt)     { var el=document.getElementById('fDdt');      if(el) el.value=s.ddt; }
+  if(s.ordine)  { var el=document.getElementById('fOrdine');   if(el) el.value=s.ordine; }
+  // commessa, statoLogico e stato vengono ripristinati dopo populateDynFilters
+  window._pendingCommessa    =s.commessa||'';
+  window._pendingStatoLogico =s.statoLogico||'';
+  window._pendingStato       =s.stato||'';
+}
 
 // ── GSI ──────────────────────────────────────────────────────────────────────
 var tokenClient;
@@ -507,25 +556,31 @@ function saveUserConfig(){
   var blob=new Blob([payload],{type:'application/json'});
   var p;
   if(configFileId){
-    p=uploadText(configFileId,blob,fname);
+    p=uploadText(configFileId,blob,fname,'application/json');
   } else {
     p=createFileInFolder(CONFIG_FOLDER_ID,fname,blob).then(function(f){ configFileId=f.id; return f; });
   }
   return p.then(function(){
+    console.log('Config salvata su Drive per '+configEmail);
     var ind=document.getElementById('cfgIndicator');
     if(ind){
       var n=Object.keys(hiddenCols).length;
       ind.style.display='block';
       ind.style.color='var(--green)';
-      ind.textContent='⚙ cfg · '+(n?n+' col nascoste':'default');
+      ind.textContent='⚙ cfg · '+(n?n+' col nascoste':'default')+' ✓';
+      setTimeout(function(){ if(ind) ind.textContent=ind.textContent.replace(' ✓',''); },2000);
     }
-  }).catch(function(e){ console.warn('saveUserConfig error:',e.message); });
+  }).catch(function(e){
+    console.warn('saveUserConfig error:',e.message);
+    var ind=document.getElementById('cfgIndicator');
+    if(ind){ ind.style.color='var(--red)'; ind.textContent='⚙ cfg · errore salvataggio'; }
+  });
 }
 
 function createFileInFolder(folderId,name,blob){
   var boundary='cfg_'+Date.now(), enc=new TextEncoder();
   var meta=JSON.stringify({name:name,parents:[folderId]});
-  var pre='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n';
+  var pre='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n';
   var post='\r\n--'+boundary+'--';
   return blob.arrayBuffer().then(function(buf){
     var body=cc(cc(enc.encode(pre),new Uint8Array(buf)),enc.encode(post));
@@ -573,7 +628,8 @@ function loadAvailableDates(){
     });
 
     document.getElementById('btnLoad').disabled=false;
-    loadData(); // carica subito oggi
+    applyPendingFilterState(); // ripristina data se salvata
+    loadData(); // carica
   }).catch(function(e){ showToast('Errore date: '+e.message,'err'); });
 }
 function formatDateLabel(iso){ var p=iso.split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:iso; }
@@ -638,13 +694,21 @@ function loadData(){
     // 2) dedup per nome DDT: stesso (commessa + numero DDT) → tieni solo il più recente per modifiedTime
     var ddtMap={};
     files.forEach(function(f){
-      var key=(extractCommessa(f.name)+'__'+extractDdt(f.name)).toLowerCase();
+      var comm=extractCommessa(f.name);
+      var ddt =extractDdt(f.name);
+      var grn =extractGrn(f.name);
+      // Se c'è GRN → chiave univoca comm+ddt+grn, altrimenti comm+ddt
+      var key=grn
+        ?(comm+'__'+ddt+'__GRN'+grn).toLowerCase()
+        :(comm+'__'+ddt).toLowerCase();
       var mt=f.modifiedTime||'';
-      if(!ddtMap[key]||mt>ddtMap[key].modifiedTime){ ddtMap[key]={id:f.id,name:f.name,modifiedTime:mt}; }
+      if(!ddtMap[key]||mt>ddtMap[key].modifiedTime){
+        ddtMap[key]={id:f.id,name:f.name,modifiedTime:mt,grn:grn};
+      }
     });
     var dedupedFiles=Object.values(ddtMap);
     skippedDups=files.length-dedupedFiles.length;
-    if(skippedDups>0) showToast('ℹ️ '+skippedDups+' duplicat'+(skippedDups===1?'o ignorato':'i ignorati')+' (tenuto il più recente per ogni DDT)');
+    if(skippedDups>0) showToast('ℹ️ '+skippedDups+' duplicat'+(skippedDups===1?'o ignorato':'i ignorati')+' (tenuto il più recente per ogni DDT/GRN)');
     setContent(spinner('Download '+dedupedFiles.length+' file...',45));
     return Promise.all(dedupedFiles.map(function(f){
       return downloadText(f.id).then(function(txt){ return {id:f.id,name:f.name,text:txt}; });
@@ -657,16 +721,25 @@ function loadData(){
       var ddt      = extractDdt(r.name);
       var parsed   = parseCsv(r.text);
       fileRegistry[r.id]={name:r.name,commessa:commessa,ddt:ddt,sep:parsed.sep,sepLine:parsed.sepLine,header:parsed.header,rows:parsed.rows,modified:false};
+      var grn=extractGrn(r.name);
       parsed.rows.forEach(function(row){
         row.__fileId  =r.id;
         row.__fileName=r.name;
         row.__commessa=commessa;
         row.__ddt     =ddt;
+        row.__grn     =grn||'';
         if(row[STATO_COL]===undefined||row[STATO_COL]===null) row[STATO_COL]='';
         allRows.push(row);
       });
     });
     populateDynFilters();
+    // Ripristina filtri dinamici da sessione precedente
+    if(window._pendingCommessa!==undefined){
+      var sc=document.getElementById('fCommessa'); if(sc&&window._pendingCommessa) sc.value=window._pendingCommessa;
+      var ss=document.getElementById('fStato');    if(ss&&window._pendingStato)    ss.value=window._pendingStato;
+      var sl=document.getElementById('fStatoLogico'); if(sl&&window._pendingStatoLogico) sl.value=window._pendingStatoLogico;
+      window._pendingCommessa=undefined; window._pendingStato=undefined; window._pendingStatoLogico=undefined;
+    }
     applyFilter();
     document.getElementById('btnRefresh').disabled=false;
     document.getElementById('btnDownload').disabled=false;
@@ -732,25 +805,44 @@ function extractCommessa(name){
   return m?m[1].toUpperCase():name.split(' ')[0].toUpperCase();
 }
 function extractDdt(name){
-  // "SME DDT Nr. 260188685.csv" → "260188685"
-  // "NTD DDT Nr. DDT26-00123.csv" → "DDT26-00123"
-  var m=name.match(/Nr\.\s*([^\s\.]+)/i);
-  if(m) return m[1];
-  // fallback: ultimi numeri/parola nel nome
+  // Nuovo formato: "FLM DDT Nr. 678 - GRN 504 - SERIALI.csv" → "678"
+  // Vecchio formato: "SME DDT Nr. 260188685.csv" → "260188685"
+  var m=name.match(/Nr\.\s*([^\s\-\.]+)/i);
+  if(m) return m[1].trim();
   var parts=name.replace(/\.[^.]+$/,'').split(/\s+/);
   return parts[parts.length-1]||name;
+}
+function extractGrn(name){
+  // "FLM DDT Nr. 678 - GRN 504 - SERIALI.csv" → "504"
+  // Se non c'è GRN → null
+  var m=name.match(/GRN\s+(\S+)/i);
+  return m?m[1].replace(/[\-\s].*$/,'').trim():null;
 }
 
 // ── FILTERS ───────────────────────────────────────────────────────────────────
 function populateDynFilters(){
-  var commesse={}, statologico={};
+  var commesse={}, statologico={}, ddts={}, ordini={};
   allRows.forEach(function(r){
     if(r.__commessa) commesse[r.__commessa]=true;
+    if(r.__ddt)      ddts[r.__ddt]=true;
     var sl=r['Stato Logico']||r['StatoLogico']||r['STATO_LOGICO']||r['Stato_Logico']||'';
     if(sl) statologico[sl]=true;
+    var ord=getRifOrdine(r);
+    if(ord) ordini[ord]=true;
   });
   fillSelect('fCommessa',commesse,'— Tutte —');
   fillSelect('fStatoLogico',statologico,'— Tutti —');
+  fillDatalist('listDdt',Object.keys(ddts).sort());
+  fillDatalist('listOrdine',Object.keys(ordini).sort());
+}
+
+function fillDatalist(id,values){
+  var dl=document.getElementById(id);
+  if(!dl) return;
+  dl.innerHTML='';
+  values.forEach(function(v){
+    var o=document.createElement('option'); o.value=v; dl.appendChild(o);
+  });
 }
 
 function fillSelect(id,obj,placeholder){
@@ -764,8 +856,8 @@ function fillSelect(id,obj,placeholder){
   if(prev&&sel.value!==prev) sel.value='';
 }
 
-function onFilterChange(){ applyFilter(); }
-function scheduleFilter(){ clearTimeout(filterTimer); filterTimer=setTimeout(applyFilter,350); }
+function onFilterChange(){ applyFilter(); saveFilterState(); }
+function scheduleFilter(){ clearTimeout(filterTimer); filterTimer=setTimeout(function(){ applyFilter(); saveFilterState(); },350); }
 
 function applyFilter(){
   var fComm  = document.getElementById('fCommessa').value;
@@ -837,6 +929,9 @@ function renderTable(){
 
   var h='<div class="tbl-outer"><table><thead><tr>';
   fixedDefs.forEach(function(d){ h+='<th'+ch(d.key)+'>'+esc(d.label)+'</th>'; });
+  // GRN colonna fissa extra (solo se almeno un file ha GRN)
+  var hasGrn=filteredRows.some(function(r){return r.__grn;});
+  if(hasGrn) h+='<th'+ch('__grn')+' style="color:#22d3ee">N° GRN</th>';
   csvCols.forEach(function(c){ h+='<th'+ch(c)+'>'+esc(c)+'</th>'; });
   VLT_DISPLAY_COLS.forEach(function(d){
     h+='<th'+ch(d.key)+' style="color:'+d.color+';border-left:2px solid '+d.color+'40">'+esc(d.label)+'</th>';
@@ -870,6 +965,7 @@ function renderTable(){
     h+='<tr>';
     h+='<td class="td-comm'+(colHidden('__commessa')?' col-hidden':'')+'">'+esc(row.__commessa)+'</td>';
     h+='<td class="td-ddt'+(colHidden('__ddt')?' col-hidden':'')+'">'+esc(row.__ddt)+'</td>';
+    if(hasGrn) h+='<td'+(colHidden('__grn')?' class="col-hidden"':'')+' style="font-family:var(--ff-mono);font-size:11px;color:#22d3ee">'+esc(row.__grn||'—')+'</td>';
     h+='<td class="mono td-file'+(colHidden('__fileName')?' col-hidden':'')+'" title="'+esc(row.__fileName)+'">'+esc(shortName(row.__fileName))+'</td>';
     csvCols.forEach(function(c){
       var v2=row[c]!==undefined?row[c]:'';
@@ -1059,6 +1155,7 @@ function openColMgr(){
   var allCols=[
     {key:'__commessa',label:'Commessa'},
     {key:'__ddt',label:'N° DDT'},
+    {key:'__grn',label:'N° GRN'},
     {key:'__fileName',label:'File'}
   ].concat(csvCols.map(function(c){return{key:c,label:c};}))
   .concat(VLT_DISPLAY_COLS.map(function(d){return{key:d.key,label:d.label};}))
@@ -1094,9 +1191,10 @@ function downloadText(id){
   return fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{headers:{Authorization:'Bearer '+TOKEN}})
   .then(function(r){ if(!r.ok) throw new Error('Download: '+r.status); return r.text(); });
 }
-function uploadText(fileId,blob,name){
+function uploadText(fileId,blob,name,contentType){
+  contentType=contentType||'text/csv';
   var boundary='grn_'+Date.now(), meta=JSON.stringify({name:name}), enc=new TextEncoder();
-  var pre='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: text/csv\r\n\r\n';
+  var pre='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: '+contentType+'\r\n\r\n';
   var post='\r\n--'+boundary+'--';
   return blob.arrayBuffer().then(function(buf){
     var body=cc(cc(enc.encode(pre),new Uint8Array(buf)),enc.encode(post));
@@ -1115,6 +1213,11 @@ function spinner(msg,pct){ return '<div class="state"><div class="spinner"></div
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escAttr(s){ return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function cc(a,b){ var c=new Uint8Array(a.length+b.length); c.set(a); c.set(b,a.length); return c; }
+function clearFld(id){
+  var el=document.getElementById(id);
+  if(el){ el.value=''; onFilterChange(); }
+}
+
 function showToast(msg,type){
   var t=document.getElementById('toast');
   t.textContent=msg; t.className=(type?'show '+type:'show');
