@@ -179,7 +179,7 @@ td.editing input,td.editing select{width:100%;height:100%;min-height:30px;backgr
     <div class="topbar-logo">GRN <span>Manager</span></div>
     <div class="topbar-div"></div>
     <div class="topbar-sub">Bolle di Consegna</div>
-    <div id="cfgIndicator" style="font-size:10px;color:var(--muted);font-family:var(--ff-mono);white-space:nowrap;display:none" title="Config personale caricata da Drive">⚙ cfg</div>
+    <div id="cfgIndicator" style="font-size:10px;color:var(--muted);font-family:var(--ff-mono);white-space:nowrap" title="Config personale caricata da Drive">⚙ cfg…</div>
     <div class="save-indicator" id="saveIndicator" style="display:none">
       <div class="save-dot" id="saveDot"></div>
       <span id="saveMsg"></span>
@@ -520,33 +520,44 @@ function configFileName(email){
 }
 
 function loadUserConfig(email){
-  if(!email||!TOKEN) return;
+  var ind=document.getElementById('cfgIndicator');
+  if(ind){ ind.style.color='var(--muted)'; ind.textContent='⚙ cfg · caricamento…'; }
+  if(!email||!TOKEN){
+    if(ind){ ind.style.color='var(--red)'; ind.textContent='⚙ cfg · no auth'; }
+    return;
+  }
   var fname=configFileName(email);
-  // Cerca il file nella cartella config
   listFiles('"'+CONFIG_FOLDER_ID+'" in parents and name="'+fname+'" and trashed=false')
   .then(function(files){
     if(!files.length){
-      // Non esiste ancora: crea con default
       configFileId=null;
       hiddenCols={};
-      console.log('Config non trovata, uso default');
+      if(ind){ ind.style.color='var(--amber)'; ind.textContent='⚙ cfg · nuovo (default)'; }
+      console.log('Config non trovata, creo nuovo file per '+email);
       return saveUserConfig();
     }
     configFileId=files[0].id;
+    if(ind){ ind.style.color='var(--muted)'; ind.textContent='⚙ cfg · lettura…'; }
     return downloadText(configFileId).then(function(txt){
       try{
         var cfg=JSON.parse(txt);
         hiddenCols=cfg.hiddenCols||{};
-        // Aggiorna anche localStorage
         try{localStorage.setItem(COL_HIDE_KEY,JSON.stringify(hiddenCols));}catch(ex){}
-        console.log('Config caricata per '+email+': '+Object.keys(hiddenCols).length+' col nascoste');
-        var ind=document.getElementById('cfgIndicator');
-        if(ind){ ind.style.display='block'; ind.textContent='⚙ cfg · '+Object.keys(hiddenCols).length+' col nascoste'; ind.style.color='var(--green)'; }
+        var n=Object.keys(hiddenCols).length;
+        console.log('Config caricata per '+email+': '+n+' col nascoste');
+        if(ind){ ind.style.color='var(--green)'; ind.textContent='⚙ cfg · '+(n?n+' col nascoste':'default'); }
         if(allRows.length) renderTable();
-      }catch(e){ hiddenCols={}; }
+      }catch(e){
+        hiddenCols={};
+        console.warn('Config parse error:',e.message,'testo ricevuto:',txt.substring(0,100));
+        if(ind){ ind.style.color='var(--red)'; ind.textContent='⚙ cfg · parse error'; }
+      }
     });
   })
-  .catch(function(e){ console.warn('loadUserConfig error:',e.message); });
+  .catch(function(e){
+    console.warn('loadUserConfig error:',e.message);
+    if(ind){ ind.style.color='var(--red)'; ind.textContent='⚙ cfg · '+e.message.substring(0,30); }
+  });
 }
 
 function saveUserConfig(){
