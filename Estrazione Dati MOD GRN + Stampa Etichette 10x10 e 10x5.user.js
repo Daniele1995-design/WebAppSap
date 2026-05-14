@@ -364,7 +364,8 @@ async function downloadCSV() {
 
     const commessa = document.querySelector('#commessaTestata')?.value || 'SenzaCommessa';
     const riferimento = document.querySelector('#Riferimento')?.value?.trim() || 'SenzaRif';
-    const base = `${commessa} DDT Nr. ${riferimento}`;
+    const grnNumber = document.getElementById('numeroGRN')?.textContent?.trim() || '';
+    const base = `${commessa} DDT Nr. ${riferimento}${grnNumber ? ' - GRN ' + grnNumber : ''}`;
 
     // --- FILE SERIALI ---
     if (totalSeriali > 0) {
@@ -379,7 +380,7 @@ async function downloadCSV() {
 
         // Invia a Google Drive
         const base64Seriali = btoa(unescape(encodeURIComponent(csvSeriali)));
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzUQDvDUxFShoWWbHougyHjr0tFz3E38fX8e0bnTUpya-P0mXW_jTA/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzEEBRPLitb7K5ZNlr3mm5hyVj0KHryrPb9_3-Y7Zuy7wT9sNY_jTA/exec";
         GM_xmlhttpRequest({
             method: "POST",
             url: scriptUrl,
@@ -413,7 +414,7 @@ async function downloadCSV() {
 
         // Invia a Google Drive
         const base64Lotti = btoa(unescape(encodeURIComponent(csvLotti)));
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzUQDvDUxFShoWWbHougyHjr0tFz3E38fX8e0bnTUpya-P0mXW_jTA/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbzr0H4pihMD_EKLyzEEBRPLitb7K5ZNlr3mm5hyVj0KHryrPb9_3-Y7Zuy7wT9sNY_jTA/exec";
         GM_xmlhttpRequest({
             method: "POST",
             url: scriptUrl,
