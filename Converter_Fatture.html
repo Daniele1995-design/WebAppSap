@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📦 Fatture Trasporti — Viewer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #151820;
+    --surface2: #1c2030;
+    --border: #252a3a;
+    --accent: #4f9eff;
+    --accent2: #ff6b35;
+    --accent3: #2ecc71;
+    --text: #e8ecf4;
+    --text2: #8892a4;
+    --text3: #4a5568;
+    --radius: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    background: linear-gradient(135deg, #0d0f14 0%, #151c2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  }
+
+  .logo {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--text2); font-weight: 400; }
+
+  .header-stats {
+    margin-left: auto;
+    display: flex;
+    gap: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .hstat { text-align: center; }
+  .hstat-val { font-size: 16px; font-weight: 600; color: var(--accent); }
+  .hstat-lbl { color: var(--text3); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ─── MAIN LAYOUT ─── */
+  main { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
+
+  /* ─── CARICAMENTO FILE ─── */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 48px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .upload-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(79,158,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(79,158,255,0.05);
+  }
+  .upload-zone input { display: none; }
+  .upload-icon { font-size: 48px; margin-bottom: 16px; }
+  .upload-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .upload-sub { color: var(--text2); font-size: 14px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3a8fee; transform: translateY(-1px); }
+  .btn-success { background: var(--accent3); color: #fff; }
+  .btn-success:hover { background: #27ae60; transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── PROGRESS ─── */
+  #progress-bar-wrap {
+    display: none;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 16px 20px;
+    border: 1px solid var(--border);
+  }
+  .progress-label { font-size: 13px; color: var(--text2); margin-bottom: 10px; }
+  .progress-track { background: var(--border); border-radius: 4px; height: 6px; }
+  .progress-fill { height: 6px; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent3)); transition: width 0.3s; width: 0%; }
+
+  /* ─── TABS ─── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    width: fit-content;
+  }
+  .tab {
+    padding: 8px 20px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text2);
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    font-family: 'Syne', sans-serif;
+  }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ─── FILTRI ─── */
+  .filters-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .filter-group { display: flex; flex-direction: column; gap: 6px; }
+  .filter-group label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); font-weight: 600; }
+  .filter-group select,
+  .filter-group input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: 'Syne', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .filter-group select:focus,
+  .filter-group input:focus { border-color: var(--accent); }
+
+  .filters-actions {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+  }
+
+  /* ─── TABLE ─── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-count { font-size: 13px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+  
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th {
+    background: var(--surface2);
+    padding: 11px 14px;
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  .data-table th:hover { color: var(--text); background: rgba(79,158,255,0.05); }
+  .data-table th.sorted { color: var(--accent); }
+  .sort-arrow { font-size: 10px; margin-left: 4px; }
+
+  .data-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(37,42,58,0.6);
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(79,158,255,0.04); color: var(--text); }
+
+  .td-num { color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .td-desc { max-width: 200px; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+  .td-price { font-family: 'JetBrains Mono', monospace; color: var(--accent3); font-weight: 600; }
+  .td-iva { font-family: 'JetBrains Mono', monospace; color: var(--accent2); }
+  .td-rotta { }
+  
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .badge-blue { background: rgba(79,158,255,0.15); color: var(--accent); }
+  .badge-orange { background: rgba(255,107,53,0.15); color: var(--accent2); }
+  .badge-green { background: rgba(46,204,113,0.15); color: var(--accent3); }
+
+  .rotta-arrow { color: var(--accent2); margin: 0 4px; }
+
+  /* ─── DASHBOARD ─── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .kpi-card.blue::before { background: var(--accent); }
+  .kpi-card.orange::before { background: var(--accent2); }
+  .kpi-card.green::before { background: var(--accent3); }
+  .kpi-card.purple::before { background: #a855f7; }
+
+  .kpi-icon { font-size: 28px; margin-bottom: 12px; }
+  .kpi-val { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+  .kpi-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .chart-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+  .chart-wrap { position: relative; height: 260px; }
+
+  /* ─── ROTTE TABLE ─── */
+  .rotte-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+  }
+  .rotta-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .rotta-label { font-weight: 600; font-size: 14px; }
+  .rotta-stats { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .rotta-count { color: var(--accent); font-weight: 600; }
+  .rotta-tot { color: var(--accent3); }
+
+  /* ─── EMPTY ─── */
+  .empty-state {
+    text-align: center;
+    padding: 80px 40px;
+    color: var(--text3);
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 15px; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  .table-scroll { overflow-x: auto; }
+
+  .file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .file-chip {
+    background: rgba(79,158,255,0.1);
+    border: 1px solid rgba(79,158,255,0.2);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: var(--shadow);
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--accent3); color: var(--accent3); }
+  .toast.error { border-color: var(--accent2); color: var(--accent2); }
+
+  .pagination {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    justify-content: flex-end;
+  }
+  .page-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Syne', sans-serif;
+    transition: all 0.2s;
+  }
+  .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .page-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+  .page-info { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-right: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📦 Fatture<span>Trasporti</span></div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-val" id="h-fatture">0</div>
+      <div class="hstat-lbl">Fatture</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="h-righe">0</div>
+      <div class="hstat-lbl">Righe</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="h-totale">€0</div>
+      <div class="hstat-lbl">Imponibile</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="h-iva">€0</div>
+      <div class="hstat-lbl">IVA 22%</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- UPLOAD ZONE -->
+  <div class="upload-zone" id="upload-zone">
+    <input type="file" id="file-input" accept=".pdf" multiple>
+    <div class="upload-icon">📂</div>
+    <div class="upload-title">Seleziona i PDF delle fatture</div>
+    <div class="upload-sub" style="margin-bottom:20px">Trascina i file qui, seleziona più PDF oppure scegli direttamente una cartella</div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+        📄 Scegli file PDF
+      </button>
+      <button class="btn btn-outline" onclick="selectFolder()" title="Seleziona una cartella e carica tutti i PDF al suo interno">
+        📁 Scegli cartella
+      </button>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="progress-bar-wrap">
+    <div class="progress-label" id="progress-label">Elaborazione in corso…</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <!-- FILE CARICATI -->
+  <div id="file-list-wrap" style="display:none;margin-bottom:16px">
+    <div class="section-title">File caricati</div>
+    <div class="file-list" id="file-chips"></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('righe')">📋 Righe Fattura</button>
+    <button class="tab" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab" onclick="switchTab('rotte')">🗺️ Analisi Rotte</button>
+  </div>
+
+  <!-- TAB: RIGHE -->
+  <div class="tab-content active" id="tab-righe">
+
+    <div class="filters-bar" id="filters-bar">
+      <div class="filter-group">
+        <label>Ragione Sociale</label>
+        <select id="f-ragione">
+          <option value="">Tutte</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>N° Fattura</label>
+        <select id="f-fattura">
+          <option value="">Tutte</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Data Da</label>
+        <input type="date" id="f-data-da">
+      </div>
+      <div class="filter-group">
+        <label>Data A</label>
+        <input type="date" id="f-data-a">
+      </div>
+      <div class="filter-group">
+        <label>Origine</label>
+        <select id="f-origine">
+          <option value="">Tutte</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Destinazione</label>
+        <select id="f-dest">
+          <option value="">Tutte</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Prezzo Min (€)</label>
+        <input type="number" id="f-prezzo-min" placeholder="0">
+      </div>
+      <div class="filter-group">
+        <label>Prezzo Max (€)</label>
+        <input type="number" id="f-prezzo-max" placeholder="9999">
+      </div>
+    </div>
+
+    <div class="filters-actions">
+      <button class="btn btn-primary" onclick="applyFilters()">🔍 Filtra</button>
+      <button class="btn btn-outline" onclick="resetFilters()">✕ Reset</button>
+      <button class="btn btn-success" onclick="exportExcel()" style="margin-left:auto">⬇️ Esporta Excel</button>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <span class="table-count" id="table-count">0 righe</span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="data-table">
+          <thead>
+            <tr>
+              <th onclick="sortTable('ragione_sociale')">Ragione Sociale <span class="sort-arrow" id="sort-ragione_sociale"></span></th>
+              <th onclick="sortTable('num_fattura')">N° Fattura <span class="sort-arrow" id="sort-num_fattura"></span></th>
+              <th onclick="sortTable('data_fattura')">Data Fatt. <span class="sort-arrow" id="sort-data_fattura"></span></th>
+              <th onclick="sortTable('num_linea')">Lin. <span class="sort-arrow" id="sort-num_linea"></span></th>
+              <th onclick="sortTable('data_riga')">Data Riga <span class="sort-arrow" id="sort-data_riga"></span></th>
+              <th onclick="sortTable('origine')">Origine <span class="sort-arrow" id="sort-origine"></span></th>
+              <th onclick="sortTable('destinazione')">Destinazione <span class="sort-arrow" id="sort-destinazione"></span></th>
+              <th>Descrizione</th>
+              <th onclick="sortTable('prezzo')">Prezzo <span class="sort-arrow" id="sort-prezzo"></span></th>
+              <th>IVA %</th>
+              <th onclick="sortTable('totale')">Totale <span class="sort-arrow" id="sort-totale"></span></th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr><td colspan="11"><div class="empty-state"><div class="empty-icon">📂</div><p>Carica i PDF per iniziare</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+  <!-- TAB: DASHBOARD -->
+  <div class="tab-content" id="tab-dashboard">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px;gap:10px" id="dashboard-actions" style="display:none">
+      <button class="btn btn-outline" onclick="exportDashboardPNG()">🖼️ Scarica grafici PNG</button>
+      <button class="btn btn-success" onclick="exportDashboardExcel()">📊 Esporta Dashboard Excel</button>
+    </div>
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📊</div><p>Carica i PDF per vedere la dashboard</p></div>
+    </div>
+    <div class="charts-grid" id="charts-grid"></div>
+  </div>
+
+  <!-- TAB: ROTTE -->
+  <div class="tab-content" id="tab-rotte">
+    <div id="rotte-content">
+      <div class="empty-state"><div class="empty-icon">🗺️</div><p>Carica i PDF per analizzare le rotte</p></div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── PDF.js worker ───
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ─── STATE ───
+let allRows = [];
+let filteredRows = [];
+let currentPage = 1;
+const PAGE_SIZE = 50;
+let sortCol = 'data_riga';
+let sortDir = 1;
+let charts = {};
+
+// ─── UPLOAD ───
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+uploadZone.addEventListener('click', e => { if (e.target === uploadZone || e.target.classList.contains('upload-icon') || e.target.classList.contains('upload-title') || e.target.classList.contains('upload-sub')) fileInput.click(); });
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); processFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', e => processFiles(e.target.files));
+
+async function processFiles(files) {
+  if (!files.length) return;
+  const pdfFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.pdf'));
+  if (!pdfFiles.length) { showToast('Nessun PDF trovato', 'error'); return; }
+
+  showProgress(true);
+  allRows = [];
+
+  const chips = document.getElementById('file-chips');
+  chips.innerHTML = '';
+  document.getElementById('file-list-wrap').style.display = 'block';
+
+  for (let i = 0; i < pdfFiles.length; i++) {
+    const f = pdfFiles[i];
+    updateProgress((i / pdfFiles.length) * 100, `Elaboro: ${f.name}`);
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.textContent = f.name;
+    chips.appendChild(chip);
+    try {
+      const rows = await parsePDF(f);
+      allRows.push(...rows);
+    } catch(e) { console.error(e); showToast(`Errore su ${f.name}`, 'error'); }
+  }
+
+  updateProgress(100, 'Completato!');
+  setTimeout(() => showProgress(false), 600);
+
+  buildFilters();
+  filteredRows = [...allRows];
+  renderTable();
+  renderDashboard();
+  renderRotte();
+  updateHeader();
+  showToast(`✅ ${allRows.length} righe caricate da ${pdfFiles.length} PDF`, 'success');
+}
+
+// ─── PARSE PDF ───
+async function parsePDF(file) {
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  let fullText = '';
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    fullText += tc.items.map(i => i.str).join(' ') + '\n';
+  }
+
+  // Estrai ragione sociale dal nome file
+  const ragioneSociale = extractRagioneSociale(file.name);
+
+  // Estrai dati header fattura
+  const numFattura = extractField(fullText, /NUMERO FATTURA[\s\S]*?(\d+\/\d+|\d+\/[A-Z])/i) ||
+                     extractField(fullText, /(\d{2,}\/[0-9A-Z])/) || '?';
+  const dataFattura = extractDate(fullText, /DATA[\s\S]{0,40}?(\d{2}-\d{2}-\d{4}|\d{2}\/\d{2}\/\d{4})/);
+
+  // Parse righe tabella
+  const rows = parseRighe(fullText, ragioneSociale, numFattura, dataFattura);
+  return rows;
+}
+
+function extractRagioneSociale(filename) {
+  // Rimuovi estensione e caratteri speciali, prendi prima parte significativa
+  let name = filename.replace(/\.pdf$/i, '');
+  // Es: "JED_-_Enerj_s_r_l" -> "Enerj s.r.l"
+  name = name.replace(/_/g, ' ').replace(/\s*-\s*/g, ' - ').trim();
+  // Prendi tutto dopo il primo " - " se presente
+  const parts = name.split(/\s*-\s*/);
+  if (parts.length > 1) return parts.slice(1).join(' - ').trim();
+  return name;
+}
+
+function extractField(text, regex) {
+  const m = text.match(regex);
+  return m ? m[1] : null;
+}
+
+function extractDate(text, regex) {
+  const m = text.match(regex);
+  if (!m) return null;
+  return normalizeDate(m[1]);
+}
+
+function normalizeDate(s) {
+  if (!s) return null;
+  s = s.replace(/\//g, '-');
+  // gg-mm-aaaa -> aaaa-mm-gg
+  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+    const [d, m, y] = s.split('-');
+    return `${y}-${m}-${d}`;
+  }
+  return s;
+}
+
+function parseRighe(text, ragioneSociale, numFattura, dataFattura) {
+  const rows = [];
+
+  // Pattern per trovare righe: NUM_LINEA seguito da dati
+  // Riga: numero linea, codice art, descrizione, quantita, prezzo unitario, UM, sconto, %IVA, prezzo totale
+  // Utilizziamo pattern per catturare blocchi riga
+  
+  // Prima troviamo la sezione righe (tra "NUM. LINEA" e "DATI RIEPILOGO")
+  const sectionMatch = text.match(/NUM\.\s*LINEA[\s\S]*?(?=DATI RIEPILOGO|$)/i);
+  if (!sectionMatch) return rows;
+  const section = sectionMatch[0];
+
+  // Pattern per ogni riga: numero intero seguito da pattern codice e descrizione e prezzi
+  // Ogni riga inizia con un numero (num linea)
+  const linePattern = /\b(\d{1,3})\s+\*\s*\(Codice Articolo\)[\s\S]*?\(AswArtFor\)\s+([\s\S]*?)\s+([\d]+[.,][\d]{2})\s+NR\s+[\d.,]+\s+([\d]+[.,][\d]{2})/g;
+  
+  let match;
+  while ((match = linePattern.exec(section)) !== null) {
+    const numLinea = parseInt(match[1]);
+    if (numLinea > 200) continue; // skip numeri troppo grandi (probabilmente non righe)
+    
+    const descRaw = match[2].replace(/\s+/g, ' ').trim();
+    const prezzoUnit = parseFloat(match[3].replace(',', '.'));
+    const prezzoTot = parseFloat(match[4].replace(',', '.'));
+    
+    // Estrai rotta dalla descrizione
+    const { origine, destinazione, descrizione, dataRiga } = parseDescrizione(descRaw);
+    
+    rows.push({
+      ragione_sociale: ragioneSociale,
+      num_fattura: numFattura,
+      data_fattura: dataFattura,
+      num_linea: numLinea,
+      data_riga: dataRiga,
+      origine: origine,
+      destinazione: destinazione,
+      descrizione: descrizione,
+      desc_raw: descRaw,
+      prezzo: prezzoUnit,
+      iva_perc: 22,
+      totale: prezzoTot,
+      totale_ivato: prezzoTot * 1.22
+    });
+  }
+
+  // Fallback: pattern alternativo senza codice articolo (righe più semplici)
+  if (rows.length === 0) {
+    const altPattern = /(\d{1,3})\s+([A-Z][^\d]{5,80?})\s+([\d]{3,}[.,][\d]{2})\s+NR\s+[\d]{1,2}[.,][\d]{2}\s+([\d]{3,}[.,][\d]{2})/g;
+    while ((match = altPattern.exec(section)) !== null) {
+      const numLinea = parseInt(match[1]);
+      if (numLinea > 200) continue;
+      const descRaw = match[2].trim();
+      const prezzoUnit = parseFloat(match[3].replace(',', '.'));
+      const prezzoTot = parseFloat(match[4].replace(',', '.'));
+      const { origine, destinazione, descrizione, dataRiga } = parseDescrizione(descRaw);
+      rows.push({
+        ragione_sociale: ragioneSociale,
+        num_fattura: numFattura,
+        data_fattura: dataFattura,
+        num_linea: numLinea,
+        data_riga: dataRiga,
+        origine, destinazione, descrizione,
+        desc_raw: descRaw,
+        prezzo: prezzoUnit,
+        iva_perc: 22,
+        totale: prezzoTot,
+        totale_ivato: prezzoTot * 1.22
+      });
+    }
+  }
+
+  // Se ancora vuoto, proviamo un parsing più aggressivo riga per riga
+  if (rows.length === 0) {
+    return parseRigheAggressive(text, ragioneSociale, numFattura, dataFattura);
+  }
+
+  return rows;
+}
+
+function parseRigheAggressive(text, ragioneSociale, numFattura, dataFattura) {
+  const rows = [];
+  // Cerca pattern: LUOGO -> LUOGO ... prezzo ... 22,00 ... prezzo
+  // Divide il testo in token e cerca sequenze significative
+  const lines = text.split('\n');
+  
+  // Trova tutte le occorrenze di prezzi con IVA 22%
+  const rottaPattern = /([A-Z\s]+(?:\([A-Z]{2}\))?)\s*->\s*([A-Z\s]+(?:\([A-Z]{2}\))?[A-Z\s]*)/;
+  const datePattern = /Data[:\s]+(\d{2}[\/\-]\d{2}[\/\-]\d{4})/i;
+  const prezzoPattern = /(\d{3,5}(?:[.,]\d{2})?)\s+NR\s+22[,.]00/;
+
+  let lastLinea = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    const pm = l.match(prezzoPattern);
+    if (pm) {
+      // Guarda le righe precedenti per trovare descrizione
+      const context = lines.slice(Math.max(0, i - 5), i + 2).join(' ');
+      const rm = context.match(rottaPattern);
+      const dm = context.match(datePattern);
+      const prezzo = parseFloat(pm[1].replace(',', '.'));
+      
+      if (rm || prezzo > 0) {
+        lastLinea++;
+        const descRaw = rm ? `${rm[1].trim()} -> ${rm[2].trim()}` : context.substring(0, 60);
+        const { origine, destinazione, descrizione, dataRiga } = parseDescrizione(descRaw);
+        const dRiga = dm ? normalizeDate(dm[1]) : null;
+        rows.push({
+          ragione_sociale: ragioneSociale,
+          num_fattura: numFattura,
+          data_fattura: dataFattura,
+          num_linea: lastLinea,
+          data_riga: dRiga || dataRiga,
+          origine, destinazione, descrizione,
+          desc_raw: descRaw,
+          prezzo,
+          iva_perc: 22,
+          totale: prezzo,
+          totale_ivato: prezzo * 1.22
+        });
+      }
+    }
+  }
+  return rows;
+}
+
+function parseDescrizione(desc) {
+  // Estrai origine e destinazione dal pattern "LUOGO -> LUOGO"
+  // Es: "PALERMO -> CASERTA", "CASERTA (CE) -> PALERMO (PA)"
+  // Tronca tutto ciò che viene dopo "Rif." o il primo numero/data nella parte destra
+  let origine = '', destinazione = '', descrizione = desc;
+
+  // Pulisci la stringa togliendo "Rif.: ..." e "Data: ..." prima di fare il match
+  // così "CASERTA Rif.: PACE 4331 Data: 01/04/2026" diventa "CASERTA"
+  const cleanDesc = desc
+    .replace(/\s+Rif\.?:?\s+.*/i, '')   // taglia da "Rif." in poi
+    .replace(/\s+Data\s*:?.*/i, '')      // taglia da "Data" in poi
+    .replace(/\s+\d{4,}.*/g, '')        // taglia da sequenze numeriche lunghe in poi
+    .trim();
+
+  const arrowMatch = cleanDesc.match(/^(.+?)\s*->\s*(.+)$/);
+
+  if (arrowMatch) {
+    origine = cleanCity(arrowMatch[1]);
+    destinazione = cleanCity(arrowMatch[2]);
+  }
+
+  // Estrai data dalla descrizione originale
+  const dateMatch = desc.match(/Data[:\s]+(\d{2}[\/\-]\d{2}[\/\-]\d{4})/i);
+  const dataRiga = dateMatch ? normalizeDate(dateMatch[1]) : null;
+
+  return { origine, destinazione, descrizione: desc, dataRiga };
+}
+
+function cleanCity(s) {
+  // Rimuovi eventuali residui dopo parentesi provincia, taglia parole strane
+  return s
+    .replace(/\s*Rif\.?.*/i, '')        // sicurezza extra
+    .replace(/\s+\d{3,}.*/g, '')        // taglia numeri lunghi residui
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+// ─── FILTRI ───
+function buildFilters() {
+  populateSelect('f-ragione', [...new Set(allRows.map(r => r.ragione_sociale).filter(Boolean))].sort());
+  populateSelect('f-fattura', [...new Set(allRows.map(r => r.num_fattura).filter(Boolean))].sort());
+  populateSelect('f-origine', [...new Set(allRows.map(r => r.origine).filter(Boolean))].sort());
+  populateSelect('f-dest', [...new Set(allRows.map(r => r.destinazione).filter(Boolean))].sort());
+}
+
+function populateSelect(id, values) {
+  const sel = document.getElementById(id);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Tutte</option>' + values.map(v => `<option value="${v}">${v}</option>`).join('');
+  if (values.includes(cur)) sel.value = cur;
+}
+
+function applyFilters() {
+  const ragione = document.getElementById('f-ragione').value;
+  const fattura = document.getElementById('f-fattura').value;
+  const da = document.getElementById('f-data-da').value;
+  const a = document.getElementById('f-data-a').value;
+  const orig = document.getElementById('f-origine').value;
+  const dest = document.getElementById('f-dest').value;
+  const pMin = parseFloat(document.getElementById('f-prezzo-min').value) || 0;
+  const pMax = parseFloat(document.getElementById('f-prezzo-max').value) || Infinity;
+
+  filteredRows = allRows.filter(r => {
+    if (ragione && r.ragione_sociale !== ragione) return false;
+    if (fattura && r.num_fattura !== fattura) return false;
+    if (da && r.data_riga && r.data_riga < da) return false;
+    if (a && r.data_riga && r.data_riga > a) return false;
+    if (orig && r.origine !== orig) return false;
+    if (dest && r.destinazione !== dest) return false;
+    if (r.prezzo < pMin || r.prezzo > pMax) return false;
+    return true;
+  });
+
+  currentPage = 1;
+  renderTable();
+}
+
+function resetFilters() {
+  document.getElementById('f-ragione').value = '';
+  document.getElementById('f-fattura').value = '';
+  document.getElementById('f-data-da').value = '';
+  document.getElementById('f-data-a').value = '';
+  document.getElementById('f-origine').value = '';
+  document.getElementById('f-dest').value = '';
+  document.getElementById('f-prezzo-min').value = '';
+  document.getElementById('f-prezzo-max').value = '';
+  filteredRows = [...allRows];
+  currentPage = 1;
+  renderTable();
+}
+
+// ─── SORT ───
+function sortTable(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  document.querySelectorAll('.sort-arrow').forEach(e => e.textContent = '');
+  const arrow = document.getElementById('sort-' + col);
+  if (arrow) arrow.textContent = sortDir === 1 ? '↑' : '↓';
+  filteredRows.sort((a, b) => {
+    let va = a[col] ?? '', vb = b[col] ?? '';
+    if (typeof va === 'number') return (va - vb) * sortDir;
+    return String(va).localeCompare(String(vb)) * sortDir;
+  });
+  renderTable();
+}
+
+// ─── RENDER TABLE ───
+function renderTable() {
+  const total = filteredRows.length;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  currentPage = Math.min(currentPage, pages);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const slice = filteredRows.slice(start, start + PAGE_SIZE);
+
+  document.getElementById('table-count').textContent = `${total} righe (pagina ${currentPage}/${pages})`;
+
+  const tbody = document.getElementById('table-body');
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">🔍</div><p>Nessuna riga trovata con i filtri applicati</p></div></td></tr>`;
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = slice.map(r => `
+    <tr>
+      <td><span class="badge badge-blue">${esc(r.ragione_sociale || '-')}</span></td>
+      <td class="td-num">${esc(r.num_fattura || '-')}</td>
+      <td class="td-num">${formatDate(r.data_fattura)}</td>
+      <td class="td-num">${r.num_linea}</td>
+      <td class="td-num">${formatDate(r.data_riga)}</td>
+      <td><span class="badge badge-orange">${esc(r.origine || '-')}</span></td>
+      <td><span class="badge badge-green">${esc(r.destinazione || '-')}</span></td>
+      <td class="td-desc" title="${esc(r.desc_raw)}">${esc(r.descrizione || '-')}</td>
+      <td class="td-price">€${fmt(r.prezzo)}</td>
+      <td class="td-iva">${r.iva_perc}%</td>
+      <td class="td-price">€${fmt(r.totale)}</td>
+    </tr>
+  `).join('');
+
+  renderPagination(pages);
+}
+
+function renderPagination(pages) {
+  const p = document.getElementById('pagination');
+  if (pages <= 1) { p.innerHTML = ''; return; }
+  let html = `<span class="page-info">${filteredRows.length} righe</span>`;
+  const maxVisible = 7;
+  const half = Math.floor(maxVisible / 2);
+  let start = Math.max(1, currentPage - half);
+  let end = Math.min(pages, start + maxVisible - 1);
+  if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+  
+  if (currentPage > 1) html += `<button class="page-btn" onclick="goPage(${currentPage - 1})">‹</button>`;
+  if (start > 1) html += `<button class="page-btn" onclick="goPage(1)">1</button>${start > 2 ? '<span style="color:var(--text3);padding:0 4px">…</span>' : ''}`;
+  for (let i = start; i <= end; i++) html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+  if (end < pages) html += `${end < pages - 1 ? '<span style="color:var(--text3);padding:0 4px">…</span>' : ''}<button class="page-btn" onclick="goPage(${pages})">${pages}</button>`;
+  if (currentPage < pages) html += `<button class="page-btn" onclick="goPage(${currentPage + 1})">›</button>`;
+  p.innerHTML = html;
+}
+
+function goPage(n) { currentPage = n; renderTable(); }
+
+// ─── DASHBOARD ───
+function renderDashboard() {
+  if (!allRows.length) return;
+
+  const totImponibile = allRows.reduce((s, r) => s + (r.totale || 0), 0);
+  const totIva = totImponibile * 0.22;
+  const totIvato = totImponibile + totIva;
+  const nFatture = new Set(allRows.map(r => r.num_fattura + r.ragione_sociale)).size;
+  const nRotte = new Set(allRows.filter(r => r.origine && r.destinazione).map(r => r.origine + '→' + r.destinazione)).size;
+
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-icon">📄</div>
+      <div class="kpi-val">${allRows.length}</div>
+      <div class="kpi-label">Righe Totali</div>
+      <div class="kpi-sub">${nFatture} fatture caricate</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-icon">💶</div>
+      <div class="kpi-val">€${fmtK(totImponibile)}</div>
+      <div class="kpi-label">Imponibile Totale</div>
+      <div class="kpi-sub">Media riga: €${fmt(totImponibile / allRows.length)}</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">🧾</div>
+      <div class="kpi-val">€${fmtK(totIva)}</div>
+      <div class="kpi-label">IVA 22% Totale</div>
+      <div class="kpi-sub">Ivato: €${fmtK(totIvato)}</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-icon">🗺️</div>
+      <div class="kpi-val">${nRotte}</div>
+      <div class="kpi-label">Rotte Distinte</div>
+      <div class="kpi-sub">${new Set(allRows.map(r => r.ragione_sociale)).size} fornitori</div>
+    </div>
+  `;
+
+  // Distruggi chart precedenti
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  // Chart 1: Imponibile per giorno
+  const byDay = {};
+  allRows.forEach(r => { if (r.data_riga) { byDay[r.data_riga] = (byDay[r.data_riga] || 0) + r.totale; } });
+  const dayKeys = Object.keys(byDay).sort();
+
+  // Chart 2: Top rotte per importo
+  const byRotta = {};
+  allRows.forEach(r => {
+    if (r.origine && r.destinazione) {
+      const k = `${r.origine} → ${r.destinazione}`;
+      byRotta[k] = (byRotta[k] || 0) + r.totale;
+    }
+  });
+  const rotteTop = Object.entries(byRotta).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+  // Chart 3: N° corse per fascia di prezzo (quante righe hanno quel prezzo)
+  const pgKeys = ['<=400 (breve)', '401-570 (medio)', '571-1000', '1001-1420 (lunga)', '>1420 (extra)'];
+  const prezziGroups = {};
+  pgKeys.forEach(k => prezziGroups[k] = 0);
+  allRows.forEach(r => {
+    if (r.prezzo <= 400)       prezziGroups[pgKeys[0]]++;
+    else if (r.prezzo <= 570)  prezziGroups[pgKeys[1]]++;
+    else if (r.prezzo <= 1000) prezziGroups[pgKeys[2]]++;
+    else if (r.prezzo <= 1420) prezziGroups[pgKeys[3]]++;
+    else                       prezziGroups[pgKeys[4]]++;
+  });
+
+  // Chart 4: Per ragione sociale
+  const byRS = {};
+  allRows.forEach(r => { byRS[r.ragione_sociale] = (byRS[r.ragione_sociale] || 0) + r.totale; });
+
+  const chartsConf = [
+    {
+      id: 'chart-day', title: '📅 Imponibile per Giorno',
+      type: 'bar',
+      data: { labels: dayKeys.map(d => formatDate(d)), datasets: [{ label: 'Imponibile (€)', data: dayKeys.map(d => byDay[d]), backgroundColor: 'rgba(79,158,255,0.6)', borderColor: '#4f9eff', borderWidth: 1, borderRadius: 4 }] },
+      options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#8892a4', maxRotation: 45, font: { size: 10 } }, grid: { color: '#252a3a' } }, y: { ticks: { color: '#8892a4', callback: v => '€' + fmtK(v) }, grid: { color: '#252a3a' } } } }
+    },
+    {
+      id: 'chart-rotte', title: '🛣️ Top Rotte per Importo',
+      type: 'bar',
+      data: { labels: rotteTop.map(r => r[0]), datasets: [{ label: 'Totale (€)', data: rotteTop.map(r => r[1]), backgroundColor: 'rgba(255,107,53,0.6)', borderColor: '#ff6b35', borderWidth: 1, borderRadius: 4 }] },
+      options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#8892a4', callback: v => '€' + fmtK(v) }, grid: { color: '#252a3a' } }, y: { ticks: { color: '#8892a4', font: { size: 10 } }, grid: { color: '#252a3a' } } } }
+    },
+    {
+      id: 'chart-prezzi', title: '🚛 N° Corse per Fascia di Prezzo',
+      type: 'doughnut',
+      data: { labels: Object.keys(prezziGroups), datasets: [{ data: Object.values(prezziGroups), backgroundColor: ['rgba(79,158,255,0.85)', 'rgba(255,107,53,0.85)', 'rgba(46,204,113,0.85)', 'rgba(168,85,247,0.85)', 'rgba(251,191,36,0.85)'], borderColor: '#0d0f14', borderWidth: 2 }] },
+      options: { plugins: { legend: { labels: { color: '#8892a4', font: { size: 11 } } }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} corse (${Math.round(ctx.raw/allRows.length*100)}%)` } } } }
+    },
+    {
+      id: 'chart-rs', title: '🏢 Importo per Fornitore',
+      type: 'pie',
+      data: { labels: Object.keys(byRS), datasets: [{ data: Object.values(byRS), backgroundColor: Object.keys(byRS).map((_, i) => `hsl(${i * 60 + 200},70%,55%)`), borderColor: '#0d0f14', borderWidth: 2 }] },
+      options: { plugins: { legend: { labels: { color: '#8892a4', font: { size: 10 } } } } }
+    }
+  ];
+
+  const cGrid = document.getElementById('charts-grid');
+  cGrid.innerHTML = chartsConf.map(c => `
+    <div class="chart-card">
+      <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>${c.title}</span>
+        <button onclick="downloadChart('${c.id}')" title="Scarica come PNG" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">💾 PNG</button>
+      </div>
+      <div class="chart-wrap"><canvas id="${c.id}"></canvas></div>
+    </div>
+  `).join('');
+
+  // Mostra barra azioni dashboard
+  document.getElementById('dashboard-actions').style.display = 'flex';
+
+  const globalOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#8892a4' } } }, scales: { x: { grid: { color: '#252a3a' }, ticks: { color: '#8892a4' } }, y: { grid: { color: '#252a3a' }, ticks: { color: '#8892a4' } } } };
+
+  chartsConf.forEach(conf => {
+    const ctx = document.getElementById(conf.id).getContext('2d');
+    charts[conf.id] = new Chart(ctx, {
+      type: conf.type,
+      data: conf.data,
+      options: { ...globalOpts, ...conf.options, plugins: { ...globalOpts.plugins, ...conf.options?.plugins } }
+    });
+  });
+}
+
+// ─── ROTTE ───
+function renderRotte() {
+  if (!allRows.length) return;
+
+  const byRotta = {};
+  allRows.forEach(r => {
+    if (!r.origine || !r.destinazione) return;
+    const k = `${r.origine} → ${r.destinazione}`;
+    if (!byRotta[k]) byRotta[k] = { count: 0, totale: 0, origine: r.origine, destinazione: r.destinazione };
+    byRotta[k].count++;
+    byRotta[k].totale += r.totale;
+  });
+
+  const sorted = Object.entries(byRotta).sort((a, b) => b[1].count - a[1].count);
+
+  document.getElementById('rotte-content').innerHTML = `
+    <div class="section-title">🗺️ Rotte — ${sorted.length} combinazioni</div>
+    <div class="rotte-list">
+      ${sorted.map(([key, v]) => `
+        <div class="rotta-card">
+          <div>
+            <div class="rotta-label">
+              <span class="badge badge-orange">${esc(v.origine)}</span>
+              <span class="rotta-arrow">→</span>
+              <span class="badge badge-green">${esc(v.destinazione)}</span>
+            </div>
+          </div>
+          <div class="rotta-stats">
+            <div class="rotta-count">${v.count} viaggi</div>
+            <div class="rotta-tot">€${fmt(v.totale)}</div>
+            <div style="color:var(--text3);font-size:10px">avg €${fmt(v.totale / v.count)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ─── HEADER UPDATE ───
+function updateHeader() {
+  const tot = allRows.reduce((s, r) => s + r.totale, 0);
+  const iva = tot * 0.22;
+  const nFatture = new Set(allRows.map(r => r.num_fattura + r.ragione_sociale)).size;
+  document.getElementById('h-fatture').textContent = nFatture;
+  document.getElementById('h-righe').textContent = allRows.length;
+  document.getElementById('h-totale').textContent = '€' + fmtK(tot);
+  document.getElementById('h-iva').textContent = '€' + fmtK(iva);
+}
+
+// ─── EXPORT EXCEL ───
+function exportExcel() {
+  if (!filteredRows.length) { showToast('Nessun dato da esportare', 'error'); return; }
+
+  const data = filteredRows.map(r => ({
+    'Ragione Sociale': r.ragione_sociale,
+    'N° Fattura': r.num_fattura,
+    'Data Fattura': formatDate(r.data_fattura),
+    'N° Linea': r.num_linea,
+    'Data Riga': formatDate(r.data_riga),
+    'Origine': r.origine,
+    'Destinazione': r.destinazione,
+    'Descrizione': r.desc_raw,
+    'Prezzo Unitario': r.prezzo,
+    'IVA %': r.iva_perc,
+    'Totale Imponibile': r.totale,
+    'Totale Ivato': parseFloat((r.totale_ivato).toFixed(2))
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  
+  // Larghezze colonne
+  ws['!cols'] = [
+    {wch:25},{wch:12},{wch:12},{wch:8},{wch:12},
+    {wch:20},{wch:25},{wch:50},{wch:15},{wch:8},{wch:18},{wch:14}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Fatture');
+
+  // Foglio 2: Riepilogo rotte
+  const byRotta = {};
+  filteredRows.forEach(r => {
+    if (!r.origine || !r.destinazione) return;
+    const k = `${r.origine} → ${r.destinazione}`;
+    if (!byRotta[k]) byRotta[k] = { Origine: r.origine, Destinazione: r.destinazione, 'N° Viaggi': 0, 'Totale Imponibile €': 0 };
+    byRotta[k]['N° Viaggi']++;
+    byRotta[k]['Totale Imponibile €'] += r.totale;
+  });
+  const wsRotte = XLSX.utils.json_to_sheet(
+    Object.values(byRotta)
+      .sort((a, b) => b['Totale Imponibile €'] - a['Totale Imponibile €'])
+      .map(r => ({ ...r, 'Media per Viaggio €': parseFloat((r['Totale Imponibile €'] / r['N° Viaggi']).toFixed(2)), 'Totale Imponibile €': parseFloat(r['Totale Imponibile €'].toFixed(2)), 'Totale Ivato €': parseFloat((r['Totale Imponibile €'] * 1.22).toFixed(2)) }))
+  );
+  wsRotte['!cols'] = [{wch:22},{wch:22},{wch:12},{wch:20},{wch:18},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsRotte, 'Rotte');
+
+  // Foglio 3: Imponibile per giorno
+  const byDay = {};
+  filteredRows.forEach(r => { if (r.data_riga) { byDay[r.data_riga] = (byDay[r.data_riga] || { 'Data': '', 'N° Corse': 0, 'Imponibile €': 0 }); byDay[r.data_riga]['Data'] = formatDate(r.data_riga); byDay[r.data_riga]['N° Corse']++; byDay[r.data_riga]['Imponibile €'] += r.totale; } });
+  const wsByDay = XLSX.utils.json_to_sheet(
+    Object.keys(byDay).sort().map(k => ({ ...byDay[k], 'Imponibile €': parseFloat(byDay[k]['Imponibile €'].toFixed(2)), 'IVA €': parseFloat((byDay[k]['Imponibile €'] * 0.22).toFixed(2)), 'Totale Ivato €': parseFloat((byDay[k]['Imponibile €'] * 1.22).toFixed(2)) }))
+  );
+  wsByDay['!cols'] = [{wch:12},{wch:10},{wch:16},{wch:12},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsByDay, 'Per Giorno');
+
+  // Foglio 4: Fasce di prezzo — N° corse per fascia
+  const fasceData = [
+    { 'Fascia': '≤ €400 (corsa breve)', 'N° Corse': 0, 'Imponibile €': 0 },
+    { 'Fascia': '€401–570 (media-breve)', 'N° Corse': 0, 'Imponibile €': 0 },
+    { 'Fascia': '€571–1.000 (media)', 'N° Corse': 0, 'Imponibile €': 0 },
+    { 'Fascia': '€1.001–1.420 (media-lunga)', 'N° Corse': 0, 'Imponibile €': 0 },
+    { 'Fascia': '> €1.420 (lunga)', 'N° Corse': 0, 'Imponibile €': 0 },
+  ];
+  filteredRows.forEach(r => {
+    const idx = r.prezzo <= 400 ? 0 : r.prezzo <= 570 ? 1 : r.prezzo <= 1000 ? 2 : r.prezzo <= 1420 ? 3 : 4;
+    fasceData[idx]['N° Corse']++;
+    fasceData[idx]['Imponibile €'] += r.totale;
+  });
+  const tot4 = fasceData.reduce((s, f) => s + f['N° Corse'], 0);
+  const wsFasce = XLSX.utils.json_to_sheet(fasceData.map(f => ({ ...f, '% sul totale': tot4 ? (f['N° Corse'] / tot4 * 100).toFixed(1) + '%' : '0%', 'Imponibile €': parseFloat(f['Imponibile €'].toFixed(2)) })));
+  wsFasce['!cols'] = [{wch:28},{wch:10},{wch:16},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, wsFasce, 'Fasce Prezzo');
+
+  // Foglio 5: Per Fornitore
+  const byRS = {};
+  filteredRows.forEach(r => { if (!byRS[r.ragione_sociale]) byRS[r.ragione_sociale] = { 'Ragione Sociale': r.ragione_sociale, 'N° Righe': 0, 'Imponibile €': 0 }; byRS[r.ragione_sociale]['N° Righe']++; byRS[r.ragione_sociale]['Imponibile €'] += r.totale; });
+  const wsRS = XLSX.utils.json_to_sheet(Object.values(byRS).map(r => ({ ...r, 'Imponibile €': parseFloat(r['Imponibile €'].toFixed(2)), 'IVA €': parseFloat((r['Imponibile €'] * 0.22).toFixed(2)), 'Totale Ivato €': parseFloat((r['Imponibile €'] * 1.22).toFixed(2)) })));
+  wsRS['!cols'] = [{wch:30},{wch:10},{wch:16},{wch:12},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsRS, 'Per Fornitore');
+
+  const ts = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `fatture_trasporti_${ts}.xlsx`);
+  showToast(`✅ Excel esportato — ${filteredRows.length} righe`, 'success');
+}
+
+// ─── TABS ───
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => { if (t.textContent.toLowerCase().includes({ righe: 'rig', dashboard: 'dash', rotte: 'rot' }[name])) t.classList.add('active'); });
+}
+
+// ─── UTILITIES ───
+function fmt(n) { return (n || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtK(n) { if (n >= 1000) return (n / 1000).toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'k'; return fmt(n); }
+function formatDate(d) { if (!d) return '-'; const [y, m, g] = d.split('-'); return g && m && y ? `${g}/${m}/${y}` : d; }
+function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function showProgress(show) {
+  document.getElementById('progress-bar-wrap').style.display = show ? 'block' : 'none';
+  if (!show) document.getElementById('progress-fill').style.width = '0%';
+}
+function updateProgress(pct, label) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = label;
+}
+
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── SELEZIONE CARTELLA ───
+async function selectFolder() {
+  if (!window.showDirectoryPicker) {
+    showToast('Il tuo browser non supporta la selezione cartella (usa Chrome o Edge)', 'error');
+    return;
+  }
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+    const pdfFiles = [];
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
+        const file = await entry.getFile();
+        pdfFiles.push(file);
+      }
+    }
+    if (!pdfFiles.length) { showToast('Nessun PDF trovato nella cartella', 'error'); return; }
+    showToast(`📁 Trovati ${pdfFiles.length} PDF nella cartella`, 'success');
+    processFiles(pdfFiles);
+  } catch(e) {
+    if (e.name !== 'AbortError') showToast('Errore nella selezione cartella', 'error');
+  }
+}
+
+// ─── DOWNLOAD SINGOLO GRAFICO PNG ───
+function downloadChart(chartId) {
+  const chart = charts[chartId];
+  if (!chart) return;
+  // Render su canvas off-screen con sfondo scuro per leggibilità
+  const src = chart.canvas;
+  const offscreen = document.createElement('canvas');
+  offscreen.width = src.width * 2;
+  offscreen.height = src.height * 2;
+  const ctx2 = offscreen.getContext('2d');
+  ctx2.scale(2, 2);
+  ctx2.fillStyle = '#151820';
+  ctx2.fillRect(0, 0, src.width, src.height);
+  ctx2.drawImage(src, 0, 0);
+  const link = document.createElement('a');
+  link.download = `${chartId}_${new Date().toISOString().slice(0,10)}.png`;
+  link.href = offscreen.toDataURL('image/png');
+  link.click();
+}
+
+// ─── DOWNLOAD TUTTI I GRAFICI PNG ───
+function exportDashboardPNG() {
+  if (!Object.keys(charts).length) { showToast('Nessun grafico da esportare', 'error'); return; }
+  Object.keys(charts).forEach((id, i) => {
+    setTimeout(() => downloadChart(id), i * 300);
+  });
+  showToast(`📥 Scarico ${Object.keys(charts).length} grafici PNG…`, 'success');
+}
+
+// ─── ESPORTA DASHBOARD IN EXCEL CON GRAFICI INCORPORATI ───
+async function exportDashboardExcel() {
+  if (!Object.keys(charts).length) { showToast('Nessun grafico disponibile — apri la Dashboard prima', 'error'); return; }
+  if (typeof ExcelJS === 'undefined') { showToast('ExcelJS non ancora caricato, riprova', 'error'); return; }
+
+  showToast('⏳ Generazione Excel con grafici…', 'success');
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Fatture Viewer';
+  wb.created = new Date();
+
+  // ── Foglio 1: Dashboard con grafici ──
+  const wsDash = wb.addWorksheet('Dashboard', {
+    pageSetup: { paperSize: 9, orientation: 'landscape' }
+  });
+
+  // Titolo
+  const ts = new Date().toLocaleDateString('it-IT');
+  wsDash.getCell('A1').value = `📦 Dashboard Fatture Trasporti — ${ts}`;
+  wsDash.getCell('A1').font = { bold: true, size: 16, color: { argb: 'FF4F9EFF' } };
+  wsDash.getCell('A1').alignment = { vertical: 'middle' };
+  wsDash.getRow(1).height = 30;
+
+  // KPI row
+  const totImponibile = allRows.reduce((s, r) => s + (r.totale || 0), 0);
+  const nFatture = new Set(allRows.map(r => r.num_fattura + r.ragione_sociale)).size;
+  const nRotte = new Set(allRows.filter(r => r.origine && r.destinazione).map(r => r.origine + '→' + r.destinazione)).size;
+  const kpis = [
+    ['Righe Totali', allRows.length],
+    ['Fatture', nFatture],
+    ['Imponibile €', parseFloat(totImponibile.toFixed(2))],
+    ['IVA 22% €', parseFloat((totImponibile * 0.22).toFixed(2))],
+    ['Ivato Totale €', parseFloat((totImponibile * 1.22).toFixed(2))],
+    ['Rotte Distinte', nRotte],
+  ];
+
+  wsDash.addRow([]);
+  const kpiLabelRow = wsDash.addRow(kpis.map(k => k[0]));
+  const kpiValRow   = wsDash.addRow(kpis.map(k => k[1]));
+
+  kpiLabelRow.eachCell(cell => {
+    cell.font = { bold: true, size: 10, color: { argb: 'FF8892A4' } };
+    cell.alignment = { horizontal: 'center' };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1C2030' } };
+  });
+  kpiValRow.eachCell((cell, ci) => {
+    cell.font = { bold: true, size: 13 };
+    cell.alignment = { horizontal: 'center' };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF151820' } };
+    const colors = ['FF4F9EFF','FFFF6B35','FF2ECC71','FF2ECC71','FF2ECC71','FFA855F7'];
+    cell.font.color = { argb: colors[ci - 1] || 'FFE8ECF4' };
+    if (ci >= 3 && ci <= 5) {
+      cell.numFmt = '#,##0.00 "€"';
+    }
+  });
+
+  wsDash.columns.forEach((col, i) => {
+    col.width = [18,10,18,14,18,14][i] || 16;
+  });
+
+  // Separa KPI dai grafici
+  wsDash.addRow([]);
+  wsDash.addRow([]);
+
+  // Embed grafici come immagini
+  const chartList = Object.entries(charts);
+  const CHART_W = 480, CHART_H = 260;  // px nel canvas
+  const COL_W_PX = 64; // larghezza colonna Excel ~px
+  const ROW_H_PX = 15; // altezza riga Excel ~px
+
+  // 2 colonne di grafici: coppie affiancate
+  let currentRow = 8; // riga di partenza nel foglio
+  for (let i = 0; i < chartList.length; i += 2) {
+    const leftChart  = chartList[i];
+    const rightChart = chartList[i + 1];
+
+    // Altezza righe del blocco per ospitare il grafico
+    const rowsNeeded = Math.ceil(CHART_H / ROW_H_PX) + 1;
+    for (let r = 0; r < rowsNeeded; r++) {
+      const row = wsDash.getRow(currentRow + r);
+      row.height = ROW_H_PX;
+    }
+
+    // Titolo grafico sinistro
+    const titleCell = wsDash.getCell(currentRow, 1);
+    titleCell.value = leftChart[1].canvas.closest?.('.chart-card')
+      ?.querySelector?.('.chart-title span')?.textContent
+      || leftChart[0].replace('chart-', '');
+    titleCell.font = { bold: true, size: 11, color: { argb: 'FFE8ECF4' } };
+
+    // PNG grafico sinistro
+    const leftPNG  = getPNGBase64(leftChart[1]);
+    const leftImgId = wb.addImage({ base64: leftPNG, extension: 'png' });
+    wsDash.addImage(leftImgId, {
+      tl: { col: 0, row: currentRow },
+      ext: { width: CHART_W, height: CHART_H }
+    });
+
+    // PNG grafico destro (se esiste)
+    if (rightChart) {
+      const rightPNG = getPNGBase64(rightChart[1]);
+      const rightImgId = wb.addImage({ base64: rightPNG, extension: 'png' });
+      wsDash.addImage(rightImgId, {
+        tl: { col: 8, row: currentRow },
+        ext: { width: CHART_W, height: CHART_H }
+      });
+    }
+
+    currentRow += rowsNeeded + 1;
+  }
+
+  // ── Fogli dati (riutilizza logica esistente) ──
+  const addDataSheet = (name, rows, cols) => {
+    const ws = wb.addWorksheet(name);
+    ws.addRow(Object.keys(rows[0]));
+    ws.getRow(1).eachCell(cell => {
+      cell.font = { bold: true, color: { argb: 'FFE8ECF4' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1C2030' } };
+    });
+    rows.forEach(r => ws.addRow(Object.values(r)));
+    if (cols) ws.columns = cols.map((w, i) => ({ key: String(i), width: w }));
+    return ws;
+  };
+
+  // Foglio Fatture
+  const fattureData = filteredRows.map(r => ({
+    'Ragione Sociale': r.ragione_sociale, 'N° Fattura': r.num_fattura,
+    'Data Fattura': formatDate(r.data_fattura), 'N° Linea': r.num_linea,
+    'Data Riga': formatDate(r.data_riga), 'Origine': r.origine,
+    'Destinazione': r.destinazione, 'Descrizione': r.desc_raw,
+    'Prezzo Unitario': r.prezzo, 'IVA %': r.iva_perc,
+    'Totale Imponibile': r.totale, 'Totale Ivato': parseFloat((r.totale_ivato).toFixed(2))
+  }));
+  if (fattureData.length) addDataSheet('Fatture', fattureData, [25,12,12,8,12,20,25,50,15,8,18,14]);
+
+  // Foglio Rotte
+  const byRotta2 = {};
+  filteredRows.forEach(r => {
+    if (!r.origine || !r.destinazione) return;
+    const k = `${r.origine} → ${r.destinazione}`;
+    if (!byRotta2[k]) byRotta2[k] = { Origine: r.origine, Destinazione: r.destinazione, 'N° Viaggi': 0, 'Totale Imponibile €': 0 };
+    byRotta2[k]['N° Viaggi']++;
+    byRotta2[k]['Totale Imponibile €'] += r.totale;
+  });
+  const rotteArr = Object.values(byRotta2).sort((a,b) => b['Totale Imponibile €'] - a['Totale Imponibile €'])
+    .map(r => ({ ...r, 'Media Viaggio €': parseFloat((r['Totale Imponibile €']/r['N° Viaggi']).toFixed(2)), 'Totale Imponibile €': parseFloat(r['Totale Imponibile €'].toFixed(2)), 'Totale Ivato €': parseFloat((r['Totale Imponibile €']*1.22).toFixed(2)) }));
+  if (rotteArr.length) addDataSheet('Rotte', rotteArr, [22,22,12,20,18,16]);
+
+  // Scarica
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fatture_dashboard_${new Date().toISOString().slice(0,10)}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`✅ Dashboard Excel esportata con ${chartList.length} grafici`, 'success');
+}
+
+function getPNGBase64(chart) {
+  // Render con sfondo scuro per leggibilità in Excel
+  const src = chart.canvas;
+  const off = document.createElement('canvas');
+  off.width = src.width * 2;
+  off.height = src.height * 2;
+  const ctx = off.getContext('2d');
+  ctx.scale(2, 2);
+  ctx.fillStyle = '#1c2030';
+  ctx.fillRect(0, 0, src.width, src.height);
+  ctx.drawImage(src, 0, 0);
+  return off.toDataURL('image/png').split(',')[1];
+}
+
+// Tastiera: Escape = reset filtri
+document.addEventListener('keydown', e => { if (e.key === 'Escape') resetFilters(); });
+</script>
+</body>
+</html>
