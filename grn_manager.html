@@ -165,7 +165,7 @@ td.editing input,td.editing select{width:100%;height:100%;min-height:30px;backgr
     </button>
     <p class="login-note">Richiede accesso a Google Drive per leggere e modificare i file nella cartella GRN.</p>
     <div id="iframeWarning" style="display:none;margin-top:18px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:14px 16px;font-size:12px;color:#fca5a5;line-height:1.7">
-      ⚠️ <strong>Stai aprendo il tool dentro Claude.ai</strong> — Google OAuth non funziona negli iframe.<br>
+      ⚠️ <strong>Stai aprendo il tool in Locale</strong> — Google OAuth non funziona negli iframe.<br>
       Scarica il file HTML e aprilo direttamente nel browser (doppio click sul file).
     </div>
   </div>
@@ -190,6 +190,7 @@ td.editing input,td.editing select{width:100%;height:100%;min-height:30px;backgr
         <span id="userName">—</span>
       </div>
       <button class="btn-secondary" onclick="loadVltSheet()" title="Ricarica dati dal foglio VLT" style="padding:4px 10px;font-size:11px;align-self:auto">↻ VLT</button>
+      <button id="btnSendFlm" class="btn-secondary" onclick="sendFlmData()" title="Invia dati FLM aperti allo script Tampermonkey" style="padding:4px 10px;font-size:11px;align-self:auto;border-color:#f59e0b;color:#f59e0b">📡 FLM</button>
       <button class="btn-logout" onclick="signOut()">Esci</button>
     </div>
   </header>
@@ -406,7 +407,7 @@ function onToken(resp){
   TOKEN=resp.access_token;
   clearTimeout(window._trTimer);
   window._trTimer=setTimeout(function(){ var s=getSavedSession(); tokenClient.requestAccessToken({prompt:'',login_hint:s?s.email||'':''}); },50*60*1000);
-  showApp(); loadUserInfo(); loadVltSheet(); loadAvailableDates();
+  showApp(); loadUserInfo(); loadVltSheet(); loadAvailableDates(); initBroadcastChannel();
 }
 
 // ── VLT SHEET LOAD ────────────────────────────────────────────────────────────
@@ -1227,6 +1228,73 @@ function cc(a,b){ var c=new Uint8Array(a.length+b.length); c.set(a); c.set(b,a.l
 function clearFld(id){
   var el=document.getElementById(id);
   if(el){ el.value=''; onFilterChange(); }
+}
+
+// ── BROADCAST CHANNEL (integrazione Tampermonkey) ────────────────────────────
+var grnChannel = null;
+
+function initBroadcastChannel(){
+  try{
+    grnChannel = new BroadcastChannel('grn_flm_channel');
+    grnChannel.onmessage = function(ev){
+      var msg = ev.data;
+      if(!msg || !msg.type) return;
+
+      // Script TM ha completato un FR → segna riga come Chiuso
+      if(msg.type === 'FR_DONE'){
+        var codeFr = (msg.codice_fr||'').trim().toLowerCase();
+        var matched = 0;
+        allRows.forEach(function(row){
+          if((row.__commessa||'').toUpperCase() !== 'FLM') return;
+          var rif = (getRifOrdine(row)||'').trim().toLowerCase();
+          if(rif !== codeFr) return;
+          var stato = row[STATO_COL]||'';
+          if(stato === 'Chiuso') return;
+          row[STATO_COL] = 'Chiuso';
+          markModified(row.__fileId);
+          autoSave(row.__fileId);
+          matched++;
+        });
+        if(matched > 0){
+          updateStats();
+          renderTable();
+          showToast('✓ FR '+msg.codice_fr+' → Chiuso ('+matched+' riga/e)','ok');
+        }
+        // Risponde con ACK
+        grnChannel.postMessage({type:'FR_DONE_ACK', codice_fr: msg.codice_fr, matched: matched});
+      }
+
+      // Script TM chiede la lista dati FLM
+      if(msg.type === 'GET_FLM_DATA'){
+        sendFlmData();
+      }
+    };
+    console.log('GRN BroadcastChannel attivo');
+  }catch(e){
+    console.warn('BroadcastChannel non disponibile:',e.message);
+  }
+}
+
+function sendFlmData(){
+  if(!grnChannel) return;
+  var flmRows = allRows.filter(function(row){
+    if((row.__commessa||'').toUpperCase() !== 'FLM') return false;
+    var stato = row[STATO_COL]||'';
+    return stato !== 'Chiuso'; // solo aperte o vuote
+  });
+  var data = flmRows.map(function(row){
+    return {
+      CODICE_FR:   getRifOrdine(row),
+      NOTE:        row[NOTE_COL]||'',
+      STATO_VLT:   row.__vlt_stato||'',
+      CONF_SERIAL: (row['Seriale']||row['SERIALE']||'').trim(),
+      CONF_TMPN:   (row['Part Number']||row['PART_NUMBER']||'').trim(),
+      _grn:        row.__grn||'',
+      _ddt:        row.__ddt||''
+    };
+  });
+  grnChannel.postMessage({type:'FLM_DATA', rows: data, total: data.length});
+  console.log('GRN → TM: inviati '+data.length+' record FLM aperti');
 }
 
 function showToast(msg,type){
