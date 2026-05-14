@@ -175,6 +175,7 @@ td.editing input,td.editing select{width:100%;height:100%;min-height:30px;backgr
     <div class="topbar-logo">GRN <span>Manager</span></div>
     <div class="topbar-div"></div>
     <div class="topbar-sub">Bolle di Consegna</div>
+    <div id="cfgIndicator" style="font-size:10px;color:var(--muted);font-family:var(--ff-mono);white-space:nowrap;display:none" title="Config personale caricata da Drive">⚙ cfg</div>
     <div class="save-indicator" id="saveIndicator" style="display:none">
       <div class="save-dot" id="saveDot"></div>
       <span id="saveMsg"></span>
@@ -184,6 +185,7 @@ td.editing input,td.editing select{width:100%;height:100%;min-height:30px;backgr
         <div id="userAvatarWrap"></div>
         <span id="userName">—</span>
       </div>
+      <button class="btn-secondary" onclick="loadVltSheet()" title="Ricarica dati dal foglio VLT" style="padding:4px 10px;font-size:11px;align-self:auto">↻ VLT</button>
       <button class="btn-logout" onclick="signOut()">Esci</button>
     </div>
   </header>
@@ -250,6 +252,7 @@ td.editing input,td.editing select{width:100%;height:100%;min-height:30px;backgr
   <!-- STATS -->
   <div class="stats-bar" id="statsBar" style="display:none">
     <div class="stat"><div class="sl">File caricati</div><div class="sv blue" id="sFile">—</div></div>
+    <div class="stat"><div class="sl">Duplicati saltati</div><div class="sv" id="sDup" style="color:var(--muted)">—</div></div>
     <div class="stat"><div class="sl">Righe totali</div><div class="sv" id="sRighe">—</div></div>
     <div class="stat"><div class="sl">Filtrate</div><div class="sv blue" id="sFiltrate">—</div></div>
     <div class="stat"><div class="sl">Commesse</div><div class="sv" id="sCommesse">—</div></div>
@@ -295,7 +298,18 @@ var fileRegistry = {};  // fileId -> { name, commessa, sep, sepLine, header, row
 var dateCache = {};
 var filterTimer = null;
 var toastTimer  = null;
-var hiddenCols  = loadHiddenCols(); // Set di nomi colonna nascosti
+var hiddenCols  = loadHiddenCols();
+
+// Cartella config su Drive
+var CONFIG_FOLDER_ID = '1LGoR9SKDthz1tUDLxbZhClqA-xhkjoNY';
+var configFileId  = null;
+var configEmail   = '';
+
+// VLT SHEET
+var VLT_CSV_URL = 'https://docs.google.com/spreadsheets/d/1KxP-nGn6AbenWhZXi1EAPRxSKeCRdEoESH4UzMqqjdk/export?format=csv&gid=244367079';
+var vltMap    = {};
+var vltLoaded = false;
+var NOTE_COL  = 'NOTE';
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 window.onload = function(){
@@ -328,7 +342,92 @@ function onToken(resp){
   TOKEN=resp.access_token;
   clearTimeout(window._trTimer);
   window._trTimer=setTimeout(function(){ var s=getSavedSession(); tokenClient.requestAccessToken({prompt:'',login_hint:s?s.email||'':''}); },50*60*1000);
-  showApp(); loadUserInfo(); loadAvailableDates();
+  showApp(); loadUserInfo(); loadVltSheet(); loadAvailableDates();
+}
+
+// ── VLT SHEET LOAD ────────────────────────────────────────────────────────────
+function loadVltSheet(){
+  vltLoaded=false;
+  fetch(VLT_CSV_URL)
+  .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+  .then(function(txt){
+    vltMap={};
+    var lines=txt.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+    if(!lines.length) return;
+    var hdr=splitLineVlt(lines[0],',');
+    var normalize=function(h){ return h.replace(/^=+/,'').replace(/"/g,'').trim().toLowerCase(); };
+    hdr=hdr.map(normalize);
+    var idxId    = hdr.indexOf('fr_id');
+    var idxStato = hdr.indexOf('stato');
+    var idxSN    = hdr.indexOf('f_mat_serial_no');
+    var idxPN    = hdr.indexOf('f_mat_tmpn');
+    var idxDepot = hdr.indexOf('depot_origine');
+    if(idxId===-1){ console.warn('VLT sheet: colonna fr_id non trovata. Headers:', hdr); }
+    for(var i=1;i<lines.length;i++){
+      var line=lines[i]; if(!line.trim()) continue;
+      var cells=splitLineVlt(line,',');
+      var key=(cells[idxId]||'').replace(/^=/,'').replace(/"/g,'').trim().toLowerCase();
+      if(!key) continue;
+      vltMap[key]={
+        stato:       (cells[idxStato]||'').replace(/^=/,'').replace(/"/g,'').trim(),
+        sn:          (cells[idxSN]||'').replace(/^=/,'').replace(/"/g,'').trim(),
+        pn:          (cells[idxPN]||'').replace(/^=/,'').replace(/"/g,'').trim(),
+        depot:       (cells[idxDepot]||'').replace(/^=/,'').replace(/"/g,'').trim()
+      };
+    }
+    vltLoaded=true;
+    console.log('VLT sheet caricato: '+Object.keys(vltMap).length+' record');
+    showToast('✓ VLT sheet caricato ('+Object.keys(vltMap).length+' record)','ok');
+    if(allRows.length) renderTable();
+  })
+  .catch(function(e){ console.warn('VLT sheet non caricabile:',e.message); showToast('⚠ VLT sheet non raggiungibile','err'); });
+}
+
+function splitLineVlt(line,sep){
+  var res=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===sep&&!inQ){res.push(cur);cur='';}
+    else{cur+=c;}
+  }
+  res.push(cur);
+  return res;
+}
+
+// Calcola i valori VLT per una riga DDT
+function getVlt(row){
+  var rifOrd = (row['Riferimento Ordine']||row['RIFERIMENTO_ORDINE']||row['RiferimentoOrdine']||row['Rif. Ordine']||'').trim().toLowerCase();
+  return vltMap[rifOrd]||null;
+}
+
+// Calcola il testo NOTE automatico per una riga
+function calcNote(row){
+  var v=getVlt(row);
+  if(!v) return row[NOTE_COL]||'';
+  var stato=v.stato||'';
+  var parts=[];
+  if(stato==='Failure Report Sent'){
+    // Solo depot_origine
+    parts.push(v.depot||'');
+  } else {
+    // Prefisso OPEN o SCRAP
+    if(stato==='Open') parts.push('OPEN');
+    else if(stato==='Close for Scrap material') parts.push('SCRAP');
+    // Confronto SERIALE
+    var sn     =(row['Seriale']||row['SERIALE']||'').trim();
+    var snVlt  =v.sn||'';
+    if(sn && snVlt && sn.toLowerCase()!==snVlt.toLowerCase()){
+      parts.push('INSERIRE SERIALE CORRETTO: '+sn);
+    }
+    // Confronto PART NUMBER
+    var pn     =(row['Part Number']||row['PART_NUMBER']||row['PartNumber']||'').trim();
+    var pnVlt  =v.pn||'';
+    if(pn && pnVlt && pn.toLowerCase()!==pnVlt.toLowerCase()){
+      parts.push('INSERIRE TPN CORRETTO: '+pn);
+    }
+  }
+  return parts.filter(Boolean).join(' ');
 }
 function showApp(){
   document.getElementById('loginScreen').style.display='none';
@@ -346,7 +445,81 @@ function loadUserInfo(){
     if(u.error)return;
     saveSession(u.name||u.email||'',u.email||'',u.picture||'');
     setUserUI(u.name||u.email||'—',u.email||'',u.picture||'');
+    configEmail=u.email||'';
+    loadUserConfig(u.email||'');
   }).catch(function(){});
+}
+
+// ── CONFIG DRIVE ──────────────────────────────────────────────────────────────
+function configFileName(email){
+  return 'config_'+email.replace(/[^a-zA-Z0-9_\-]/g,'_')+'.json';
+}
+
+function loadUserConfig(email){
+  if(!email||!TOKEN) return;
+  var fname=configFileName(email);
+  // Cerca il file nella cartella config
+  listFiles('"'+CONFIG_FOLDER_ID+'" in parents and name="'+fname+'" and trashed=false')
+  .then(function(files){
+    if(!files.length){
+      // Non esiste ancora: crea con default
+      configFileId=null;
+      hiddenCols={};
+      console.log('Config non trovata, uso default');
+      return saveUserConfig();
+    }
+    configFileId=files[0].id;
+    return downloadText(configFileId).then(function(txt){
+      try{
+        var cfg=JSON.parse(txt);
+        hiddenCols=cfg.hiddenCols||{};
+        // Aggiorna anche localStorage
+        try{localStorage.setItem(COL_HIDE_KEY,JSON.stringify(hiddenCols));}catch(ex){}
+        console.log('Config caricata per '+email+': '+Object.keys(hiddenCols).length+' col nascoste');
+        var ind=document.getElementById('cfgIndicator');
+        if(ind){ ind.style.display='block'; ind.textContent='⚙ cfg · '+Object.keys(hiddenCols).length+' col nascoste'; ind.style.color='var(--green)'; }
+        if(allRows.length) renderTable();
+      }catch(e){ hiddenCols={}; }
+    });
+  })
+  .catch(function(e){ console.warn('loadUserConfig error:',e.message); });
+}
+
+function saveUserConfig(){
+  if(!configEmail||!TOKEN) return Promise.resolve();
+  var fname=configFileName(configEmail);
+  var payload=JSON.stringify({hiddenCols:hiddenCols},null,2);
+  var blob=new Blob([payload],{type:'application/json'});
+  var p;
+  if(configFileId){
+    p=uploadText(configFileId,blob,fname);
+  } else {
+    p=createFileInFolder(CONFIG_FOLDER_ID,fname,blob).then(function(f){ configFileId=f.id; return f; });
+  }
+  return p.then(function(){
+    var ind=document.getElementById('cfgIndicator');
+    if(ind){
+      var n=Object.keys(hiddenCols).length;
+      ind.style.display='block';
+      ind.style.color='var(--green)';
+      ind.textContent='⚙ cfg · '+(n?n+' col nascoste':'default');
+    }
+  }).catch(function(e){ console.warn('saveUserConfig error:',e.message); });
+}
+
+function createFileInFolder(folderId,name,blob){
+  var boundary='cfg_'+Date.now(), enc=new TextEncoder();
+  var meta=JSON.stringify({name:name,parents:[folderId]});
+  var pre='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n';
+  var post='\r\n--'+boundary+'--';
+  return blob.arrayBuffer().then(function(buf){
+    var body=cc(cc(enc.encode(pre),new Uint8Array(buf)),enc.encode(post));
+    return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+TOKEN,'Content-Type':'multipart/related; boundary='+boundary},
+      body:body
+    });
+  }).then(function(r){ if(!r.ok) return r.text().then(function(t){throw new Error(t);}); return r.json(); });
 }
 function setUserUI(name,email,picture){
   document.getElementById('userName').textContent=name||'—';
@@ -444,11 +617,21 @@ function loadData(){
   }))
   .then(function(arrays){
     var files=[].concat.apply([],arrays);
-    // dedup by id
-    var seen={}; files=files.filter(function(f){ if(seen[f.id])return false; seen[f.id]=true; return true; });
+    // 1) dedup by Drive file id
+    var seenId={}; files=files.filter(function(f){ if(seenId[f.id])return false; seenId[f.id]=true; return true; });
     if(!files.length) throw new Error('Nessun file trovato per il periodo selezionato');
-    setContent(spinner('Download '+files.length+' file...',40));
-    return Promise.all(files.map(function(f){
+    // 2) dedup per nome DDT: stesso (commessa + numero DDT) → tieni solo il più recente per modifiedTime
+    var ddtMap={};
+    files.forEach(function(f){
+      var key=(extractCommessa(f.name)+'__'+extractDdt(f.name)).toLowerCase();
+      var mt=f.modifiedTime||'';
+      if(!ddtMap[key]||mt>ddtMap[key].modifiedTime){ ddtMap[key]={id:f.id,name:f.name,modifiedTime:mt}; }
+    });
+    var dedupedFiles=Object.values(ddtMap);
+    skippedDups=files.length-dedupedFiles.length;
+    if(skippedDups>0) showToast('ℹ️ '+skippedDups+' duplicat'+(skippedDups===1?'o ignorato':'i ignorati')+' (tenuto il più recente per ogni DDT)');
+    setContent(spinner('Download '+dedupedFiles.length+' file...',45));
+    return Promise.all(dedupedFiles.map(function(f){
       return downloadText(f.id).then(function(txt){ return {id:f.id,name:f.name,text:txt}; });
     }));
   })
@@ -608,13 +791,19 @@ var COL_ORDER = ['__commessa','__ddt','__fileName']; // colonne fisse a sinistra
 
 function getVisibleCols(){
   if(!allRows.length) return [];
-  // prendi header dal primo file
   var fid=allRows[0].__fileId;
   var hdr=(fileRegistry[fid]||{}).header||[];
-  // rimuovi STATO_COL dall'ordine normale (lo mettiamo sempre alla fine)
-  var csvCols=hdr.filter(function(c){ return c&&c!==STATO_COL; });
-  return csvCols;
+  // Escludi colonne gestite manualmente in fondo
+  var managed=[STATO_COL, NOTE_COL];
+  return hdr.filter(function(c){ return c && managed.indexOf(c)===-1; });
 }
+
+// Colonne VLT calcolate (read-only, da sheet)
+var VLT_DISPLAY_COLS=[
+  {key:'__vlt_stato', label:'STATO_VLT',      color:'#a855f7'},
+  {key:'__vlt_sn',    label:'CONFRONTO SN VLT',color:'#06b6d4'},
+  {key:'__vlt_pn',    label:'CONFRONTO PN VLT', color:'#06b6d4'}
+];
 
 function renderTable(){
   if(!filteredRows.length){
@@ -622,7 +811,6 @@ function renderTable(){
     return;
   }
   var csvCols=getVisibleCols();
-  // Colonne fisse: Commessa, DDT, File
   var fixedDefs=[
     {key:'__commessa',label:'Commessa'},
     {key:'__ddt',label:'N° DDT'},
@@ -630,31 +818,63 @@ function renderTable(){
   ];
 
   function colHidden(name){ return hiddenCols[name]; }
+  function ch(name){ return colHidden(name)?' class="col-hidden"':''; }
 
   var h='<div class="tbl-outer"><table><thead><tr>';
-  fixedDefs.forEach(function(d){ h+='<th'+(colHidden(d.key)?' class="col-hidden"':'')+'>'+esc(d.label)+'</th>'; });
-  csvCols.forEach(function(c){ h+='<th'+(colHidden(c)?' class="col-hidden"':'')+'>'+esc(c)+'</th>'; });
-  h+='<th'+(colHidden(STATO_COL)?' class="col-hidden"':'')+' style="color:var(--amber)">'+STATO_COL+'</th>';
+  fixedDefs.forEach(function(d){ h+='<th'+ch(d.key)+'>'+esc(d.label)+'</th>'; });
+  csvCols.forEach(function(c){ h+='<th'+ch(c)+'>'+esc(c)+'</th>'; });
+  VLT_DISPLAY_COLS.forEach(function(d){
+    h+='<th'+ch(d.key)+' style="color:'+d.color+';border-left:2px solid '+d.color+'40">'+esc(d.label)+'</th>';
+  });
+  h+='<th'+ch(NOTE_COL)+' style="color:#22d3ee;min-width:220px">'+NOTE_COL+'</th>';
+  h+='<th'+ch(STATO_COL)+' style="color:var(--amber);min-width:90px">'+STATO_COL+'</th>';
   h+='</tr></thead><tbody>';
 
   filteredRows.forEach(function(row,ri){
+    var isFLM=(row.__commessa||'').toUpperCase()==='FLM';
+    var vlt = isFLM ? getVlt(row) : null;
+    var vStato = vlt?vlt.stato:'';
+    var vSn    = vlt?vlt.sn:'';
+    var vPn    = vlt?vlt.pn:'';
+    row.__vlt_stato=vStato;
+    row.__vlt_sn   =vSn;
+    row.__vlt_pn   =vPn;
+    if(isFLM && !row.__note_manual){ row[NOTE_COL]=calcNote(row); }
+    if(!isFLM){ row.__vlt_stato=''; row.__vlt_sn=''; row.__vlt_pn=''; }
+
+    var statoColor='var(--subtle)';
+    if(vStato==='Open') statoColor='var(--amber)';
+    else if(vStato==='Failure Report Sent') statoColor='var(--green)';
+    else if(vStato==='Close for Scrap material') statoColor='var(--red)';
+
+    var snRow=(row['Seriale']||row['SERIALE']||'').trim();
+    var snOk=!vSn||(snRow.toLowerCase()===vSn.toLowerCase());
+    var pnRow=(row['Part Number']||row['PART_NUMBER']||'').trim();
+    var pnOk=!vPn||(pnRow.toLowerCase()===vPn.toLowerCase());
+
     h+='<tr>';
-    // Commessa
     h+='<td class="td-comm'+(colHidden('__commessa')?' col-hidden':'')+'">'+esc(row.__commessa)+'</td>';
-    // DDT
     h+='<td class="td-ddt'+(colHidden('__ddt')?' col-hidden':'')+'">'+esc(row.__ddt)+'</td>';
-    // File
     h+='<td class="mono td-file'+(colHidden('__fileName')?' col-hidden':'')+'" title="'+esc(row.__fileName)+'">'+esc(shortName(row.__fileName))+'</td>';
-    // CSV cols
     csvCols.forEach(function(c){
-      var v=row[c]!==undefined?row[c]:'';
-      var hc=colHidden(c)?' col-hidden':'';
-      h+='<td class="editable'+hc+'" onclick="editCell(this,'+ri+',\''+escAttr(c)+'\')" title="'+esc(v)+'">'+esc(v)+'</td>';
+      var v2=row[c]!==undefined?row[c]:'';
+      h+='<td class="editable'+(colHidden(c)?' col-hidden':'')+'" onclick="editCell(this,'+ri+',''+escAttr(c)+'')" title="'+esc(v2)+'">'+esc(v2)+'</td>';
     });
+    // STATO_VLT
+    h+='<td'+ch('__vlt_stato')+' style="font-family:var(--ff-cond);font-size:11px;font-weight:700;color:'+statoColor+';border-left:2px solid #a855f740">'+esc(vStato||(vltLoaded?'—':'⏳'))+'</td>';
+    // CONFRONTO SN VLT
+    var snColor=snOk?'var(--green)':'var(--red)';
+    h+='<td'+ch('__vlt_sn')+' style="font-family:var(--ff-mono);font-size:11px;color:'+snColor+';border-left:1px solid #06b6d420" title="'+esc(vSn)+'">'+esc(vSn||(vltLoaded?'—':'⏳'))+((!snOk&&vSn)?'<span style="font-size:9px;margin-left:3px">✗</span>':'')+'</td>';
+    // CONFRONTO PN VLT
+    var pnColor=pnOk?'var(--green)':'var(--red)';
+    h+='<td'+ch('__vlt_pn')+' style="font-family:var(--ff-mono);font-size:11px;color:'+pnColor+'" title="'+esc(vPn)+'">'+esc(vPn||(vltLoaded?'—':'⏳'))+((!pnOk&&vPn)?'<span style="font-size:9px;margin-left:3px">✗</span>':'')+'</td>';
+    // NOTE editabile
+    var noteVal=row[NOTE_COL]||'';
+    h+='<td class="editable note-cell'+(colHidden(NOTE_COL)?' col-hidden':'')+'" onclick="editNote(this,'+ri+')" title="'+esc(noteVal)+'" style="max-width:280px;color:#22d3ee;font-size:11px;font-family:var(--ff-mono)">'+esc(noteVal||'—')+'</td>';
     // Stato_File
     var stato=row[STATO_COL]||'';
     var sc=stato==='Chiuso'?'stato-chiuso':stato==='Aperto'?'stato-aperto':'';
-    h+='<td class="editable '+sc+(colHidden(STATO_COL)?' col-hidden':'')+'" onclick="editStato(this,'+ri+')" style="min-width:90px">'+esc(stato||'—')+'</td>';
+    h+='<td class="editable '+sc+(colHidden(STATO_COL)?' col-hidden':'')+'" onclick="editStato(this,'+ri+')">'+esc(stato||'—')+'</td>';
     h+='</tr>';
   });
   h+='</tbody></table></div>';
@@ -699,6 +919,33 @@ function editStato(td,ri){
   sel.addEventListener('keydown',function(e){ if(e.key==='Escape'){sel.removeEventListener('blur',save);td.classList.remove('editing');td.textContent=cur||'—';} });
 }
 
+// ── EDIT NOTE ────────────────────────────────────────────────────────────────
+function editNote(td,ri){
+  if(td.classList.contains('editing'))return;
+  var row=filteredRows[ri];
+  var cur=row[NOTE_COL]||'';
+  td.classList.add('editing');
+  td.style.padding='0';
+  var inp=document.createElement('input');
+  inp.value=cur; inp.style.cssText='width:100%;height:100%;min-height:30px;min-width:240px;background:#0d1629;border:2px solid #22d3ee;border-radius:0;padding:4px 8px;font-family:var(--ff-mono);font-size:12px;color:#22d3ee;outline:none;box-sizing:border-box';
+  td.innerHTML=''; td.appendChild(inp); inp.focus(); inp.select();
+  function save(){
+    var nv=inp.value.trim();
+    td.classList.remove('editing'); td.style.padding='';
+    td.textContent=nv||'—'; td.title=nv;
+    row[NOTE_COL]=nv;
+    // Marca come modifica manuale: non sovrascrivere con calcolo automatico
+    row.__note_manual = (nv !== '');
+    if(nv===cur) return;
+    markModified(row.__fileId); autoSave(row.__fileId);
+  }
+  inp.addEventListener('blur',save);
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){e.preventDefault();inp.blur();}
+    if(e.key==='Escape'){inp.removeEventListener('blur',save);td.classList.remove('editing');td.style.padding='';td.textContent=cur||'—';}
+  });
+}
+
 // ── AUTO SAVE ─────────────────────────────────────────────────────────────────
 var saveTimers={};
 function markModified(fid){ fileRegistry[fid].modified=true; setSaveUI('pending','Modifiche non salvate'); }
@@ -735,6 +982,9 @@ function doSave(fileIds){
 
 function buildCsv(rows,fd){
   var hdr=fd.header.slice();
+  // NOTE solo per commessa FLM
+  var isFLM=(fd.commessa||'').toUpperCase()==='FLM';
+  if(isFLM && hdr.indexOf(NOTE_COL)===-1) hdr.push(NOTE_COL);
   if(hdr.indexOf(STATO_COL)===-1) hdr.push(STATO_COL);
   var sep=fd.sep||';';
   var lines=[];
@@ -757,6 +1007,8 @@ function setSaveUI(state,msg){
   msgEl.textContent=msg;
 }
 
+var skippedDups = 0;
+
 // ── STATS ─────────────────────────────────────────────────────────────────────
 function updateStats(){
   if(!allRows.length){document.getElementById('statsBar').style.display='none';return;}
@@ -765,6 +1017,8 @@ function updateStats(){
   var aper=allRows.filter(function(r){return r[STATO_COL]==='Aperto';}).length;
   var chiu=allRows.filter(function(r){return r[STATO_COL]==='Chiuso';}).length;
   document.getElementById('sFile').textContent=Object.keys(fileRegistry).length;
+  document.getElementById('sDup').textContent=skippedDups;
+  document.getElementById('sDup').style.color=skippedDups>0?'var(--amber)':'var(--muted)';
   document.getElementById('sRighe').textContent=allRows.length;
   document.getElementById('sFiltrate').textContent=filteredRows.length;
   document.getElementById('sCommesse').textContent=Object.keys(comms).length;
@@ -774,8 +1028,16 @@ function updateStats(){
 }
 
 // ── COLUMN MANAGER ────────────────────────────────────────────────────────────
-function loadHiddenCols(){ try{var s=localStorage.getItem(COL_HIDE_KEY);return s?JSON.parse(s):{};} catch(e){return{};} }
-function saveHiddenCols(){ try{localStorage.setItem(COL_HIDE_KEY,JSON.stringify(hiddenCols));}catch(e){} }
+function loadHiddenCols(){
+  try{ var s=localStorage.getItem(COL_HIDE_KEY); return s?JSON.parse(s):{}; }catch(e){ return{}; }
+}
+function saveHiddenCols(){
+  // Salva anche in localStorage come fallback locale
+  try{ localStorage.setItem(COL_HIDE_KEY,JSON.stringify(hiddenCols)); }catch(e){}
+  // Salva su Drive (debounce 1s per non fare troppe chiamate)
+  clearTimeout(window._cfgSaveTimer);
+  window._cfgSaveTimer=setTimeout(function(){ saveUserConfig(); },1000);
+}
 
 function openColMgr(){
   var csvCols=getVisibleCols();
@@ -783,7 +1045,9 @@ function openColMgr(){
     {key:'__commessa',label:'Commessa'},
     {key:'__ddt',label:'N° DDT'},
     {key:'__fileName',label:'File'}
-  ].concat(csvCols.map(function(c){return{key:c,label:c};})).concat([{key:STATO_COL,label:STATO_COL}]);
+  ].concat(csvCols.map(function(c){return{key:c,label:c};}))
+  .concat(VLT_DISPLAY_COLS.map(function(d){return{key:d.key,label:d.label};}))
+  .concat([{key:NOTE_COL,label:'NOTE'},{key:STATO_COL,label:STATO_COL}]);
 
   var list=document.getElementById('colMgrList'); list.innerHTML='';
   allCols.forEach(function(c){
@@ -805,7 +1069,7 @@ document.addEventListener('click',function(e){ if(e.target.id==='colMgrOverlay')
 // ── DRIVE API ─────────────────────────────────────────────────────────────────
 function listFiles(q){
   function page(pt){
-    var url='https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name),nextPageToken&pageSize=1000';
+    var url='https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name,modifiedTime),nextPageToken&pageSize=1000';
     if(pt) url+='&pageToken='+encodeURIComponent(pt);
     return gFetch(url).then(function(r){ var f=r.files||[]; if(r.nextPageToken) return page(r.nextPageToken).then(function(m){return f.concat(m);}); return f; });
   }
