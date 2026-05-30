@@ -6,20 +6,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <style>
-  /* ---------- Stili comuni ---------- */
   body { margin: 0px; background:#f0f0f0; font-family:Arial,sans-serif; }
   .no-print { margin-bottom:20px; }
-  .header-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  .header-logo { height:50px; margin-right:15px; }
-  .header-title { font-size:18pt; font-weight:bold; color:#2c3e50; margin:0; }
+
   .btn-stampa {
     background:#007bff; color:white; padding:10px 20px; font-size:13pt;
     border:none; border-radius:5px; cursor:pointer; font-weight:bold;
@@ -27,130 +16,182 @@
   }
   .btn-stampa:hover { background:#0056b3; }
   #formManuale {
-    background:white; padding:20px; border:2px solid #000; 
+    background:white; padding:20px; border:2px solid #000;
     border-radius:8px; max-width:600px; margin-bottom:20px;
   }
   #formManuale h3 { margin-top:0; color:#2c3e50; font-size:18pt; }
   #formManuale label { display:block; margin:8px 0; font-size:12pt; }
   #formManuale input, #formManuale textarea { width:100%; padding:6px; box-sizing:border-box; font-size:12pt; }
   #formManuale textarea { height:80px; }
-
-  /* --- Selettori formato + commessa affiancati --- */
-  .selettori-row {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-  }
-  .selettori-row label {
-    font-size: 12pt;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-  }
-  .selettori-row select {
-    font-size: 12pt;
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid #aaa;
-  }
-
-  /* --- Riga Serial Number con pulsante inline --- */
-  .sn-row-label {
-    font-size: 12pt;
-    margin: 8px 0 4px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+  .selettori-row { display:flex; align-items:center; gap:24px; margin-bottom:12px; flex-wrap:wrap; }
+  .selettori-row label { font-size:12pt; display:flex; align-items:center; gap:8px; margin:0; }
+  .selettori-row select { font-size:12pt; padding:4px 8px; border-radius:4px; border:1px solid #aaa; }
+  .sn-row-label { font-size:12pt; margin:8px 0 4px; display:flex; align-items:center; gap:10px; }
   .btn-genera-sn {
-    background: #17a2b8;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 12px;
-    font-size: 10pt;
-    font-weight: bold;
-    cursor: pointer;
-    white-space: nowrap;
+    background:#17a2b8; color:white; border:none; border-radius:4px;
+    padding:4px 12px; font-size:10pt; font-weight:bold; cursor:pointer; white-space:nowrap;
   }
-  .btn-genera-sn:hover { background: #117a8b; }
+  .btn-genera-sn:hover { background:#117a8b; }
+  @media print { .no-print { display:none; } body { padding-top:0; } }
 
-  @media print { .no-print { display:none; } }
+  /* --- Topbar stile WMS Hub --- */
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap');
+  .topbar {
+    height: 52px;
+    background: #0b0f18;
+    border-bottom: 1px solid #243048;
+    display: flex;
+    align-items: center;
+    padding: 0 16px 0 60px;
+    gap: 10px;
+    margin: 0 0 14px 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .topbar-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px; font-weight: 800;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: #00c8ff; white-space: nowrap;
+  }
+  .topbar-title span { color: #64748b; font-weight: 600; }
+  .topbar-div { width:1px; height:18px; background:#243048; flex-shrink:0; }
+  .topbar-sub {
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #64748b; white-space: nowrap;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 600;
+  }
 
-  /* ---------- Etichetta 10x10 originale ---------- */
+
+  /* spinge il contenuto sotto la topbar */
+
+
+  /* ============================================================
+     ETICHETTA 10x10
+     Layout per ogni sezione con dati:
+     [scritta verticale] [QR]  |  [TESTO]  |  [logo destra]
+     ============================================================ */
   .etichetta-10x10 {
-    width:100mm; height:100mm; border: 0.5px solid #000; background:white;
-    padding:2mm 3.5mm; box-sizing:border-box; page-break-after:always;
+    width:100mm; height:100mm; border:0.5px solid #000; background:white;
+    padding:2mm 2.5mm; box-sizing:border-box; page-break-after:always;
     position:relative; margin-bottom:10mm;
+    display:flex; flex-direction:column;
   }
-  .logo-container { height:10mm; margin-bottom:0.5mm; position:relative; }
-  .logo-img { height:9mm; }
-  .label-cod-bp { position:absolute; right:0; top:12mm; font-size:7pt; font-weight:bold; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.3px; }
-  .bp-section { margin-bottom:1mm; }
-  .bp-label { font-size:9pt; font-weight:bold; margin-bottom:0.2mm; }
-  .bp-value { font-size:20pt; font-weight:bold; line-height:1; }
-  .qr-bp { position:absolute; top:11mm; right:9mm; width:11mm; height:11mm; }
-  hr { border:none; border-top:1.8px solid black; margin:1.2mm 0; }
-  hr.thin { border-top:1.8px solid black; margin:1.5mm 0; }
-  .art-label { font-weight:bold; font-size:9pt; margin:0 0 0.8mm; }
-  .barcode-svg { width:72mm; height:26px; margin:0 auto 0.8mm; display:block; }
-  .wms { text-align:center; font-size:10.5pt; font-weight:bold; margin-bottom:1mm; }
-  .po-row { margin-top:1.2mm; margin-bottom:1mm; display:flex; justify-content:space-between; align-items:flex-start; }
+
+  hr { border:none; border-top:1.8px solid black; margin:0.7mm 0; }
+  hr.thin { border-top:1.8px solid black; margin:0.5mm 0; }
+
+  /* --- Riga generica con: [vert+QR a sx] [testo al centro] [logo opzionale a dx] --- */
+  .et-row {
+    display: flex;
+    align-items: center;
+    gap: 1.5mm;
+    margin-bottom: 0.3mm;
+  }
+
+  /* Colonna sinistra: scritta verticale + QR */
+  .et-left {
+    display: flex;
+    align-items: center;
+    gap: 1mm;
+    flex-shrink: 0;
+  }
+
+  .et-vert {
+    font-size: 7pt;
+    font-weight: bold;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .et-qr {
+    width: 11mm;
+    height: 11mm;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  /* Colonna centrale: testo */
+  .et-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Colonna destra: logo */
+  .et-logo {
+    height: 9mm;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  /* Testi */
+  .lbl  { font-size:9pt; font-weight:bold; display:block; line-height:1.2; }
+  .val-lg  { font-size:20pt; font-weight:bold; line-height:1; display:block; }
+  .val-md  { font-size:16pt; font-weight:bold; line-height:1; display:block; }
+  .val-sm  { font-size:12pt; font-weight:bold; line-height:1.2; word-break:break-all; display:block; }
+
+  /* Barcode + WMS (sezione centrale senza QR laterale) */
+  .art-label { font-weight:bold; font-size:9pt; margin:0 0 0.5mm; }
+  .barcode-svg { width:76mm; height:26px; margin:0 auto 0.5mm; display:block; }
+  .wms { text-align:center; font-size:10.5pt; font-weight:bold; margin-bottom:0.5mm; }
+
+  /* PO row */
+  .po-row { display:flex; justify-content:space-between; align-items:flex-start; margin:0.8mm 0; }
   .po-col { flex:1; }
+  .po-col.right { text-align:right; }
   .po-label { font-size:9pt; font-weight:bold; }
   .po-value { font-size:18pt; font-weight:bold; line-height:1; display:block; }
-  .label-tpn { position:absolute; right:3mm; top:55mm; font-size:7pt; font-weight:bold; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.3px; }
-  .part-section { margin:1mm 0 3mm; position:relative; }
-  .part-label { font-size:9pt; font-weight:bold; line-height:1.1; }
-  .part-value { font-size:16pt; font-weight:bold; line-height:1; display:block; }
-  .qr-part { position:absolute; top:0; right:3.5mm; width:11mm; height:11mm; }
-  .sn-section { position:relative; margin:2mm 0 0.5mm; }
-  .sn-label { font-size:9pt; font-weight:bold; display:block; }
-  .sn-value { font-size:16pt; font-weight:bold; line-height:1.2; display:block; }
-  .qr-sn { position:absolute; top:0; right:3.5mm; width:11mm; height:11mm; }
-  .label-sn { position:absolute; right:0; bottom:2.8mm; font-size:7pt; font-weight:bold; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.3px; }
-  .ubicazione-under-sn { margin-top:-0.5mm; }
-  .ubicazione-under-sn .pos-label { font-size:9pt; font-weight:bold; display:block; }
-  .ubicazione-under-sn .pos-value { font-size:12pt; font-weight:bold; line-height:1.2; word-break:break-all; }
 
-  /* ---------- Etichetta 10x5 compatta ---------- */
-  @page { size: 100mm 50mm; }
+  /* Ubicazione sotto SN */
+  .ubicazione { margin-top:0.5mm; }
+
+  /* ============================================================
+     ETICHETTA 10x5
+     ============================================================ */
+  @page { size:100mm 50mm; }
   .etichetta-10x5 {
     width:100mm; height:50mm; border:0.5px solid #000; background:white;
-    padding:2mm 3mm; box-sizing:border-box; page-break-after:always;
+    padding:2mm 2.5mm; box-sizing:border-box; page-break-after:always;
     position:relative; font-size:8pt;
   }
-  .et5-logo { height:8mm; display:inline-block; vertical-align:middle; }
-  .et5-codbp { display:inline-block; float:right; text-align:right; font-weight:bold; font-size:16pt; }
-  .et5-qr-bp { width:10mm; height:10mm; vertical-align:middle; margin-left:2mm; }
-  .et5-barcode { width:55mm; height:20px; display:block; margin:2mm auto 1mm; }
-  .et5-wms { text-align:center; font-weight:bold; font-size:9pt; margin-bottom:1mm; }
-  .et5-info { font-size:10pt; display:flex; justify-content:space-between; margin-top:1mm; }
-  .et5-info div { line-height:1.5; }
-  .et5-qr-sn { width:10mm; height:10mm; margin-left:2mm; vertical-align:middle;margin-top:4mm; }
+  .et5-top {
+    display:flex; align-items:center; gap:1.5mm; margin-bottom:1mm;
+  }
+  .et5-vert {
+    font-size:7pt; font-weight:bold;
+    writing-mode:vertical-rl; transform:rotate(180deg);
+    letter-spacing:0.3px; white-space:nowrap;
+  }
+  .et5-qr { width:10mm; height:10mm; flex-shrink:0; }
+  .et5-codbp-block { flex:1; }
+  .et5-codbp-label { font-size:8pt; font-weight:bold; }
+  .et5-codbp-val { font-size:13pt; font-weight:bold; line-height:1.2; }
+  .et5-logo { height:8mm; margin-left:auto; }
+  .et5-barcode { width:55mm; height:20px; display:block; margin:1mm auto 0.5mm; }
+  .et5-wms { text-align:center; font-weight:bold; font-size:9pt; margin-bottom:0.5mm; }
+  .et5-footer { display:flex; align-items:center; gap:1.5mm; margin-top:1mm; }
+  .et5-info { font-size:9pt; line-height:1.5; flex:1; }
 </style>
 </head>
 <body>
 <div class="no-print">
-  <div class="header-container">
-    <img class="header-logo" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg" alt="ATS Logo">
-    <h1 class="header-title">Sistema di Gestione Etichette ATS</h1>
+  <div class="topbar">
+    <div class="topbar-title">Hub Logistica <span>WMS</span></div>
+    <div class="topbar-div"></div>
+    <div class="topbar-sub">Etichetta Logistica ATS</div>
   </div>
 
-  <!-- ===== SELETTORI AFFIANCATI ===== -->
   <div class="selettori-row">
-    <label>
-      Seleziona formato:
+    <label>Seleziona formato:
       <select id="formatoEtichetta">
         <option value="10x10">10×10</option>
         <option value="10x5">10×5</option>
       </select>
     </label>
-    <label>
-      Seleziona commessa:
+    <label>Seleziona commessa:
       <select id="commessaSelect">
         <option value="NTD">NTD</option>
         <option value="FLM">FLM</option>
@@ -169,22 +210,18 @@
 
   <div id="formManuale" style="display:none;">
     <h3>Compila Etichetta Manualmente</h3>
-    <label>Codice BP: <input type="text" id="m_CodiceBP" placeholder="Inserisci Codice BP"></label>
+    <label>Material ID Cliente: <input type="text" id="m_CodiceBP" placeholder="Inserisci Material ID Cliente"></label>
     <label>Part Number: <input type="text" id="m_PartNumber" placeholder="Inserisci Part Number"></label>
     <label>Articolo WMS: <input type="text" id="m_ArticoloWMS" readonly></label>
-
-    <!-- ===== RIGA SERIAL NUMBER CON PULSANTE ===== -->
     <div class="sn-row-label">
       <span>Serial Number/Lotto:</span>
-      <button class="btn-genera-sn" onclick="generaSeriale()" title="Genera seriale automatico dalla commessa selezionata">
-        ⚡ Genera Lotto
-      </button>
+      <button class="btn-genera-sn" onclick="generaSeriale()">⚡ Genera Lotto</button>
     </div>
     <textarea id="m_SerialNumber" placeholder="Inserisci un seriale per riga, oppure Seleziona Commessa e usa Genera Lotto"></textarea>
-
     <label>PO: <input type="text" id="m_PO"></label>
     <label>Posizione: <input type="text" id="m_Posizione"></label>
     <label>Ubicazione: <input type="text" id="m_Ubicazione"></label>
+    <label>CDC: <input type="text" id="m_CDC" placeholder="Es. IT2V"></label>
     <br>
     <button class="btn-stampa" onclick="aggiungiEtichettaManuale()">AGGIUNGI ETICHETTA</button>
     <button class="btn-stampa" onclick="resetFormManuale()" style="background:#ffc107;">RESET CAMPI</button>
@@ -197,91 +234,192 @@
 <script>
 let etichettaCounter = 1000;
 
-function resetFile() { document.getElementById('excelFile').value = ''; document.getElementById('output').innerHTML = ''; }
-function apriFormManuale() { document.getElementById('formManuale').style.display = 'block'; }
-function chiudiFormManuale() { document.getElementById('formManuale').style.display = 'none'; }
+function resetFile() { document.getElementById('excelFile').value=''; document.getElementById('output').innerHTML=''; }
+function apriFormManuale() { document.getElementById('formManuale').style.display='block'; }
+function chiudiFormManuale() { document.getElementById('formManuale').style.display='none'; }
 function resetFormManuale() {
-  ['m_CodiceBP','m_PartNumber','m_SerialNumber','m_ArticoloWMS','m_PO','m_Posizione','m_Ubicazione']
+  ['m_CodiceBP','m_PartNumber','m_SerialNumber','m_ArticoloWMS','m_PO','m_Posizione','m_Ubicazione','m_CDC']
   .forEach(id=>document.getElementById(id).value='');
 }
 
-// ---------- GENERA SERIALE AUTOMATICO ----------
 function generaSeriale() {
   const commessa = document.getElementById('commessaSelect').value;
   const now = new Date();
-
-  const yyyy = now.getFullYear();
-  const mm   = String(now.getMonth() + 1).padStart(2, '0');
-  const dd   = String(now.getDate()).padStart(2, '0');
-  const hh   = String(now.getHours()).padStart(2, '0');
-  const min  = String(now.getMinutes()).padStart(2, '0');
-  const ss   = String(now.getSeconds()).padStart(2, '0');
-
-  const seriale = `${commessa}-${yyyy}${mm}${dd}-${hh}${min}${ss}`;
-
+  const pad = n => String(n).padStart(2,'0');
+  const seriale = `${commessa}-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
   const ta = document.getElementById('m_SerialNumber');
-  // Controlla se l'ultimo seriale inserito è già identico → non duplicare
   const righe = ta.value.trimEnd().split('\n');
-  const ultimaRiga = righe[righe.length - 1].trim();
-  if (ultimaRiga === seriale) {
-    ta.focus();
-    return;
-  }
-
-  if (ta.value.trim() !== '') {
-    ta.value = ta.value.trimEnd() + '\n' + seriale;
-  } else {
-    ta.value = seriale;
-  }
+  if (righe[righe.length-1].trim() === seriale) { ta.focus(); return; }
+  ta.value = ta.value.trim() !== '' ? ta.value.trimEnd()+'\n'+seriale : seriale;
   ta.scrollTop = ta.scrollHeight;
   ta.focus();
 }
 
 function downloadTemplate() {
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([['CodiceBP','PartNumber','SerialNumber/Lotto','ArticoloWMS','PO','Posizione PO','Ubicazione'],['000000000302059612','02310CET','2102310CET10E5001574','WMS0006047-FLM','471005225','10','71-STK-S11-C14-05-003']]);
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['CodiceBP','PartNumber','SerialNumber/Lotto','ArticoloWMS','PO','Posizione PO','Ubicazione','CDC'],
+    ['000000000302059612','02310CET','2102310CET10E5001574','WMS0006047-FLM','471005225','10','71-STK-S11-C14-05-003','IT2V']
+  ]);
   XLSX.utils.book_append_sheet(wb, ws, 'Etichette');
   XLSX.writeFile(wb, 'Template_Etichette_ATS.xlsx');
 }
 
-// ---------- CREA ETICHETTA 10x10 ----------
-function creaEtichetta10x10(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, bcId){
+/* ============================================================
+   ETICHETTA 10x10
+   Layout:
+   - Riga 1: logo ATS in alto a destra (solo)
+   - Riga 2: [COD BP vert][QR] | "Codice BP" + valore CENTRATI
+   - Riga 3: "Articolo" centrato + barcode + WMS
+   - Riga 4: PO sx / Posizione dx
+   - Riga 5: [TPN vert][QR] | label+valore TUTTO A DESTRA
+   - Riga 6: [SN vert][QR]  | label+valore TUTTO A DESTRA
+   ============================================================ */
+function creaEtichetta10x10(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, CDC, bcId){
+  const qrBP = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(CodiceBP)}`;
+  const qrPN = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(PartNumber)}`;
+  const qrSN = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(SerialNumber)}`;
+  const logo = `https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg`;
+
   return `<div class="etichetta-10x10">
-    <div class="logo-container"><img class="logo-img" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg"><div class="label-cod-bp">COD BP</div></div>
-    <div class="bp-section"><div class="bp-label">Codice BP</div><div class="bp-value">${CodiceBP}</div></div>
-    <img class="qr-bp" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(CodiceBP)}">
-    <hr>
-    <div class="art-label">Articolo</div>
-    <svg class="barcode-svg" id="${bcId}"></svg>
-    <div class="wms">${ArticoloWMS}</div>
-    <hr>
-    <div class="po-row">
-      <div class="po-col"><span class="po-label">Po Nr°</span><span class="po-value">${PO}</span></div>
-      <div class="po-col" style="text-align:right;"><span class="po-label">Posizione</span><span class="po-value">${Posizione}</span></div>
+
+    <!-- RIGA 1: logo ATS in alto a destra da solo -->
+    <div style="text-align:right; margin-bottom:1mm;">
+      <img style="height:9mm;" src="${logo}">
     </div>
-    <div class="label-tpn">TPN</div><hr class="thin">
-    <div class="part-section"><span class="part-label">Part Number</span><span class="part-value">${PartNumber}</span><img class="qr-part" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(PartNumber)}"></div>
+
+    <!-- RIGA 2: [COD BP vert][QR] | Codice BP centrato -->
+    <div class="et-row">
+      <div class="et-left">
+        <span class="et-vert">COD BP</span>
+        <img class="et-qr" src="${qrBP}">
+      </div>
+      <div class="et-body" style="text-align:center;">
+        <span class="lbl">Codice BP</span>
+        <span class="val-lg">${CodiceBP}</span>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Piccolo spazio tra Codice BP e Articolo -->
+    <div style="height:1mm;"></div>
+
+    <!-- RIGA 3: Articolo verticale a sinistra + barcode + WMS -->
+    <div style="display:flex; align-items:center; gap:1mm;">
+      <span style="font-size:7pt; font-weight:bold; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.3px; white-space:nowrap; flex-shrink:0;">Articolo</span>
+      <div style="flex:1;">
+        <svg class="barcode-svg" id="${bcId}" style="width:100%;"></svg>
+        <div class="wms">${ArticoloWMS}</div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- RIGA 4: PO sx / Posizione dx -->
+    <div class="po-row">
+      <div class="po-col">
+        <span class="po-label">Po Nr°</span>
+        <span class="po-value">${PO}</span>
+      </div>
+      <div class="po-col right">
+        <span class="po-label">Posizione</span>
+        <span class="po-value">${Posizione}</span>
+      </div>
+    </div>
+
     <hr class="thin">
-    <div class="sn-section"><span class="sn-label">SerialNumber/Lotto</span><span class="sn-value">${SerialNumber}</span><img class="qr-sn" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(SerialNumber)}"><div class="label-sn">SN</div></div>
-    <div class="ubicazione-under-sn"><span class="pos-label">Ubicazione</span><div class="pos-value">${Ubicazione}</div></div>
+
+    <!-- RIGA 5: [TPN vert][QR] | Part Number TUTTO A DESTRA -->
+    <div class="et-row">
+      <div class="et-left">
+        <span class="et-vert">TPN</span>
+        <img class="et-qr" src="${qrPN}">
+      </div>
+      <div class="et-body" style="text-align:right;">
+        <span class="lbl">Part Number</span>
+        <span class="val-md">${PartNumber}</span>
+      </div>
+    </div>
+
+    <hr class="thin">
+
+    <!-- SPACER flessibile: spazio ridotto tra TPN e SN -->
+    <div style="flex:0.4;"></div>
+
+    <!-- RIGA 6: [SN vert][QR] | SerialNumber TUTTO A DESTRA - spinto al fondo -->
+    <div class="et-row" style="margin-top:0;">
+      <div class="et-left">
+        <span class="et-vert">SN</span>
+        <img class="et-qr" src="${qrSN}">
+      </div>
+      <div class="et-body" style="text-align:right;">
+        <span class="lbl">SerialNumber/Lotto</span>
+        <span class="val-md">${SerialNumber}</span>
+      </div>
+    </div>
+
+    <!-- Spacer: spinge CDC+Ubicazione al fondo -->
+    <div style="flex:1;min-height:0;"></div>
+
+    <!-- CDC a sinistra + Ubicazione a destra sulla stessa riga -->
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:0.5mm;">
+      <div style="text-align:left;">
+        <span class="lbl">CDC</span>
+        <span class="val-sm">${CDC}</span>
+      </div>
+      <div style="text-align:right;">
+        <span class="lbl">Ubicazione</span>
+        <span class="val-sm">${Ubicazione}</span>
+      </div>
+    </div>
+
   </div>`;
 }
 
-// ---------- CREA ETICHETTA 10x5 ----------
-function creaEtichetta10x5(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, bcId){
+/* ============================================================
+   ETICHETTA 10x5
+   Struttura: [vert] [QR] [testo] [logo]
+   ============================================================ */
+function creaEtichetta10x5(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, CDC, bcId){
+  const qrBP = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(CodiceBP)}`;
+  const qrSN = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(SerialNumber)}`;
+  const logo = `https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg`;
+
   return `<div class="etichetta-10x5">
-    <img class="et5-logo" src="https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg">
-    <div class="et5-codbp">Codice BP<br>${CodiceBP}<img class="et5-qr-bp" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(CodiceBP)}"></div>
+
+    <!-- HEADER: [COD BP vert] [QR] [testo BP] [logo] -->
+    <div class="et5-top">
+      <span class="et5-vert">COD BP</span>
+      <img class="et5-qr" src="${qrBP}">
+      <div class="et5-codbp-block">
+        <div class="et5-codbp-label">Codice BP</div>
+        <div class="et5-codbp-val">${CodiceBP}</div>
+      </div>
+      <img class="et5-logo" src="${logo}">
+    </div>
+
+    <!-- Barcode + WMS -->
     <svg class="et5-barcode" id="${bcId}"></svg>
     <div class="et5-wms">${ArticoloWMS}</div>
-    <div class="et5-info">
-      <div>PO Nr°: ${PO} / Pos: ${Posizione}<br>Part Number: ${PartNumber}<br>Seriale: ${SerialNumber}</div>
-      <img class="et5-qr-sn" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(SerialNumber)}">
+
+    <!-- FOOTER: [SN vert] [QR] [info testo] -->
+    <div class="et5-footer">
+      <span class="et5-vert">SN</span>
+      <img class="et5-qr" src="${qrSN}">
+      <div class="et5-info">
+        PO Nr°: ${PO} / Pos: ${Posizione}<br>
+        Part Number: ${PartNumber}<br>
+        Seriale: ${SerialNumber}<br>
+        CDC: ${CDC}<br>
+        Ubicazione: ${Ubicazione}
+      </div>
     </div>
+
   </div>`;
 }
 
-// ---------- DATABASE BP ----------
+/* ---------- DATABASE BP ---------- */
 let bpDatabase = [];
 fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSC8jBRzMHrA7IMzvnjbvQ0shOg2Eg5q1UpJZlk2VmT1TEHQ3bKrYlj8MX7J405NPcO7TwK5R5QHlXD/pub?output=csv')
 .then(r=>r.text())
@@ -289,110 +427,101 @@ fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSC8jBRzMHrA7IMzvnjbvQ0sh
   const lines = csv.split(/\r?\n/);
   bpDatabase = lines.slice(1).map(l=>{
     const [CodiceBP, ArticoloWMS, PartNumber] = l.split(',');
-    return {CodiceBP: CodiceBP?.trim(), ArticoloWMS: ArticoloWMS?.trim(), PartNumber: PartNumber?.trim()};
-  }).filter(r => r.CodiceBP);
-  console.log('BP database pronto', bpDatabase.length);
+    return {CodiceBP:CodiceBP?.trim(), ArticoloWMS:ArticoloWMS?.trim(), PartNumber:PartNumber?.trim()};
+  }).filter(r=>r.CodiceBP);
 });
 
-// ---------- EVENTI FORM MANUALE ----------
 function verificaCodiceBP(){
   const bp = document.getElementById('m_CodiceBP').value.trim();
   if(!bp) return;
   const matches = bpDatabase.filter(r=>r.CodiceBP===bp);
-  if(matches.length===0) return alert('Codice BP non trovato.');
+  if(matches.length===0){
+    document.getElementById('m_ArticoloWMS').value = 'ND';
+    return;
+  }
   if(matches.length===1){
     document.getElementById('m_ArticoloWMS').value = matches[0].ArticoloWMS;
-    document.getElementById('m_PartNumber').value = matches[0].PartNumber;
+    document.getElementById('m_PartNumber').value  = matches[0].PartNumber;
   } else {
     const popup = document.createElement('div');
     popup.id = 'bp-popup';
-    popup.style.position='fixed';
-    popup.style.left='50%';
-    popup.style.top='50%';
-    popup.style.transform='translate(-50%,-50%)';
-    popup.style.background='#fff';
-    popup.style.padding='20px';
-    popup.style.border='2px solid #000';
-    popup.style.zIndex=9999;
+    popup.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;padding:20px;border:2px solid #000;z-index:9999;';
     let html = '<div>Scegli Articolo WMS:</div><ul style="padding-left:0;">';
     matches.forEach((m,i)=>{
       html += `<li style="list-style:none;margin:5px 0;cursor:pointer;padding:4px;border:1px solid #000;" onclick="scegliArticolo(${i})">${m.ArticoloWMS} / ${m.PartNumber}</li>`;
     });
-    html += '</ul>';
-    popup.innerHTML = html;
+    popup.innerHTML = html+'</ul>';
     document.body.appendChild(popup);
     window.scegliArticolo = function(index){
       document.getElementById('m_ArticoloWMS').value = matches[index].ArticoloWMS;
-      document.getElementById('m_PartNumber').value = matches[index].PartNumber;
+      document.getElementById('m_PartNumber').value  = matches[index].PartNumber;
       document.body.removeChild(document.getElementById('bp-popup'));
-    }
+    };
   }
 }
 
 document.getElementById('m_CodiceBP').addEventListener('blur', verificaCodiceBP);
 document.getElementById('m_CodiceBP').addEventListener('keypress', e=>{
-  if(e.key==='Enter'){
-    e.preventDefault();
-    verificaCodiceBP();
-  }
+  if(e.key==='Enter'){ e.preventDefault(); verificaCodiceBP(); }
 });
 
-// ---------- AGGIUNGI ETICHETTA MANUALE MULTIPLE SERIALI ----------
 function aggiungiEtichettaManuale(){
-  const CodiceBP = document.getElementById('m_CodiceBP').value.trim();
-  const PartNumber = document.getElementById('m_PartNumber').value.trim();
+  const CodiceBP    = document.getElementById('m_CodiceBP').value.trim();
+  const PartNumber  = document.getElementById('m_PartNumber').value.trim();
   const ArticoloWMS = document.getElementById('m_ArticoloWMS').value.trim();
   const SerialNumbers = document.getElementById('m_SerialNumber').value.trim().split(/\r?\n/).filter(s=>s.trim());
-  const PO = document.getElementById('m_PO').value.trim();
-  const Posizione = document.getElementById('m_Posizione').value.trim();
-  const Ubicazione = document.getElementById('m_Ubicazione').value.trim();
-  const formato = document.getElementById('formatoEtichetta').value;
+  const PO          = document.getElementById('m_PO').value.trim();
+  const Posizione   = document.getElementById('m_Posizione').value.trim();
+  const Ubicazione  = document.getElementById('m_Ubicazione').value.trim();
+  const CDC         = document.getElementById('m_CDC').value.trim();
+  const formato     = document.getElementById('formatoEtichetta').value;
 
-  if(!CodiceBP || !PartNumber || !ArticoloWMS) return alert('Compila Codice BP e seleziona Articolo WMS.');
+  if(!CodiceBP) return alert('Inserisci il Material ID Cliente.');
+  if(!ArticoloWMS) document.getElementById('m_ArticoloWMS').value = 'ND';
+  const ArticoloWMSFinal = document.getElementById('m_ArticoloWMS').value.trim() || 'ND';
 
   SerialNumbers.forEach(serial=>{
     const bcId = 'bc-manual-'+(etichettaCounter++);
-    let html = '';
-    if(formato==='10x10'){
-      html = creaEtichetta10x10(CodiceBP, PartNumber, serial, ArticoloWMS, PO, Posizione, Ubicazione, bcId);
-    } else {
-      html = creaEtichetta10x5(CodiceBP, PartNumber, serial, ArticoloWMS, PO, Posizione, bcId);
-    }
+    const html = formato==='10x10'
+      ? creaEtichetta10x10(CodiceBP, PartNumber, serial, ArticoloWMSFinal, PO, Posizione, Ubicazione, CDC, bcId)
+      : creaEtichetta10x5(CodiceBP, PartNumber, serial, ArticoloWMSFinal, PO, Posizione, Ubicazione, CDC, bcId);
     document.getElementById('output').innerHTML += html;
     setTimeout(()=>{
-      if(document.getElementById(bcId)) JsBarcode('#'+bcId, ArticoloWMS, {format:"CODE128", height:formato==='10x10'?26:20, width:1.8, displayValue:false, margin:0});
+      if(document.getElementById(bcId))
+        JsBarcode('#'+bcId, ArticoloWMSFinal, {format:"CODE128", height:formato==='10x10'?26:20, width:1.8, displayValue:false, margin:0});
     },100);
   });
 }
 
-// ---------- CARICAMENTO FILE EXCEL ----------
 document.getElementById('excelFile').addEventListener('change', e=>{
   const f = e.target.files[0]; if(!f) return;
   const r = new FileReader();
   r.onload = e=>{
-    const data = e.target.result;
-    const wb = XLSX.read(data,{type:'array'});
+    const wb = XLSX.read(e.target.result,{type:'array'});
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
     const formato = document.getElementById('formatoEtichetta').value;
     let html='';
     for(let i=1;i<rows.length;i++){
-      const CodiceBP=(rows[i][0]||'').toString().trim();
-      const PartNumber=(rows[i][1]||'').toString().trim();
-      const SerialNumber=(rows[i][2]||'').toString().trim();
-      const ArticoloWMS=(rows[i][3]||'').toString().trim();
-      const PO=(rows[i][4]||'').toString().trim();
-      const Posizione=(rows[i][5]||'').toString().trim();
-      const Ubicazione=(rows[i][6]||'').toString().trim();
-      const bcId='bc-'+i;
-      if(formato==='10x10') html+=creaEtichetta10x10(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, bcId);
-      else html+=creaEtichetta10x5(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, bcId);
+      const CodiceBP    = (rows[i][0]||'').toString().trim();
+      const PartNumber  = (rows[i][1]||'').toString().trim();
+      const SerialNumber= (rows[i][2]||'').toString().trim();
+      const ArticoloWMS = (rows[i][3]||'').toString().trim();
+      const PO          = (rows[i][4]||'').toString().trim();
+      const Posizione   = (rows[i][5]||'').toString().trim();
+      const Ubicazione  = (rows[i][6]||'').toString().trim();
+      const CDC         = (rows[i][7]||'').toString().trim();
+      const bcId = 'bc-'+i;
+      html += formato==='10x10'
+        ? creaEtichetta10x10(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, CDC, bcId)
+        : creaEtichetta10x5(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO, Posizione, Ubicazione, CDC, bcId);
     }
-    document.getElementById('output').innerHTML=html;
+    document.getElementById('output').innerHTML = html;
     setTimeout(()=>{
       for(let i=1;i<rows.length;i++){
         const val=(rows[i][3]||'').toString().trim();
         const bcId='bc-'+i;
-        if(val && document.getElementById(bcId)) JsBarcode('#'+bcId, val, {format:"CODE128", height:formato==='10x10'?26:20, width:1.8, displayValue:false, margin:0});
+        if(val && document.getElementById(bcId))
+          JsBarcode('#'+bcId, val, {format:"CODE128", height:formato==='10x10'?26:20, width:1.8, displayValue:false, margin:0});
       }
     },300);
   };
@@ -401,4 +530,3 @@ document.getElementById('excelFile').addEventListener('change', e=>{
 </script>
 </body>
 </html>
-
