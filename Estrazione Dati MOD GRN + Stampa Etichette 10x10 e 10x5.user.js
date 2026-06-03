@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      20.0
+// @version      22.0
 // @description  Esporta seriali e lotti in CSV e XLXS separati e aggiunge funzionalità di stampa etichette 10x10 e 10x5 + filtro e scroll righe
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/*
@@ -512,393 +512,164 @@ function printLabels(labels) {
 <meta charset="utf-8">
 <title>Etichette 10x10</title>
 <style>
-@page {
-    size: 100mm 100mm;
-    margin: 0;
-}
+@page { size: 100mm 100mm; margin: 0; }
 html, body {
-    margin: 0;
-    padding: 0;
+    margin: 0; padding: 0;
     font-family: Arial, Helvetica, sans-serif;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
 }
-.labels {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0;
+.etichetta-10x10 {
+    width: 100mm; height: 100mm;
+    border: 0.5px solid #000; background: white;
+    padding: 2mm 2.5mm; box-sizing: border-box;
+    page-break-after: always; position: relative;
+    display: flex; flex-direction: column;
 }
-.label {
-    width: 100mm;
-    height: 100mm;
-    box-sizing: border-box;
-    padding: 3mm;
-    border: none;
-    display: block;
-    page-break-after: always;
+hr { border: none; border-top: 1.8px solid black; margin: 0.7mm 0; }
+hr.thin { border-top: 1.8px solid black; margin: 0.5mm 0; }
+.et-row { display: flex; align-items: center; gap: 1.5mm; margin-bottom: 0.3mm; }
+.et-left { display: flex; align-items: center; gap: 1mm; flex-shrink: 0; }
+.et-vert {
+    font-size: 7pt; font-weight: bold;
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    letter-spacing: 0.3px; white-space: nowrap; line-height: 1;
 }
-.container {
-    display: flex;
-    height: 100%;
-}
-.left {
-    flex: 1;
-    padding-right: 4px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-}
-.top-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-}
-.codicebp {
-    font-size: 25px;
-    font-weight: 700;
-    letter-spacing: 1px;
-}
-.small {
-    font-size: 12px;
-    color: #222;
-}
-.line {
-    border-top: 0.3px solid #000;
-    margin: 1px 0;
-    width: 100%;
-}
-.barcode {
-    width: 100%;
-    height: 8mm;
-}
-.barcode-text {
-    text-align: center;
-    font-size: 12px;
-    margin-top: 2px;
-}
-.right {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-}
-.qr {
-    width: 13mm;
-    height: 13mm;
-}
-.vert {
-    writing-mode: vertical-lr;
-    transform: rotate(0deg);
-    font-size: 8px;
-    margin-left: 2px;
-    white-space: nowrap;
-}
-.qr-container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-}
-.field-block {
-    display: flex;
-    flex-direction: column;
-    margin-top: 2px;
-}
-.potext {
-    font-size: 12px;
-    color: #333;
-}
-.pn-block {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: -5px;
-}
-.pn-block .qr-container {
-    margin-top: -55px;
-}
-.serial-block {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 4px;
-}
-.serial-block .small {
-    font-size: 12px;
-    font-weight: bold;
-}
-.center-left {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-.logo {
-    max-height: 15mm;
-    max-width: 30mm;
-    margin-bottom: 2mm;
-}
+.et-qr { width: 11mm; height: 11mm; flex-shrink: 0; display: block; }
+.et-body { flex: 1; min-width: 0; }
+.lbl  { font-size: 9pt; font-weight: bold; display: block; line-height: 1.2; }
+.val-lg { font-size: 20pt; font-weight: bold; line-height: 1; display: block; }
+.val-md { font-size: 16pt; font-weight: bold; line-height: 1; display: block; }
+.val-sm { font-size: 12pt; font-weight: bold; line-height: 1.2; word-break: break-all; display: block; }
+.barcode-svg { width: 100%; height: 26px; margin: 0 auto 0.5mm; display: block; }
+.wms { text-align: center; font-size: 10.5pt; font-weight: bold; margin-bottom: 0.5mm; }
+.po-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 0.8mm 0; }
+.po-col { flex: 1; }
+.po-col.right { text-align: right; }
+.po-label { font-size: 9pt; font-weight: bold; }
+.po-value { font-size: 18pt; font-weight: bold; line-height: 1; display: block; }
 </style>
 </head>
 <body>
-<div id="labels" class="labels"></div>
-
+<div id="labels"></div>
 <script>
 (function(){
     const labels = JSON.parse(decodeURIComponent("${payload}"));
     const container = document.getElementById('labels');
+    const logo = "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/logo%20ats.jpg";
 
     function generateLabels() {
         labels.forEach((lab, idx) => {
-            const label = document.createElement('div');
-            label.className = 'label';
+            const div = document.createElement('div');
+            div.className = 'etichetta-10x10';
+            div.innerHTML = \`
+                <!-- RIGA 1: logo ATS in alto a destra -->
+                <div style="text-align:right; margin-bottom:1mm;">
+                  <img style="height:9mm;" src="\${logo}">
+                </div>
 
-            const containerInner = document.createElement('div');
-            containerInner.className = 'container';
+                <!-- RIGA 2: [COD BP vert][QR] | Codice BP centrato -->
+                <div class="et-row">
+                  <div class="et-left" style="align-self:flex-start;">
+                    <span class="et-vert">COD BP</span>
+                    <div class="et-qr" id="qr-bp-\${idx}"></div>
+                  </div>
+                  <div class="et-body" style="text-align:center;">
+                    <span class="lbl">Codice BP</span>
+                    <span class="val-lg">\${lab.codiceBP||''}</span>
+                  </div>
+                </div>
 
-            const left = document.createElement('div');
-            left.className = 'left';
+                <hr>
 
-            const logo = document.createElement('img');
-            logo.src = "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/logo%20ats.jpg";
-            logo.className = "logo";
-            left.appendChild(logo);
+                <!-- Piccolo spazio tra Codice BP e Articolo -->
+                <div style="height:1mm;"></div>
 
-            const topRow = document.createElement('div');
-            topRow.className = 'top-row';
+                <!-- RIGA 3: [Articolo vert] + barcode + WMS -->
+                <div style="display:flex; align-items:center; gap:1mm;">
+                  <span style="font-size:7pt; font-weight:bold; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.3px; white-space:nowrap; flex-shrink:0;">Articolo</span>
+                  <div style="flex:1;">
+                    <svg class="barcode-svg" id="barcode-\${idx}" style="width:100%;"></svg>
+                    <div class="wms">\${lab.articolo||''}</div>
+                  </div>
+                </div>
 
-            const leftTop = document.createElement('div');
-            leftTop.className = 'center-left';
-            const codLabel = document.createElement('div');
-            codLabel.className = 'small';
-            codLabel.innerText = 'Codice BP';
-            const codVal = document.createElement('div');
-            codVal.className = 'codicebp';
-            codVal.innerText = lab.codiceBP || '';
-            leftTop.appendChild(codLabel);
-            leftTop.appendChild(codVal);
+                <hr>
 
-            const rightTop = document.createElement('div');
-            rightTop.style.display = 'flex';
-            rightTop.style.flexDirection = 'column';
-            rightTop.style.alignItems = 'center';
+                <!-- RIGA 4: PO sx / Posizione dx -->
+                <div class="po-row">
+                  <div class="po-col">
+                    <span class="po-label">Po Nr\u00b0</span>
+                    <span class="po-value">\${lab.po||''}</span>
+                  </div>
+                  <div class="po-col right">
+                    <span class="po-label">Posizione</span>
+                    <span class="po-value">\${lab.posizione||''}</span>
+                  </div>
+                </div>
 
-            const qrCodContainer = document.createElement('div');
-            qrCodContainer.className = 'qr-container';
-            const qrCod = document.createElement('div');
-            qrCod.id = 'qr-codice-' + idx;
-            qrCod.className = 'qr';
-            const vertCod = document.createElement('div');
-            vertCod.className = 'vert';
-            vertCod.innerText = 'COD. BP';
-            qrCod.style.marginTop = '-15mm';
-            vertCod.style.marginTop = '-15mm';
-            qrCodContainer.appendChild(qrCod);
-            qrCodContainer.appendChild(vertCod);
-            rightTop.appendChild(qrCodContainer);
+                <hr class="thin">
 
-            topRow.appendChild(leftTop);
-            topRow.appendChild(rightTop);
-            left.appendChild(topRow);
+                <!-- RIGA 5: [TPN vert][QR] | Part Number a destra -->
+                <div class="et-row">
+                  <div class="et-left">
+                    <span class="et-vert">TPN</span>
+                    <div class="et-qr" id="qr-pn-\${idx}"></div>
+                  </div>
+                  <div class="et-body" style="text-align:right;">
+                    <span class="lbl">Part Number</span>
+                    <span class="val-md">\${lab.pn||''}</span>
+                  </div>
+                </div>
 
-            const line1 = document.createElement('div');
-            line1.className = 'line';
-            left.appendChild(line1);
+                <hr class="thin">
 
-            const artDiv = document.createElement('div');
-            artDiv.style.display = 'flex';
-            artDiv.style.flexDirection = 'column';
-            const artLabel = document.createElement('div');
-            artLabel.className = 'small';
-            artLabel.innerText = 'Articolo';
-            const svgBarcode = document.createElementNS('http://www.w3.org/2000/svg','svg');
-            svgBarcode.setAttribute('id','barcode-art-' + idx);
-            svgBarcode.classList.add('barcode');
-            const barcodeText = document.createElement('div');
-            barcodeText.id = 'barcode-text-' + idx;
-            barcodeText.className = 'barcode-text';
-            artDiv.appendChild(artLabel);
-            artDiv.appendChild(svgBarcode);
-            artDiv.appendChild(barcodeText);
-            left.appendChild(artDiv);
+                <!-- SPACER flessibile: spinge SN verso il basso -->
+                <div style="flex:1.5;"></div>
 
-            const line2 = document.createElement('div');
-            line2.className = 'line';
-            left.appendChild(line2);
+                <!-- RIGA 6: [SN vert][QR] | SerialNumber a destra - spinto al fondo -->
+                <div class="et-row" style="margin-top:0;">
+                  <div class="et-left">
+                    <span class="et-vert">SN</span>
+                    <div class="et-qr" id="qr-sn-\${idx}"></div>
+                  </div>
+                  <div class="et-body" style="text-align:right;">
+                    <span class="lbl">SerialNumber/Lotto</span>
+                    <span class="val-md">\${lab.seriale||''}</span>
+                  </div>
+                </div>
 
-            const poPosContainer = document.createElement('div');
-            poPosContainer.style.display = 'flex';
-            poPosContainer.style.justifyContent = 'flex-start';
-            poPosContainer.style.gap = '10mm';
+                <!-- Spacer: spinge CDC+Ubicazione al fondo -->
+                <div style="flex:1; min-height:0;"></div>
 
-            const poDiv = document.createElement('div');
-            poDiv.className = 'field-block';
-            const poLab = document.createElement('div');
-            poLab.className = 'small';
-            poLab.innerHTML = '<b>Po Nr\u00b0<\/b><div style="font-weight:700;font-size: 22px;">'+(lab.po||'')+'<\/div>';
-            poDiv.appendChild(poLab);
-
-            const posDiv = document.createElement('div');
-            posDiv.className = 'field-block';
-            posDiv.style.marginLeft = '10mm';
-            posDiv.style.marginRight = '0px';
-            const posLab = document.createElement('div');
-            posLab.className = 'small';
-            posLab.innerHTML = '<b>Posizione<\/b><div style="font-weight:700;font-size: 20px;">'+(lab.posizione||'')+'<\/div>';
-            posDiv.appendChild(posLab);
-
-            poPosContainer.appendChild(poDiv);
-            poPosContainer.appendChild(posDiv);
-            left.appendChild(poPosContainer);
-
-            const pnBlock = document.createElement('div');
-            pnBlock.className = 'pn-block';
-            const pnLeft = document.createElement('div');
-            pnLeft.className = 'small';
-            pnLeft.innerHTML = '<b>Part Number<\/b><div style="font-weight:700;font-size: 14px;">'+(lab.pn||'')+'<\/div>';
-            const pnRight = document.createElement('div');
-            pnRight.style.display='flex';
-            pnRight.style.flexDirection='column';
-            pnRight.style.alignItems='center';
-
-            const qrPnContainer = document.createElement('div');
-            qrPnContainer.className = 'qr-container';
-            const qrPn = document.createElement('div');
-            qrPn.id = 'qr-pn-' + idx;
-            qrPn.className = 'qr';
-            const vertP = document.createElement('div');
-            vertP.className = 'vert';
-            vertP.innerText = 'TPN';
-            qrPnContainer.appendChild(qrPn);
-            qrPnContainer.appendChild(vertP);
-            pnRight.appendChild(qrPnContainer);
-            pnRight.style.marginTop = '10mm';
-            pnBlock.appendChild(pnLeft);
-            pnBlock.appendChild(pnRight);
-            left.appendChild(pnBlock);
-
-            const line3 = document.createElement('div');
-            line3.className = 'line';
-            left.appendChild(line3);
-
-            const serialBlock = document.createElement('div');
-            serialBlock.className = 'serial-block';
-            const sLeft = document.createElement('div');
-            sLeft.className = 'small';
-            sLeft.innerHTML = '<b>Serial Number<\/b><div style="font-weight:700;font-size: 20px;">'+(lab.seriale||'')+'<\/div>';
-            const sRight = document.createElement('div');
-            sRight.style.display='flex';
-            sRight.style.flexDirection='column';
-            sRight.style.alignItems='center';
-
-            const qrSerialContainer = document.createElement('div');
-            qrSerialContainer.className = 'qr-container';
-            const qrSerial = document.createElement('div');
-            qrSerial.id = 'qr-serial-' + idx;
-            qrSerial.className = 'qr';
-            const vertS = document.createElement('div');
-            vertS.className = 'vert';
-            vertS.innerText = 'SN';
-            qrSerialContainer.appendChild(qrSerial);
-            qrSerialContainer.appendChild(vertS);
-            sRight.appendChild(qrSerialContainer);
-            sRight.style.marginTop = '6mm';
-            serialBlock.appendChild(sLeft);
-            serialBlock.appendChild(sRight);
-            left.appendChild(serialBlock);
-
-            const bottomRightBlock = document.createElement('div');
-            bottomRightBlock.style.display = 'flex';
-            bottomRightBlock.style.justifyContent = 'flex-start';
-            bottomRightBlock.style.alignItems = 'center';
-            bottomRightBlock.style.marginTop = '6px';
-            bottomRightBlock.style.marginBottom = '4px';
-            bottomRightBlock.style.gap = '150px';
-
-            const cdcDiv = document.createElement('div');
-            cdcDiv.className = 'small';
-            cdcDiv.style.textAlign = 'left';
-            const cdcLabel = document.createElement('b');
-            cdcLabel.textContent = 'CDC';
-            const cdcValueDiv = document.createElement('div');
-            cdcValueDiv.style.fontWeight = '700';
-            cdcValueDiv.style.fontSize = '16px';
-            const valoreCDC = (lab.cdc && lab.cdc.trim() !== '') ? lab.cdc.trim() : '-';
-            cdcValueDiv.textContent = valoreCDC;
-            cdcDiv.appendChild(cdcLabel);
-            cdcDiv.appendChild(cdcValueDiv);
-
-            const ubicDiv = document.createElement('div');
-            ubicDiv.className = 'small';
-            ubicDiv.style.textAlign = 'left';
-            const ubicLabel = document.createElement('b');
-            ubicLabel.textContent = 'Ubicazione';
-            const ubicValueDiv = document.createElement('div');
-            ubicValueDiv.style.fontWeight = '700';
-            ubicValueDiv.style.fontSize = '16px';
-            const valoreUbic = (lab.ubicazioneDestinazione && lab.ubicazioneDestinazione.trim() !== '')
-                ? lab.ubicazioneDestinazione.trim()
-                : '-';
-            ubicValueDiv.textContent = valoreUbic;
-            ubicDiv.appendChild(ubicLabel);
-            ubicDiv.appendChild(ubicValueDiv);
-
-            bottomRightBlock.appendChild(cdcDiv);
-            bottomRightBlock.appendChild(ubicDiv);
-            left.appendChild(bottomRightBlock);
-
-            containerInner.appendChild(left);
-            label.appendChild(containerInner);
-            container.appendChild(label);
+                <!-- CDC sx + Ubicazione dx -->
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:0.5mm;">
+                  <div style="text-align:left;">
+                    <span class="lbl">CDC</span>
+                    <span class="val-sm">\${(lab.cdc&&lab.cdc.trim())||'-'}</span>
+                  </div>
+                  <div style="text-align:right;">
+                    <span class="lbl">Ubicazione</span>
+                    <span class="val-sm">\${(lab.ubicazioneDestinazione&&lab.ubicazioneDestinazione.trim())||'-'}</span>
+                  </div>
+                </div>
+            \`;
+            container.appendChild(div);
 
             try {
-                new QRCode(qrCod, {
-                    text: lab.codiceBP || '',
-                    width: 45,
-                    height: 45,
-                    colorDark : "#000000",
-                    colorLight : "#FFFFFF",
-                    correctLevel: QRCode.CorrectLevel.H,
-                    useSVG: true
-                });
-                new QRCode(qrPn, {
-                    text: lab.pn || '',
-                    width: 45,
-                    height: 45,
-                    colorDark : "#000000",
-                    colorLight : "#FFFFFF",
-                    correctLevel: QRCode.CorrectLevel.H,
-                    useSVG: true
-                });
-                new QRCode(qrSerial, {
-                    text: lab.seriale || '',
-                    width: 45,
-                    height: 45,
-                    colorDark : "#000000",
-                    colorLight : "#FFFFFF",
-                    correctLevel: QRCode.CorrectLevel.H,
-                    useSVG: true
-                });
-                JsBarcode(svgBarcode, (lab.articolo||''), {
-                    format: "CODE128",
-                    width: 1.2,
-                    height: 25,
-                    displayValue: false,
-                    margin: 0
-                });
-                document.getElementById('barcode-text-'+idx).innerText = lab.articolo || '';
-            } catch(e) {
-                console.error('Errore nella generazione dei codici:', e);
-            }
+                new QRCode(document.getElementById('qr-bp-'+idx), { text: lab.codiceBP||'?', width:44, height:44, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.H });
+                new QRCode(document.getElementById('qr-pn-'+idx), { text: lab.pn||'?',       width:44, height:44, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.H });
+                new QRCode(document.getElementById('qr-sn-'+idx), { text: lab.seriale||'?',  width:44, height:44, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.H });
+                const svgEl = document.getElementById('barcode-'+idx);
+                if (svgEl) JsBarcode(svgEl, lab.articolo||'X', { format:"CODE128", width:1.8, height:26, displayValue:false, margin:0 });
+            } catch(e) { console.error('Errore codici:', e); }
         });
-
         setTimeout(() => { window.print(); }, 500);
     }
 
     window.onafterprint = function() {
         setTimeout(() => { if (!window.closed) { window.close(); } }, 100);
     };
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', generateLabels);
     } else {
@@ -915,6 +686,7 @@ html, body {
         if (printWindow && !printWindow.closed) { printWindow.close(); }
     }, 3000000);
 }
+
 
 function printLabels10x5(labels) {
     const printWindow = window.open('', '_blank');
@@ -946,344 +718,91 @@ function printLabels10x5(labels) {
 <meta charset="utf-8">
 <title>Etichette 10x5</title>
 <style>
-@page {
-    size: 100mm 50mm;
-    margin: 0;
-}
-body {
-    margin: 0;
-    padding: 0;
+@page { size: 100mm 50mm; margin: 0; }
+html, body {
+    margin: 0; padding: 0;
     font-family: Arial, sans-serif;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
 }
-.label {
-    width: 100mm;
-    height: 50mm;
-    padding: 3mm;
-    box-sizing: border-box;
-    position: relative;
-    overflow: hidden;
-    page-break-after: always;
+.etichetta-10x5 {
+    width: 100mm; height: 50mm;
+    border: 0.5px solid #000; background: white;
+    padding: 2mm 2.5mm; box-sizing: border-box;
+    page-break-after: always; position: relative; font-size: 8pt;
 }
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    border-bottom: 0.5px solid #000;
-    padding-bottom: 0.5mm;
-    margin-bottom: 0.5mm;
-    height: 12mm;
+.et5-top { display: flex; align-items: center; gap: 1.5mm; margin-bottom: 1mm; }
+.et5-vert {
+    font-size: 7pt; font-weight: bold;
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    letter-spacing: 0.3px; white-space: nowrap;
 }
-.logo {
-    height: 10mm;
-    max-width: 40mm;
-    margin-top: 0;
-}
-.bp-section {
-    display: flex;
-    align-items: center;
-    gap: 1mm;
-}
-.bp-text {
-    text-align: center;
-    line-height: 1.0;
-    margin-right: 4mm;
-}
-.bp-label {
-    font-size: 15px;
-    font-weight: bold;
-}
-.bp-value {
-    font-size: 12px;
-    font-weight: bold;
-}
-.qr-bp-container {
-    display: flex;
-    align-items: center;
-    gap: 1mm;
-}
-.qr-bp {
-    width: 9mm;
-    height: 9mm;
-}
-.bp-vert {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    font-size: 6px;
-    font-weight: bold;
-    height: 12mm;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 1mm;
-}
-.barcode-container {
-    text-align: center;
-    margin: 0.5mm 0;
-    height: 15mm;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    border-bottom: 1px solid #000;
-    padding-bottom: 1mm;
-    margin-bottom: 1mm;
-}
-.barcode {
-    height: 10mm;
-    max-width: 100%;
-}
-.barcode-text {
-    font-size: 9px;
-    margin-top: 0.5px;
-    text-align: left;
-    font-weight: bold;
-    letter-spacing: 0.3px;
-}
-.details {
-    margin-top: 1mm;
-    font-size: 9px;
-    line-height: 1;
-}
-.detail-row {
-    display: flex;
-    margin-bottom: 1mm;
-    align-items: center;
-    position: relative;
-}
-.detail-label {
-    font-weight: bold;
-    margin-right: 1mm;
-    white-space: nowrap;
-    width: 20mm;
-}
-.detail-value {
-    flex-grow: 1;
-    text-align: left;
-    word-break: break-all;
-    font-size: 11px;
-}
-.qr-serial-container {
-    position: absolute;
-    right: 0;
-    top: -5%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    gap: 1mm;
-    height: 20px;
-}
-.qr-serial {
-    width: 9mm;
-    height: 9mm;
-}
-.sn-vert {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    font-size: 6px;
-    height: 9mm;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    margin-left: 1mm;
-    line-height: 1;
-    transform-origin: center;
-}
+.et5-qr { width: 10mm; height: 10mm; flex-shrink: 0; }
+.et5-codbp-block { flex: 1; }
+.et5-codbp-label { font-size: 8pt; font-weight: bold; }
+.et5-codbp-val { font-size: 13pt; font-weight: bold; line-height: 1.2; }
+.et5-logo { height: 8mm; margin-left: auto; }
+.et5-barcode { width: 55mm; height: 20px; display: block; margin: 1mm auto 0.5mm; }
+.et5-wms { text-align: center; font-weight: bold; font-size: 9pt; margin-bottom: 0.5mm; }
+.et5-footer { display: flex; align-items: center; gap: 1.5mm; margin-top: 1mm; }
+.et5-info { font-size: 9pt; line-height: 1.5; flex: 1; }
 </style>
 </head>
 <body>
 <div id="labels"></div>
-
 <script>
 (function(){
     const labels = JSON.parse(decodeURIComponent("${payload}"));
     const container = document.getElementById('labels');
+    const logo = "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/logo%20ats.jpg";
 
     function generateLabels() {
         labels.forEach((lab, idx) => {
-            const label = document.createElement('div');
-            label.className = 'label';
+            const div = document.createElement('div');
+            div.className = 'etichetta-10x5';
+            div.innerHTML = \`
+                <!-- HEADER: [COD BP vert][QR][testo BP][logo] -->
+                <div class="et5-top">
+                  <span class="et5-vert">COD BP</span>
+                  <div class="et5-qr" id="qr-bp-\${idx}"></div>
+                  <div class="et5-codbp-block">
+                    <div class="et5-codbp-label">Codice BP</div>
+                    <div class="et5-codbp-val">\${lab.codiceBP||''}</div>
+                  </div>
+                  <img class="et5-logo" src="\${logo}">
+                </div>
 
-            const header = document.createElement('div');
-            header.className = 'header';
+                <!-- Barcode + Articolo -->
+                <svg class="et5-barcode" id="barcode-\${idx}"></svg>
+                <div class="et5-wms">\${lab.articolo||''}</div>
 
-            const logo = document.createElement('img');
-            logo.src = "https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/main/logo%20ats.jpg";
-            logo.className = "logo";
-            logo.alt = "ATS";
-
-            const bpSection = document.createElement('div');
-            bpSection.className = 'bp-section';
-
-            const bpText = document.createElement('div');
-            bpText.className = 'bp-text';
-            const codLabel = document.createElement('div');
-            codLabel.className = 'bp-label';
-            codLabel.innerText = 'Codice BP';
-            const codVal = document.createElement('div');
-            codVal.className = 'bp-value';
-            codVal.innerText = lab.codiceBP || '';
-            bpText.appendChild(codLabel);
-            bpText.appendChild(codVal);
-
-            const qrBpContainer = document.createElement('div');
-            qrBpContainer.className = 'qr-bp-container';
-            const qrBp = document.createElement('div');
-            qrBp.id = 'qr-bp-' + idx;
-            qrBp.className = 'qr-bp';
-            const bpVert = document.createElement('div');
-            bpVert.className = 'bp-vert';
-            bpVert.innerText = 'BP';
-            qrBpContainer.appendChild(qrBp);
-            qrBpContainer.appendChild(bpVert);
-
-            bpSection.appendChild(bpText);
-            bpSection.appendChild(qrBpContainer);
-            header.appendChild(logo);
-            header.appendChild(bpSection);
-            label.appendChild(header);
-
-            const barcodeContainer = document.createElement('div');
-            barcodeContainer.className = 'barcode-container';
-            const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            barcodeSvg.id = 'barcode-' + idx;
-            barcodeSvg.className = 'barcode';
-            const barcodeText = document.createElement('div');
-            barcodeText.className = 'barcode-text';
-            barcodeText.textContent = lab.articolo || '';
-            barcodeContainer.appendChild(barcodeSvg);
-            barcodeContainer.appendChild(barcodeText);
-            label.appendChild(barcodeContainer);
-
-            const details = document.createElement('div');
-            details.className = 'details';
-
-            const poPosRow = document.createElement('div');
-            poPosRow.className = 'detail-row';
-            poPosRow.style.justifyContent = 'flex-start';
-            poPosRow.style.gap = '5mm';
-
-            const poDiv = document.createElement('div');
-            poDiv.style.display = 'flex';
-            poDiv.style.alignItems = 'center';
-            const poLabel = document.createElement('span');
-            poLabel.className = 'detail-label';
-            poLabel.style.marginRight = '2mm';
-            poLabel.textContent = 'Po Nr\u00b0:';
-            const poValue = document.createElement('span');
-            poValue.className = 'detail-value';
-            poValue.textContent = lab.po || '';
-            poDiv.appendChild(poLabel);
-            poDiv.appendChild(poValue);
-
-            const posDiv = document.createElement('div');
-            posDiv.style.display = 'flex';
-            posDiv.style.alignItems = 'center';
-            const posLabel = document.createElement('span');
-            posLabel.className = 'detail-label';
-            posLabel.style.marginRight = '2mm';
-            posLabel.textContent = 'Pos:';
-            const posValue = document.createElement('span');
-            posValue.className = 'detail-value';
-            posValue.textContent = lab.posizione || '';
-            posDiv.appendChild(posLabel);
-            posDiv.appendChild(posValue);
-
-            poPosRow.appendChild(poDiv);
-            poPosRow.appendChild(posDiv);
-
-            const pnRow = document.createElement('div');
-            pnRow.className = 'detail-row';
-            pnRow.innerHTML = \`<span class="detail-label">Part Number:<\/span><span class="detail-value">\${lab.pn || ''}<\/span>\`;
-
-            const serialRow = document.createElement('div');
-            serialRow.className = 'detail-row';
-            serialRow.style.marginBottom = '0';
-            serialRow.style.marginTop = '0';
-            const serialContent = document.createElement('div');
-            serialContent.style.flexGrow = '1';
-            serialContent.innerHTML = \`<span class="detail-label">Seriale:<\/span><span class="detail-value">\${lab.seriale || ''}<\/span>\`;
-
-            const qrSerialContainer = document.createElement('div');
-            qrSerialContainer.className = 'qr-serial-container';
-            const qrSerial = document.createElement('div');
-            qrSerial.id = 'qr-serial-' + idx;
-            qrSerial.className = 'qr-serial';
-            const snVert = document.createElement('div');
-            snVert.className = 'sn-vert';
-            snVert.innerText = 'SN';
-            qrSerialContainer.appendChild(qrSerial);
-            qrSerialContainer.appendChild(snVert);
-
-            serialRow.appendChild(serialContent);
-            serialRow.appendChild(qrSerialContainer);
-
-            details.appendChild(poPosRow);
-            details.appendChild(pnRow);
-            details.appendChild(serialRow);
-
-            const cdcRow = document.createElement('div');
-            cdcRow.className = 'detail-row';
-            cdcRow.style.marginTop = '1mm';
-            cdcRow.style.marginBottom = '0';
-            const cdcContent = document.createElement('div');
-            cdcContent.style.flexGrow = '1';
-            const cdcLabelSpan = document.createElement('span');
-            cdcLabelSpan.className = 'detail-label';
-            cdcLabelSpan.textContent = 'CDC:';
-            const cdcValueSpan = document.createElement('span');
-            cdcValueSpan.className = 'detail-value';
-            const valoreCDC = (lab.cdc && lab.cdc.trim() !== '') ? lab.cdc.trim() : '-';
-            cdcValueSpan.textContent = valoreCDC;
-            cdcContent.appendChild(cdcLabelSpan);
-            cdcContent.appendChild(cdcValueSpan);
-            cdcRow.appendChild(cdcContent);
-            details.appendChild(cdcRow);
-
-            label.appendChild(details);
-            container.appendChild(label);
+                <!-- FOOTER: [SN vert][QR][info testo] -->
+                <div class="et5-footer">
+                  <span class="et5-vert">SN</span>
+                  <div class="et5-qr" id="qr-sn-\${idx}"></div>
+                  <div class="et5-info">
+                    PO Nr\u00b0: \${lab.po||''} / Pos: \${lab.posizione||''}<br>
+                    Part Number: \${lab.pn||''}<br>
+                    Seriale: \${lab.seriale||''}<br>
+                    CDC: \${(lab.cdc&&lab.cdc.trim())||'-'}
+                  </div>
+                </div>
+            \`;
+            container.appendChild(div);
 
             try {
-                const paddedSeriale = String(lab.seriale || '').padStart(4, '0');
-                const paddedCodiceBP = String(lab.codiceBP || '').padStart(4, '0');
-
-                new QRCode(qrBp, {
-                    text: paddedCodiceBP || '',
-                    width: 40,
-                    height: 40,
-                    colorDark : "#000000",
-                    colorLight : "#FFFFFF",
-                    correctLevel: QRCode.CorrectLevel.H,
-                    useSVG: true
-                });
-                new QRCode(qrSerial, {
-                    text: paddedSeriale,
-                    width: 40,
-                    height: 40,
-                    colorDark : "#000000",
-                    colorLight : "#FFFFFF",
-                    correctLevel: QRCode.CorrectLevel.H,
-                });
-                JsBarcode(barcodeSvg, lab.articolo || '', {
-                    format: "CODE128",
-                    width: 1,
-                    height: 20,
-                    displayValue: false,
-                    margin: 0
-                });
-            } catch(e) {
-                console.error('Errore generazione codici:', e);
-            }
+                new QRCode(document.getElementById('qr-bp-'+idx), { text: lab.codiceBP||'?', width:40, height:40, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.H });
+                new QRCode(document.getElementById('qr-sn-'+idx), { text: lab.seriale||'?',  width:40, height:40, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.H });
+                const svgEl = document.getElementById('barcode-'+idx);
+                if (svgEl) JsBarcode(svgEl, lab.articolo||'X', { format:"CODE128", width:1.8, height:20, displayValue:false, margin:0 });
+            } catch(e) { console.error('Errore codici:', e); }
         });
-
         setTimeout(() => { window.print(); }, 500);
     }
 
     window.onafterprint = function() {
-        setTimeout(() => { if (!window.closed) window.close(); }, 100);
+        setTimeout(() => { if (!window.closed) { window.close(); } }, 100);
     };
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', generateLabels);
     } else {
@@ -1300,6 +819,7 @@ body {
         if (printWindow && !printWindow.closed) { printWindow.close(); }
     }, 30000);
 }
+
 
     function printAllLabels10x5() {
         const righe = document.querySelectorAll('li.item-content.item-input.item-input-outline');
