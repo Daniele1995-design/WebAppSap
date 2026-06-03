@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      22.0
+// @version      21.0
 // @description  Esporta seriali e lotti in CSV e XLXS separati e aggiunge funzionalità di stampa etichette 10x10 e 10x5 + filtro e scroll righe
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/*
@@ -569,8 +569,8 @@ hr.thin { border-top: 1.8px solid black; margin: 0.5mm 0; }
                 </div>
 
                 <!-- RIGA 2: [COD BP vert][QR] | Codice BP centrato -->
-                <div class="et-row">
-                  <div class="et-left" style="align-self:flex-start;">
+                <div class="et-row" style="align-items:flex-start;">
+                  <div class="et-left">
                     <span class="et-vert">COD BP</span>
                     <div class="et-qr" id="qr-bp-\${idx}"></div>
                   </div>
@@ -622,10 +622,10 @@ hr.thin { border-top: 1.8px solid black; margin: 0.5mm 0; }
                   </div>
                 </div>
 
-                <hr class="thin">
+                <hr style="border:none; border-top:1.8px solid black; margin-top:2mm; margin-bottom:0;">
 
                 <!-- SPACER flessibile: spinge SN verso il basso -->
-                <div style="flex:1.5;"></div>
+                <div style="flex:2.5;"></div>
 
                 <!-- RIGA 6: [SN vert][QR] | SerialNumber a destra - spinto al fondo -->
                 <div class="et-row" style="margin-top:0;">
