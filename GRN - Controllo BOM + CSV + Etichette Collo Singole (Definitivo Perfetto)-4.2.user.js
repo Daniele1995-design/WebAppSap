@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GRN - Controllo BOM + CSV + Etichette Collo Singole + Ricerca VDS
 // @namespace    http://tampermonkey.net/
-// @version      6.1
+// @version      7.1
 // @description  BOM perfetto + CSV completo + Etichette con QR nitidi (30x30) + campi ravvicinati+Equivalenze
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/*
@@ -17,10 +17,10 @@
 
     // ===================== CARICAMENTO BOM =====================
     const DRIVE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvprxVE4qAvY5PMFEoz1tUi3yIynkE0fjCAebj10_v3wJEj-ezdtgYvJawAh2DqLX40f3pH6WUcDbS/pub?output=csv";
-    const BOM_CSV_URL = "https://corsproxy.io/?" + encodeURIComponent(DRIVE_CSV_URL);
+    const BOM_CSV_URL = "https://corsproxy.io/?url=" + encodeURIComponent(DRIVE_CSV_URL);
     let bomData = {};
     let catalogoBP = {};
-const CATALOGO_BP_URL = "https://corsproxy.io/?" + encodeURIComponent(
+const CATALOGO_BP_URL = "https://corsproxy.io/?url" + encodeURIComponent(
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvprxVE4qAvY5PMFEoz1tUi3yIynkE0fjCAebj10_v3wJEj-ezdtgYvJawAh2DqLX40f3pH6WUcDbS/pub?gid=1382717559&single=true&output=csv"
 );
     console.log("Avvio BOM definitivo...");
@@ -518,7 +518,7 @@ figli.forEach(f => {
         ? f.alternativi.map(alt =>
             `<tr style="background:#fff8e1;">
                 <td style="padding-left:6px; color:#e65100; font-size:0.85em;">
-                    <em>Oppure:  ${alt.figlio}</em>
+                    <em>[ALT] ${alt.figlio}</em>
                 </td>
                 <td style="color:#e65100; font-size:0.85em;">${alt.pn || '—'}</td>
                 <td>—</td>
