@@ -1190,7 +1190,7 @@ function addSearchBar() {
     Object.assign(bar.style, {
         position: 'fixed',
         top: '70px',
-        right: '180px',
+        right: '120px',
         zIndex: '99999',
         background: '#fff',
         border: '2px solid #0d6efd',
