@@ -17,12 +17,11 @@
 
     // ===================== CARICAMENTO BOM =====================
     const DRIVE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvprxVE4qAvY5PMFEoz1tUi3yIynkE0fjCAebj10_v3wJEj-ezdtgYvJawAh2DqLX40f3pH6WUcDbS/pub?output=csv";
-    const BOM_CSV_URL = "https://corsproxy.io/?url=" + encodeURIComponent(DRIVE_CSV_URL);
+    const BOM_CSV_URL = DRIVE_CSV_URL;
     let bomData = {};
     let catalogoBP = {};
-const CATALOGO_BP_URL = "https://corsproxy.io/?url" + encodeURIComponent(
-    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvprxVE4qAvY5PMFEoz1tUi3yIynkE0fjCAebj10_v3wJEj-ezdtgYvJawAh2DqLX40f3pH6WUcDbS/pub?gid=1382717559&single=true&output=csv"
-);
+    const CATALOGO_BP_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvprxVE4qAvY5PMFEoz1tUi3yIynkE0fjCAebj10_v3wJEj-ezdtgYvJawAh2DqLX40f3pH6WUcDbS/pub?gid=1382717559&single=true&output=csv";
+
     console.log("Avvio BOM definitivo...");
     Papa.parse(BOM_CSV_URL, {
         download: true,
