@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      23.0
-// @description  Esporta seriali e lotti in CSV e XLXS separati e aggiunge funzionalità di stampa etichette 10x10 e 10x5 + filtro e scroll righe patch 03062026
+// @version      24.0
+// @description  Esporta seriali e lotti in CSV e XLXS separati e aggiunge funzionalità di stampa etichette 10x10 e 10x5 + filtro e scroll righe patch 02092026
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/*
 // @match        http://172.18.20.20:8095/GRN/*
@@ -26,6 +26,7 @@ let cdcMapCache = null;
 let cdcMapLoading = false;
 let cdcMapTimestamp = 0;
 const CDC_CACHE_TTL = 5 * 60 * 1000;
+let reapplySearchFn = null;
 
 async function loadCdcMap(forceRefresh = false) {
     const now = Date.now();
@@ -1458,6 +1459,8 @@ function addSearchBar() {
         }
     }
 
+    reapplySearchFn = executeSearch;
+
     function scrollToResult(idx) {
         if (currentResults.length === 0) return;
         idx = (idx + currentResults.length) % currentResults.length;
@@ -1499,6 +1502,18 @@ function addSearchBar() {
         }, 350);
     });
 }
+
+    function reapplyActiveFilterIfNeeded() {
+        const input = document.getElementById('grn-search-input');
+        const modeBtn = document.getElementById('grn-search-mode');
+        if (!input || !modeBtn) return;
+        const q = input.value.trim();
+        if (!q) return;
+        if (modeBtn.dataset.mode !== 'filter') return;
+        if (typeof reapplySearchFn === 'function') {
+            reapplySearchFn(q);
+        }
+    }
 
     function addExportAndPrintUI() {
         const modal = document.querySelector('.sheet-modal-inner .sheet-modal-swipe-step');
@@ -1601,17 +1616,19 @@ addSearchBar();
         addPrintButtonsToRows();
     }
 
-    if (document.readyState === 'loading') {
+        if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
             addExportAndPrintUI();
             setInterval(() => {
                 addPrintButtonsToRows();
+                reapplyActiveFilterIfNeeded();
             }, 1500);
         });
     } else {
         addExportAndPrintUI();
         setInterval(() => {
             addPrintButtonsToRows();
+            reapplyActiveFilterIfNeeded();
         }, 1500);
     }
 
