@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      24.0
+// @version      25.0
 // @description  Esporta seriali e lotti in CSV e XLXS separati e aggiunge funzionalità di stampa etichette 10x10 e 10x5 + filtro e scroll righe patch 02092026
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/*
@@ -119,6 +119,12 @@ function getDataFromLi(li) {
     const dropdown = li.querySelector("div[id^='dropdown-']");
     if (dropdown) dropdown.style.display = 'block';
 
+    // Ancora la ricerca dei campi al contenitore item-N reale,
+    // escludendo eventuali nodi duplicati/residui fuori da esso
+    // (osservato: durante apertura/chiusura riga l'app può lasciare
+    // temporaneamente un div "Posizione" duplicato prima di div#item-N)
+    const itemContainer = li.querySelector("div[id^='item-']") || li;
+
     let articolo = '';
     let codiceBP = '';
     let pn = '';
@@ -151,7 +157,7 @@ function getDataFromLi(li) {
     }
 
     let riferimentoOrdine = '';
-    const divRifOrd = Array.from(li.querySelectorAll('div')).find(d => d.querySelector('button[onclick*="modificaRiferimentoCliente"]'));
+    const divRifOrd = Array.from(itemContainer.querySelectorAll('div')).find(d => d.querySelector('button[onclick*="modificaRiferimentoCliente"]'));
     if (divRifOrd) {
         const button = divRifOrd.querySelector('button');
         if (button && button.nextSibling) {
@@ -160,7 +166,7 @@ function getDataFromLi(li) {
     }
 
     let posizione = '';
-    const divPosizione = Array.from(li.querySelectorAll('div')).find(d => {
+     const divPosizione = Array.from(itemContainer.querySelectorAll('div')).find(d => {
         const strongTag = d.querySelector('b, strong');
         return strongTag && /Posizione:/i.test(strongTag.textContent);
     });
@@ -170,7 +176,7 @@ function getDataFromLi(li) {
     }
 
     let cdc = '';
-    const divCDC = Array.from(li.querySelectorAll('div')).find(d => {
+       const divCDC = Array.from(itemContainer.querySelectorAll('div')).find(d => {
         const text = (d.innerText || '').replace(/\s+/g, ' ').trim();
         return text.startsWith('CDC :');
     });
