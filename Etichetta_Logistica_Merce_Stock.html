@@ -108,8 +108,8 @@
   }
 
   .et-qr {
-    width: 11mm;
-    height: 11mm;
+    width: 8mm;
+    height: 8mm;
     flex-shrink: 0;
     display: block;
   }
@@ -147,6 +147,7 @@
 
   /* Ubicazione sotto SN */
   .ubicazione { margin-top:0.5mm; }
+  .ubi-qr { width:8mm; height:8mm; flex-shrink:0; display:block; }
 
   /* ============================================================
      ETICHETTA 10x5
@@ -279,6 +280,7 @@ function creaEtichetta10x10(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO,
   const qrBP = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(CodiceBP)}`;
   const qrPN = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(PartNumber)}`;
   const qrSN = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(SerialNumber)}`;
+  const qrUbi = Ubicazione ? `https://api.qrserver.com/v1/create-qr-code/?size=110x110&ecc=L&data=${encodeURIComponent(Ubicazione)}` : '';
   const logo = `https://raw.githubusercontent.com/Daniele1995-design/WebAppSap/refs/heads/main/logo%20ats.jpg`;
 
   return `<div class="etichetta-10x10">
@@ -368,9 +370,12 @@ function creaEtichetta10x10(CodiceBP, PartNumber, SerialNumber, ArticoloWMS, PO,
         <span class="lbl">CDC</span>
         <span class="val-sm">${CDC}</span>
       </div>
-      <div style="text-align:right;">
-        <span class="lbl">Ubicazione</span>
-        <span class="val-sm">${Ubicazione}</span>
+      <div style="display:flex; align-items:flex-end; gap:1.5mm;">
+        <div style="text-align:right;">
+          <span class="lbl">Ubicazione</span>
+          <span class="val-sm">${Ubicazione}</span>
+        </div>
+        ${qrUbi ? `<img class="ubi-qr" src="${qrUbi}">` : ''}
       </div>
     </div>
 
