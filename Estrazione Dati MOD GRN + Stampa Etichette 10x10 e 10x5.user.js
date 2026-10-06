@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      25.0
+// @version      32.8
 // @description  Esporta seriali e lotti in CSV e XLXS separati e aggiunge funzionalità di stampa etichette 10x10 e 10x5 + filtro e scroll righe patch 02092026
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/*
@@ -12,6 +12,8 @@
 // @connect      script.googleusercontent.com
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @connect      corsproxy.io
+// @connect      docs.google.com
+// @connect      googleusercontent.com
 // ==/UserScript==
 /* global grn */
 
@@ -20,6 +22,26 @@
 
     function sleep(ms) {
         return new Promise(res => setTimeout(res, ms));
+    }
+    // ===== DOWNLOAD CSV GOOGLE SHEET (GM_xmlhttpRequest, senza proxy) =====
+    // Va diretto a docs.google.com: niente CORS e usa la sessione Google del browser
+    function gmGetSheetCsv(url) {
+        return new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url,
+                headers: { 'Cache-Control': 'no-cache' },
+                onload: res => {
+                    const txt = res.responseText || '';
+                    if (res.status !== 200) return reject(new Error(`HTTP ${res.status} su ${url}`));
+                    if (/^\s*<(!doctype|html)/i.test(txt)) return reject(new Error('Risposta HTML (login Google?): foglio non accessibile'));
+                    resolve(txt);
+                },
+                onerror: () => reject(new Error(`Errore di rete su ${url}`)),
+                ontimeout: () => reject(new Error(`Timeout su ${url}`)),
+                timeout: 20000
+            });
+        });
     }
     // ===== CACHE CDC DA GOOGLE SHEET =====
 let cdcMapCache = null;
@@ -45,10 +67,8 @@ async function loadCdcMap(forceRefresh = false) {
     const sheetId = '15GNL3FmZVNyK9kjl5G0nHp2OBQlhgaSUMW9C5hRFZIQ';
     const gid = '894500886';
     const driveUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${now}`;
-    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(driveUrl);
     return new Promise((resolve) => {
-        fetch(proxyUrl, { cache: 'no-store' })
-            .then(r => r.text())
+        gmGetSheetCsv(driveUrl)
             .then(csvText => {
                 const map = {};
                 const lines = csvText.split('\n');
@@ -82,6 +102,132 @@ async function loadCdcMap(forceRefresh = false) {
             });
     });
 }
+
+// ===== UBICAZIONI DA GOOGLE SHEET (colonna B "Codice ubicazione") =====
+const UBI_SHEET_ID = '1QIJ3gxABnQCxJV7m41Ze5TexYUQwmcdn8pmnULCBNEo';
+const UBI_GID = '0';
+let ubiListPromise = null;
+
+function parseCsvLine(line) {
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+            if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+            else inQ = !inQ;
+        } else if (ch === ',' && !inQ) { cols.push(cur); cur = ''; }
+        else cur += ch;
+    }
+    cols.push(cur);
+    return cols.map(c => c.trim());
+}
+
+function loadUbicazioni(forceRefresh = false) {
+    if (ubiListPromise && !forceRefresh) return ubiListPromise;
+    const driveUrl = `https://docs.google.com/spreadsheets/d/${UBI_SHEET_ID}/export?format=csv&gid=${UBI_GID}&t=${Date.now()}`;
+    ubiListPromise = gmGetSheetCsv(driveUrl)
+        .then(txt => {
+            const seen = new Set();
+            const list = [];
+            txt.split(/\r?\n/).forEach((line, i) => {
+                if (i === 0 || !line.trim()) return; // salta intestazione
+                const codice = parseCsvLine(line)[1] || '';
+                if (codice && !seen.has(codice)) { seen.add(codice); list.push(codice); }
+            });
+            console.log('✅ Ubicazioni caricate:', list.length);
+            return list;
+        })
+        .catch(err => {
+            console.warn('⚠️ Errore caricamento ubicazioni:', err);
+            ubiListPromise = null; // riprova al prossimo click
+            return [];
+        });
+    return ubiListPromise;
+}
+
+function setUbicazioneBtn(btn, valore) {
+    btn.dataset.ubi = valore || '';
+    btn.textContent = valore || '📍Ubicazione';
+    btn.title = valore ? `Ubicazione: ${valore} (clic per cambiare)` : 'Inserisci ubicazione';
+    btn.style.borderColor = valore ? '#28a745' : '#6c757d';
+}
+
+// Popup di ricerca (case sensitive) sulla colonna "Codice ubicazione"
+async function apriSceltaUbicazione(btn, storageKey) {
+    document.getElementById('ubi-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'ubi-overlay';
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:99999; display:flex; align-items:flex-start; justify-content:center; padding-top:8vh;';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#fff; border-radius:8px; width:92vw; max-width:420px; max-height:80vh; display:flex; flex-direction:column; font-family:system-ui,sans-serif; box-shadow:0 6px 20px rgba(0,0,0,.3);';
+    box.innerHTML = `
+        <div style="padding:10px; border-bottom:1px solid #ddd; display:flex; gap:6px; align-items:center;">
+            <input id="ubi-search" type="text" autocomplete="off" placeholder="Cerca ubicazione (maiuscole/minuscole contano)"
+                   style="flex:1; padding:8px 10px; font-size:16px; border:2px solid #17a2b8; border-radius:6px; box-sizing:border-box; outline:none;">
+            <button id="ubi-close" style="padding:6px 10px; font-size:18px; border:none; background:#eee; border-radius:6px; cursor:pointer;">✖</button>
+        </div>
+        <div id="ubi-info" style="padding:4px 10px; font-size:12px; color:#666;">Caricamento…</div>
+        <ul id="ubi-list" style="list-style:none; margin:0; padding:0; overflow-y:auto; flex:1;"></ul>
+        <div style="padding:8px 10px; border-top:1px solid #ddd; text-align:right;">
+            <button id="ubi-clear" style="padding:6px 12px; font-size:14px; border:none; background:#dc3545; color:#fff; border-radius:6px; cursor:pointer;">Rimuovi ubicazione</button>
+        </div>`;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const input = box.querySelector('#ubi-search');
+    const ul = box.querySelector('#ubi-list');
+    const info = box.querySelector('#ubi-info');
+    const close = () => overlay.remove();
+    const scegli = valore => {
+        setUbicazioneBtn(btn, valore);
+        if (valore) sessionStorage.setItem(storageKey, valore);
+        else sessionStorage.removeItem(storageKey);
+        close();
+    };
+
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    box.querySelector('#ubi-close').onclick = close;
+    box.querySelector('#ubi-clear').onclick = () => scegli('');
+    input.value = btn.dataset.ubi || '';
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+
+    const lista = await loadUbicazioni();
+    const MAX = 200;
+    let risultati = [];
+
+    const render = () => {
+        const q = input.value.trim();
+        risultati = q ? lista.filter(u => u.includes(q)) : lista; // case sensitive
+        info.textContent = lista.length === 0
+            ? '⚠️ Lista ubicazioni non disponibile'
+            : `${risultati.length} risultati${risultati.length > MAX ? ` (mostrati i primi ${MAX})` : ''}`;
+        ul.innerHTML = '';
+        risultati.slice(0, MAX).forEach(u => {
+            const li = document.createElement('li');
+            li.textContent = u;
+            li.style.cssText = 'padding:10px 12px; font-size:16px; border-bottom:1px solid #eee; cursor:pointer;';
+            if (u === btn.dataset.ubi) li.style.background = '#e8f5e9';
+            li.onclick = () => scegli(u);
+            ul.appendChild(li);
+        });
+    };
+
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Escape') close();
+        if (e.key === 'Enter' && risultati.length > 0) {
+            e.preventDefault();
+            // Enter: corrispondenza esatta se presente, altrimenti il primo risultato
+            const q = input.value.trim();
+            scegli(risultati.includes(q) ? q : risultati[0]);
+        }
+    });
+    render();
+}
+
 
 
     async function waitForSerials(timeout = 10000) {
@@ -119,12 +265,6 @@ function getDataFromLi(li) {
     const dropdown = li.querySelector("div[id^='dropdown-']");
     if (dropdown) dropdown.style.display = 'block';
 
-    // Ancora la ricerca dei campi al contenitore item-N reale,
-    // escludendo eventuali nodi duplicati/residui fuori da esso
-    // (osservato: durante apertura/chiusura riga l'app può lasciare
-    // temporaneamente un div "Posizione" duplicato prima di div#item-N)
-    const itemContainer = li.querySelector("div[id^='item-']") || li;
-
     let articolo = '';
     let codiceBP = '';
     let pn = '';
@@ -157,7 +297,7 @@ function getDataFromLi(li) {
     }
 
     let riferimentoOrdine = '';
-    const divRifOrd = Array.from(itemContainer.querySelectorAll('div')).find(d => d.querySelector('button[onclick*="modificaRiferimentoCliente"]'));
+    const divRifOrd = Array.from(li.querySelectorAll('div')).find(d => d.querySelector('button[onclick*="modificaRiferimentoCliente"]'));
     if (divRifOrd) {
         const button = divRifOrd.querySelector('button');
         if (button && button.nextSibling) {
@@ -166,7 +306,7 @@ function getDataFromLi(li) {
     }
 
     let posizione = '';
-     const divPosizione = Array.from(itemContainer.querySelectorAll('div')).find(d => {
+    const divPosizione = Array.from(li.querySelectorAll('div')).find(d => {
         const strongTag = d.querySelector('b, strong');
         return strongTag && /Posizione:/i.test(strongTag.textContent);
     });
@@ -176,7 +316,7 @@ function getDataFromLi(li) {
     }
 
     let cdc = '';
-       const divCDC = Array.from(itemContainer.querySelectorAll('div')).find(d => {
+    const divCDC = Array.from(li.querySelectorAll('div')).find(d => {
         const text = (d.innerText || '').replace(/\s+/g, ' ').trim();
         return text.startsWith('CDC :');
     });
@@ -193,12 +333,17 @@ function getDataFromLi(li) {
         // ===== MODIFICA: rileva tipo (Seriale o Lotto) =====
         let tipo = 'Seriale'; // default
 
-        Array.from(sr.querySelectorAll('strong')).forEach(str => {
-            const label = (str.textContent || '').toLowerCase();
-            const parentText = (str.parentElement.innerText || '').replace(/\s+/g, ' ').trim();
+        // Esclude la sezione distinta nativa (bom-section-*): contiene "Lotto:" dei figli
+        const isInBom = el => !!el.closest("[id^='bom-section-']");
 
-            if (label.includes('quantità')) {
-                quantita = parentText.replace(/.*Quantità:\s*/i, '').trim();
+        Array.from(sr.querySelectorAll('strong')).filter(str => !isInBom(str)).forEach(str => {
+            const label = (str.textContent || '').toLowerCase();
+            let parentText = (str.parentElement.innerText || '');
+            str.parentElement.querySelectorAll('.ubi-btn').forEach(b => { parentText = parentText.replace(b.innerText || '', ''); });
+            parentText = parentText.replace(/\s+/g, ' ').trim();
+
+            if (label.includes('quantità') || label.includes('qtà')) {
+                quantita = parentText.replace(/.*(?:Quantità|Qtà):?\s*/i, '').trim();
             }
             if (label.includes('seriale')) {
                 tipo = 'Seriale';
@@ -220,7 +365,9 @@ function getDataFromLi(li) {
         });
 
         if (!seriale) {
-            const txt = (sr.innerText || sr.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, '');
+            const srClone = sr.cloneNode(true);
+            srClone.querySelectorAll("[id^='bom-section-'], select, .ubi-cdc-box, .ubi-btn").forEach(b => b.remove());
+            const txt = (srClone.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, '');
             const mS = txt.match(/Seriale[\s:]+(.+?)(?=\s*Stato|$)/i);
             const mL = txt.match(/Lotto[\s:]+(.+?)(?=\s*Stato|$)/i);
             if (mS) { seriale = mS[1].trim(); tipo = 'Seriale'; }
@@ -230,7 +377,8 @@ function getDataFromLi(li) {
         if (seriale) {
             const cdcSelect = sr.querySelector('.cdc-select');
             const cdcValue = cdcSelect ? cdcSelect.value : '';
-            serials.push({ quantita, seriale, stato, ubicazioneDestinazione: '', cdc: cdcValue, tipo });
+            const ubiValue = sr.querySelector('.ubi-btn')?.dataset.ubi || '';
+            serials.push({ quantita, seriale, stato, ubicazioneDestinazione: ubiValue, cdc: cdcValue, tipo });
         }
     });
 
@@ -542,7 +690,8 @@ hr.thin { border-top: 1.8px solid black; margin: 0.5mm 0; }
     writing-mode: vertical-rl; transform: rotate(180deg);
     letter-spacing: 0.3px; white-space: nowrap; line-height: 1;
 }
-.et-qr { width: 11mm; height: 11mm; flex-shrink: 0; display: block; }
+.et-qr, .ubi-qr { width: 8mm; height: 8mm; flex-shrink: 0; display: block; }
+.et-qr img, .et-qr canvas, .ubi-qr img, .ubi-qr canvas { width: 100% !important; height: 100% !important; display: block; }
 .et-body { flex: 1; min-width: 0; }
 .lbl  { font-size: 9pt; font-weight: bold; display: block; line-height: 1.2; }
 .val-lg { font-size: 20pt; font-weight: bold; line-height: 1; display: block; }
@@ -551,10 +700,10 @@ hr.thin { border-top: 1.8px solid black; margin: 0.5mm 0; }
 .barcode-svg { width: 100%; height: 26px; margin: 0 auto 0.5mm; display: block; }
 .wms { text-align: center; font-size: 10.5pt; font-weight: bold; margin-bottom: 0.5mm; }
 .po-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 0.8mm 0; }
-.po-col { flex: 1; }
+.po-col { flex: 1; min-width: 0; }
 .po-col.right { text-align: right; }
 .po-label { font-size: 9pt; font-weight: bold; }
-.po-value { font-size: 18pt; font-weight: bold; line-height: 1; display: block; }
+.po-value { font-size: 18pt; font-weight: bold; line-height: 1; display: block; word-break: break-all; overflow-wrap: break-word; }
 </style>
 </head>
 <body>
@@ -571,15 +720,15 @@ hr.thin { border-top: 1.8px solid black; margin: 0.5mm 0; }
             div.className = 'etichetta-10x10';
             div.innerHTML = \`
                 <!-- RIGA 1: logo ATS in alto a destra -->
-                <div style="text-align:right; margin-bottom:1mm;">
+                <div style="text-align:right;">
                   <img style="height:9mm;" src="\${logo}">
                 </div>
 
                 <!-- RIGA 2: [COD BP vert][QR] | Codice BP centrato -->
-                <div class="et-row" style="align-items:flex-start;">
+                <div class="et-row" style="align-items:flex-start; margin-top:-3mm;">
                   <div class="et-left">
                     <span class="et-vert">COD BP</span>
-                    <div class="et-qr" id="qr-bp-\${idx}"></div>
+                    <div class="et-qr" id="qr-bp-\${idx}" style="margin-top:-1mm;"></div>
                   </div>
                   <div class="et-body" style="text-align:center;">
                     <span class="lbl">Codice BP</span>
@@ -589,8 +738,8 @@ hr.thin { border-top: 1.8px solid black; margin: 0.5mm 0; }
 
                 <hr>
 
-                <!-- Piccolo spazio tra Codice BP e Articolo -->
-                <div style="height:1mm;"></div>
+                <!-- Spazio tra Codice BP e Articolo (aumentato per più separazione dal barcode) -->
+                <div style="height:2.5mm;"></div>
 
                 <!-- RIGA 3: [Articolo vert] + barcode + WMS -->
                 <div style="display:flex; align-items:center; gap:1mm;">
@@ -635,7 +784,7 @@ hr.thin { border-top: 1.8px solid black; margin: 0.5mm 0; }
                 <div style="flex:2.5;"></div>
 
                 <!-- RIGA 6: [SN vert][QR] | SerialNumber a destra - spinto al fondo -->
-                <div class="et-row" style="margin-top:0;">
+                <div class="et-row" style="margin-top:0; transform:translateY(-1.5mm);">
                   <div class="et-left">
                     <span class="et-vert">SN</span>
                     <div class="et-qr" id="qr-sn-\${idx}"></div>
@@ -655,18 +804,23 @@ hr.thin { border-top: 1.8px solid black; margin: 0.5mm 0; }
                     <span class="lbl">CDC</span>
                     <span class="val-sm">\${(lab.cdc&&lab.cdc.trim())||'-'}</span>
                   </div>
-                  <div style="text-align:right;">
-                    <span class="lbl">Ubicazione</span>
-                    <span class="val-sm">\${(lab.ubicazioneDestinazione&&lab.ubicazioneDestinazione.trim())||'-'}</span>
+                  <div style="display:flex; align-items:flex-end; gap:1.5mm;">
+                    <div style="text-align:right;">
+                      <span class="lbl">Ubicazione</span>
+                      <span class="val-sm">\${(lab.ubicazioneDestinazione&&lab.ubicazioneDestinazione.trim())||'-'}</span>
+                    </div>
+                    \${(lab.ubicazioneDestinazione&&lab.ubicazioneDestinazione.trim()) ? '<div class="ubi-qr" id="qr-ubi-'+idx+'"></div>' : ''}
                   </div>
                 </div>
             \`;
             container.appendChild(div);
 
             try {
-                new QRCode(document.getElementById('qr-bp-'+idx), { text: lab.codiceBP||'?', width:44, height:44, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.H });
-                new QRCode(document.getElementById('qr-pn-'+idx), { text: lab.pn||'?',       width:44, height:44, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.H });
-                new QRCode(document.getElementById('qr-sn-'+idx), { text: lab.seriale||'?',  width:44, height:44, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.H });
+                new QRCode(document.getElementById('qr-bp-'+idx), { text: lab.codiceBP||'?', width:128, height:128, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.L });
+                new QRCode(document.getElementById('qr-pn-'+idx), { text: lab.pn||'?',       width:128, height:128, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.L });
+                new QRCode(document.getElementById('qr-sn-'+idx), { text: lab.seriale||'?',  width:128, height:128, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.L });
+                const ubiQrEl = document.getElementById('qr-ubi-'+idx);
+                if (ubiQrEl) new QRCode(ubiQrEl, { text: lab.ubicazioneDestinazione.trim(), width:128, height:128, colorDark:"#000000", colorLight:"#FFFFFF", correctLevel:QRCode.CorrectLevel.L });
                 const svgEl = document.getElementById('barcode-'+idx);
                 if (svgEl) JsBarcode(svgEl, lab.articolo||'X', { format:"CODE128", width:1.8, height:26, displayValue:false, margin:0 });
             } catch(e) { console.error('Errore codici:', e); }
@@ -791,7 +945,7 @@ html, body {
                     PO Nr\u00b0: \${lab.po||''} / Pos: \${lab.posizione||''}<br>
                     Part Number: \${lab.pn||''}<br>
                     Seriale: \${lab.seriale||''}<br>
-                    CDC: \${(lab.cdc&&lab.cdc.trim())||'-'}
+                    CDC: \${(lab.cdc&&lab.cdc.trim())||'-'} &nbsp;|&nbsp; Ubic: \${(lab.ubicazioneDestinazione&&lab.ubicazioneDestinazione.trim())||'-'}
                   </div>
                 </div>
             \`;
@@ -846,7 +1000,8 @@ html, body {
                     pn: data.pn || '',
                     posizione: data.posizione || '',
                     seriale: s.seriale || '',
-                    cdc: s.cdc || data.cdc || ''
+                    cdc: s.cdc || data.cdc || '',
+                    ubicazioneDestinazione: s.ubicazioneDestinazione || ''
                 });
             });
         });
@@ -923,7 +1078,8 @@ function printLabelsForRow(dataRow) {
             pn: dataRow.pn || '',
             posizione: dataRow.posizione || '',
             seriale: s.seriale || '',
-            cdc: s.cdc || dataRow.cdc || ''
+            cdc: s.cdc || dataRow.cdc || '',
+            ubicazioneDestinazione: s.ubicazioneDestinazione || ''
         }));
 
         printLabels10x5(labels);
@@ -975,11 +1131,15 @@ select.className = 'cdc-select';
 select.style.cssText = `
     margin-left: auto;
     display: block;
-    padding: 1px 3px;
+    padding: 0 3px;
     border-radius: 4px;
     border: 1.5px solid #17a2b8;
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: bold;
+    text-align-last: center;
+    line-height: 1;
+    box-sizing: border-box;
+    height: calc(1em + 1mm + 3px); /* altezza carattere + 1mm + bordi */
     background: #f8f9fa;
     cursor: pointer;
     width: 60px;
@@ -1038,11 +1198,48 @@ select.addEventListener('change', () => {
     select.title = 'Modificato manualmente';
 });
 
+                // ===== PULSANTE UBICAZIONE (a sinistra del CDC) =====
+                const ubiKey = `ubi-${grnNumber}-${idx}-${srIdx}`;
+                const ubiBtn = document.createElement('button');
+                ubiBtn.type = 'button';
+                ubiBtn.className = 'ubi-btn';
+                ubiBtn.style.cssText = `
+                    padding: 0 4px; border-radius: 4px; border: 1.5px solid #6c757d;
+                    font-size: 15px; font-weight: 600; line-height: 1; background: #f8f9fa; cursor: pointer;
+                    box-sizing: border-box; height: calc(1em + 1mm + 3px);
+                    width: calc(23ch + 11px); /* es. CE71-STK-S01-C01-01-123 */
+                    text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                `;
+                setUbicazioneBtn(ubiBtn, sessionStorage.getItem(ubiKey) || '');
+                ubiBtn.addEventListener('click', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    apriSceltaUbicazione(ubiBtn, ubiKey);
+                });
+
+                const ubiCdcBox = document.createElement('div');
+                ubiCdcBox.className = 'ubi-cdc-box';
+                ubiCdcBox.style.cssText = 'margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:4.5mm;';
+                ubiCdcBox.appendChild(select);   // CDC sulla riga Quantità/Seriale
+
+                // Ubicazione sulla riga "Stato Logico", allineata a destra:
+                // così non aumenta l'altezza della riga sopra
+                const statoDiv = Array.from(sr.querySelectorAll(':scope > div')).find(d =>
+                    /^Stato Logico/i.test((d.querySelector(':scope > strong')?.textContent || '').trim()));
+                if (statoDiv) {
+                    statoDiv.style.display = 'flex';
+                    statoDiv.style.alignItems = 'center';
+                    ubiBtn.style.marginLeft = 'auto';
+                    statoDiv.appendChild(ubiBtn);
+                } else {
+                    ubiCdcBox.appendChild(ubiBtn); // fallback: sotto al CDC
+                }
+
                 const flexDiv = sr.querySelector("div[style*='display:flex']");
                 if (flexDiv) {
-                    flexDiv.appendChild(select);
+                    flexDiv.appendChild(ubiCdcBox);
                 } else {
-                    sr.appendChild(select);
+                    sr.appendChild(ubiCdcBox);
                 }
             });
         }
@@ -1661,7 +1858,7 @@ setInterval(() => {
         cdcMapCache = null;
         cdcMapTimestamp = 0;
         // Rimuovi tutti i select CDC esistenti così vengono ricreati con i nuovi valori
-        document.querySelectorAll('.cdc-select').forEach(s => s.remove());
+        document.querySelectorAll('.ubi-cdc-box, .cdc-select, .ubi-btn').forEach(s => s.remove());
         // Rilancia addPrintButtonsToRows che ricreerà i select e popolerà i CDC
         addPrintButtonsToRows();
     }
