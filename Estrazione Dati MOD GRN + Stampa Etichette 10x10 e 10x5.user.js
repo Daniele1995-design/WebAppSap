@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Estrazione Dati MOD GRN + Stampa Etichette 10x10 e 10x5
 // @namespace    http://tampermonkey.net/
-// @version      32.8
+// @version      35.2
 // @description  Esporta seriali e lotti in CSV e XLXS separati e aggiunge funzionalità di stampa etichette 10x10 e 10x5 + filtro e scroll righe patch 02092026
 // @author       Daniele Izzo
 // @match        http://172.18.20.20/GRN/*
@@ -154,7 +154,7 @@ function setUbicazioneBtn(btn, valore) {
 }
 
 // Popup di ricerca (case sensitive) sulla colonna "Codice ubicazione"
-async function apriSceltaUbicazione(btn, storageKey) {
+async function apriSceltaUbicazione(btn, storageKey, onScelta) {
     document.getElementById('ubi-overlay')?.remove();
 
     const overlay = document.createElement('div');
@@ -186,6 +186,7 @@ async function apriSceltaUbicazione(btn, storageKey) {
         if (valore) sessionStorage.setItem(storageKey, valore);
         else sessionStorage.removeItem(storageKey);
         close();
+        if (typeof onScelta === 'function') onScelta(valore);
     };
 
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
@@ -1112,6 +1113,41 @@ function addPrintButtonsToRows() {
         const existingBtns = li.querySelectorAll('.btn-print-etichetta, .btn-print-etichetta-small, .btn-container');
         existingBtns.forEach(btn => btn.remove());
 
+        // ===== UBICAZIONE ARTICOLO (riga "Rif:", a destra) → ereditata da tutte le righe seriale =====
+        if (!li.querySelector('.ubi-art-btn')) {
+            const rifDiv = Array.from(li.querySelectorAll("div[id^='item-'] > div")).find(d =>
+                /^Rif:/i.test((d.querySelector(':scope > b')?.textContent || '').trim()));
+            if (rifDiv) {
+                const grnArt = document.getElementById('numeroGRN')?.textContent?.trim() || 'unknown';
+                const artKey = `ubi-art-${grnArt}-${idx}`;
+                const artBtn = document.createElement('button');
+                artBtn.type = 'button';
+                artBtn.className = 'ubi-art-btn';
+                artBtn.style.cssText = `
+                    margin-left: auto; padding: 0 4px; border-radius: 4px; border: 1.5px solid #6c757d;
+                    font-size: 15px; font-weight: 600; line-height: 1; background: #f8f9fa; cursor: pointer;
+                    box-sizing: border-box; height: calc(1em + 1mm + 3px);
+                    width: calc(23ch + 11px);
+                    text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                `;
+                setUbicazioneBtn(artBtn, sessionStorage.getItem(artKey) || '');
+                artBtn.title = (artBtn.dataset.ubi ? `Ubicazione articolo: ${artBtn.dataset.ubi}` : 'Ubicazione per tutte le righe') + ' (applicata a tutti i seriali)';
+                artBtn.addEventListener('click', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    apriSceltaUbicazione(artBtn, artKey, valore => {
+                        // Propaga a tutte le righe seriale di questo articolo (poi modificabili singolarmente)
+                        li.querySelectorAll("div[id^='dropdown-'] ul > li .ubi-btn").forEach(rowBtn => {
+                            setUbicazioneBtn(rowBtn, valore);
+                            const k = rowBtn.dataset.key;
+                            if (k) { if (valore) sessionStorage.setItem(k, valore); else sessionStorage.removeItem(k); }
+                        });
+                    });
+                });
+                rifDiv.appendChild(artBtn);
+            }
+        }
+
         if (li.querySelector('.stampa-wrapper')) {
             return;
         }
@@ -1210,7 +1246,11 @@ select.addEventListener('change', () => {
                     width: calc(23ch + 11px); /* es. CE71-STK-S01-C01-01-123 */
                     text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                 `;
-                setUbicazioneBtn(ubiBtn, sessionStorage.getItem(ubiKey) || '');
+                ubiBtn.dataset.key = ubiKey;
+                const ubiArt = sessionStorage.getItem(`ubi-art-${grnNumber}-${idx}`) || '';
+                let ubiRiga = sessionStorage.getItem(ubiKey) || '';
+                if (!ubiRiga && ubiArt) { ubiRiga = ubiArt; sessionStorage.setItem(ubiKey, ubiArt); } // nuovi seriali ereditano
+                setUbicazioneBtn(ubiBtn, ubiRiga);
                 ubiBtn.addEventListener('click', e => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1858,7 +1898,7 @@ setInterval(() => {
         cdcMapCache = null;
         cdcMapTimestamp = 0;
         // Rimuovi tutti i select CDC esistenti così vengono ricreati con i nuovi valori
-        document.querySelectorAll('.ubi-cdc-box, .cdc-select, .ubi-btn').forEach(s => s.remove());
+        document.querySelectorAll('.ubi-cdc-box, .cdc-select, .ubi-btn, .ubi-art-btn').forEach(s => s.remove());
         // Rilancia addPrintButtonsToRows che ricreerà i select e popolerà i CDC
         addPrintButtonsToRows();
     }
